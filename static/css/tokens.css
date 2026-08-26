@@ -1,0 +1,9 @@
+:root{
+  --memo-black:#0a0a0a;--memo-black-soft:#151515;--memo-gold:#c9a35c;--memo-gold-light:#dfc487;--memo-gold-dark:#9c7737;
+  --memo-ivory:#f5f0e7;--memo-cream:#ece3d4;--memo-paper:#e4d9c7;--memo-white:#fcfbf8;
+  --memo-text-primary:#11100e;--memo-text-secondary:#716b62;--memo-text-inverse:#f8f5ef;--memo-border:#d8cec0;--memo-border-dark:#2b2926;
+  --memo-success:#38624b;--memo-warning:#a66d2c;--memo-error:#963d3d;
+  --display:clamp(3.4rem,7vw,8.5rem);--h1:clamp(2.5rem,5vw,5.6rem);--h2:clamp(2rem,3.6vw,4.1rem);--h3:clamp(1.4rem,2vw,2.2rem);
+  --body-lg:clamp(1.05rem,1.2vw,1.25rem);--body:1rem;--small:.875rem;--micro:.75rem;
+  --ease:cubic-bezier(.22,.68,0,1);--fast:180ms;--standard:360ms;--editorial:800ms;
+}

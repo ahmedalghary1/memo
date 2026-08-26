@@ -1,0 +1,23 @@
+{% load static %}
+<header class="site-header" data-header>
+  <div class="header__inner shell">
+    <button class="icon-btn mobile-only" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">فتح القائمة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
+    <nav class="desktop-nav" aria-label="التنقل الرئيسي">
+      <a href="{% url 'core:home' %}">الرئيسية</a><a href="{% url 'catalog:list' %}">المتجر</a>
+      {% for cat in nav_categories|slice:':3' %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'core:info' 'about' %}">من نحن</a>
+    </nav>
+    <a class="brand" href="{% url 'core:home' %}" aria-label="MEMO الرئيسية"><img src="{% static 'images/memo-logo.png' %}" alt="MEMO" width="1254" height="1254"></a>
+    <div class="header-actions">
+      <button class="icon-btn" data-search-open aria-controls="search-overlay" aria-expanded="false"><span class="sr-only">بحث</span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+      <a class="icon-btn desktop-only" href="{% url 'accounts:dashboard' %}"><span class="sr-only">الحساب</span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg></a>
+      <a class="icon-btn desktop-only" href="{% url 'wishlist:detail' %}"><span class="sr-only">المحفوظات</span><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg></a>
+      <a class="icon-btn cart-link" href="{% url 'cart:detail' %}"><span class="sr-only">الحقيبة</span><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>{% if cart_count %}<b>{{ cart_count }}</b>{% endif %}</a>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="القائمة" hidden>
+    <button class="icon-btn menu-close" data-menu-close><span class="sr-only">إغلاق</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+    <div class="menu-brand">MEMO <small>القاهرة / 2026</small></div>
+    <nav>{% for label,url in mobile_menu_links %}<a href="{{ url }}">{{ label }}</a>{% empty %}<a href="{% url 'core:home' %}">الرئيسية</a><a href="{% url 'catalog:list' %}">المتجر</a>{% for cat in nav_categories %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'accounts:dashboard' %}">حسابي</a>{% endfor %}</nav>
+    <p>قطع يومية. حضور غير عادي.</p>
+  </div>
+</header>

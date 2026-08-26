@@ -1,0 +1,4 @@
+<div class="search-overlay" id="search-overlay" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
+  <button class="icon-btn search-close" data-search-close><span class="sr-only">إغلاق البحث</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+  <div class="search-inner"><p class="eyebrow">SEARCH / MEMO</p><h2 id="search-title">عمّ تبحث؟</h2><form action="{% url 'core:search' %}"><label class="sr-only" for="global-search">اسم المنتج أو الكود</label><input id="global-search" name="q" type="search" placeholder="اكتب اسم القطعة أو الكود" autocomplete="off"><button type="submit">بحث</button></form><div class="search-suggestions"><span>اقتراحات</span><a href="{% url 'catalog:list' %}?sort=new">الإصدار الجديد</a><a href="{% url 'catalog:list' %}">Oversized</a><a href="{% url 'catalog:list' %}">أساسيات</a></div></div>
+</div>

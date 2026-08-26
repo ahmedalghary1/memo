@@ -1,0 +1,1 @@
+<div class="product-grid">{% for product in products %}{% include 'components/product-card.html' with product=product %}{% empty %}<div class="empty-state"><span>MEMO / 00</span><h2>لا توجد قطع هنا الآن.</h2><p>جرّب إزالة بعض الفلاتر أو اكتشف الإصدار الجديد.</p><a class="btn btn--dark" href="{% url 'catalog:list' %}">عرض كل القطع</a></div>{% endfor %}</div>

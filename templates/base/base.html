@@ -1,0 +1,33 @@
+{% load static %}<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{% block title %}MEMO — قطع يومية. حضور غير عادي.{% endblock %}</title>
+  <meta name="description" content="{% block description %}MEMO للأزياء المعاصرة — تصميم هادئ، حضور لا يُنسى.{% endblock %}">
+  <link rel="canonical" href="{{ request.build_absolute_uri }}">
+  <meta property="og:title" content="MEMO — Premium Fashion">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/memo-campaign.png' %}">
+  <meta name="theme-color" content="#0A0A0A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+  <link rel="stylesheet" href="{% static 'css/forms-extra.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  {% include 'components/header.html' %}
+  {% include 'components/search-overlay.html' %}
+  {% if messages %}<div class="toast-region" aria-live="polite">{% for message in messages %}<div class="toast toast--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  <main id="main">{% block content %}{% endblock %}</main>
+  {% include 'components/footer.html' %}
+  <script type="module" src="{% static 'js/core.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

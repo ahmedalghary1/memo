@@ -1,0 +1,1 @@
+{% extends 'base/base.html' %}{% block title %}{{ title }} — MEMO{% endblock %}{% block content %}<section class="collection-hero shell"><p class="eyebrow">MEMO / INFORMATION</p><h1>{{ title }}</h1><div><p>{{ page_content }}</p><a class="arrow-link" href="{% url 'core:info' 'contact' %}">تواصل معنا <span>←</span></a></div></section>{% endblock %}

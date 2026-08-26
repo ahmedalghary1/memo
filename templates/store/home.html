@@ -1,0 +1,27 @@
+{% extends 'base/base.html' %}{% load static %}
+{% block body_class %}home{% endblock %}
+{% block content %}
+<section class="hero">
+  <img class="hero__image" src="{% static 'images/memo-campaign.png' %}" alt="إطلالة MEMO بقميص أسود واسع في عمارة حجرية دافئة" width="1680" height="945" fetchpriority="high">
+  <div class="hero__shade"></div><div class="hero__copy shell"><p class="eyebrow reveal">MEMO / DROP 01</p><h1 class="reveal">صُممت<br>لتُلاحظ.</h1><p class="reveal">قطع يومية بهوية لا تمرّ دون أثر.</p><div class="hero__actions reveal"><a class="btn btn--light" href="{% url 'catalog:list' %}">اكتشف المجموعة</a><a class="text-link" href="{% url 'catalog:list' %}?sort=new">تسوّق الجديد <span>↗</span></a></div></div><span class="scroll-note">مرّر للاكتشاف <i></i></span>
+</section>
+
+<section class="drop-editorial shell section-space">
+  <div class="drop-visual"><img src="{% static 'images/memo-campaign.png' %}" alt="تفاصيل إصدار MEMO الأول" width="1200" height="1500" loading="lazy"><div class="drop-stamp">01<br><small>CAIRO</small></div></div>
+  <div class="drop-copy"><p class="eyebrow">NEW DROP / 01</p><h2>خطوط بسيطة.<br>أثر واضح.</h2><p>إصدار مبني حول القَصّة، الخامة، والحضور. كل تفصيلة تؤدي دورها دون ضوضاء.</p>{% if featured_collection %}<a class="arrow-link" href="{% url 'catalog:list' %}">اكتشف {{ featured_collection.name }} <span>←</span></a>{% else %}<a class="arrow-link" href="{% url 'catalog:list' %}">اكتشف الإصدار <span>←</span></a>{% endif %}<div class="mini-visual"><img src="{% static 'images/memo-campaign.png' %}" alt="خامة MEMO السوداء" width="460" height="580" loading="lazy"></div></div>
+</section>
+
+<section class="products-section shell section-space"><div class="section-heading"><div><p class="eyebrow">SELECTED / MEMO</p><h2>قطع مختارة</h2></div><a class="arrow-link" href="{% url 'catalog:list' %}">عرض الكل <span>←</span></a></div>{% include 'components/product-grid.html' with products=featured_products %}</section>
+
+<section class="category-story section-space"><div class="shell"><div class="section-heading"><div><p class="eyebrow">CATEGORIES / 06</p><h2>اختر حضورك.</h2></div></div><div class="category-composition">{% for category in categories %}<a href="{{ category.get_absolute_url }}" class="category-tile category-tile--{{ forloop.counter }}">{% if category.image %}<img src="{{ category.image.url }}" alt="{{ category.name }}" loading="lazy">{% else %}<img src="{% static 'images/memo-campaign.png' %}" alt="{{ category.name }}" loading="lazy">{% endif %}<span><small>0{{ forloop.counter }}</small>{{ category.name }}</span></a>{% empty %}<a href="{% url 'catalog:list' %}" class="category-tile category-tile--1"><img src="{% static 'images/memo-campaign.png' %}" alt="مجموعة MEMO"><span><small>01</small>الإصدار الأول</span></a>{% endfor %}</div></div></section>
+
+<section class="film-section section-space"><div class="film-head shell"><p class="eyebrow">MEMO FILM 001</p><h2>تفاصيل<br>تصنع الفرق.</h2></div><div class="film-wrap"><video muted autoplay loop playsinline preload="metadata" poster="{% static 'images/memo-campaign.png' %}" data-pause-offscreen><source src="{% static 'video/memo-film.mp4' %}" type="video/mp4"></video><button class="film-control" data-video-toggle aria-label="إيقاف الفيديو">إيقاف</button></div></section>
+
+<section class="best-section shell section-space"><div class="section-heading"><div><p class="eyebrow">MOST WANTED</p><h2>الأكثر طلبًا</h2></div><span>اختيارات تتكرر<br>لسبب واضح.</span></div><div class="product-rail">{% for product in best_sellers %}{% include 'components/product-card.html' %}{% empty %}{% for product in featured_products %}{% include 'components/product-card.html' %}{% endfor %}{% endfor %}</div></section>
+
+<section class="brand-statement section-space"><div class="shell"><p class="eyebrow">THE MEMO WAY</p><blockquote>MEMO ليست قطعة<br>ترتديها فقط.<br><em>إنها الطريقة التي<br>تدخل بها المكان.</em></blockquote></div></section>
+
+<section class="lookbook shell section-space"><div class="lookbook__intro"><p class="eyebrow">LOOKBOOK / 001</p><h2>بين الضوء<br>والخامة.</h2><p>قراءة بصرية للإصدار الأول، من تفاصيل القَصّة إلى الحركة.</p></div><figure class="look look--1"><img src="{% static 'images/memo-campaign.png' %}" alt="إطلالة MEMO رقم 1" loading="lazy"><figcaption>LOOK 01 / BLACK ESSENTIAL</figcaption></figure><figure class="look look--2"><img src="{% static 'images/memo-campaign.png' %}" alt="إطلالة MEMO رقم 2" loading="lazy"><figcaption>LOOK 02 / QUIET FORM</figcaption></figure></section>
+
+<section class="newsletter"><div class="shell"><p class="eyebrow">PRIVATE LIST</p><h2>ابقَ قريبًا من<br>الإصدار القادم.</h2><form action="{% url 'core:newsletter' %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><label class="sr-only" for="newsletter-email">البريد الإلكتروني</label><input id="newsletter-email" name="email" type="email" placeholder="بريدك الإلكتروني" required><button type="submit">انضم للقائمة <span>←</span></button></form><small>رسائل قليلة. ما يستحق فقط.</small></div></section>
+{% endblock %}
