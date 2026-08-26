@@ -9,8 +9,9 @@ class Command(BaseCommand):
     help = "Create isolated MEMO demo catalog, variants, coupon, and dashboard user."
     def handle(self, *args, **options):
         categories = []
-        for order, name, slug in [(1,"رجالي","men"),(2,"نسائي","women"),(3,"Unisex","unisex"),(4,"Oversized","oversized"),(5,"T-Shirts","t-shirts"),(6,"Hoodies","hoodies")]:
-            category, _ = Category.objects.update_or_create(slug=slug, defaults={"name":name,"sort_order":order,"is_active":True,"image":"categories/memo-category.png","description":"قطع معاصرة بقَصّات واثقة وخامات مختارة."})
+        category_data = [(1,"رجالي","men","memo-black-tee-v2.png"),(2,"نسائي","women","memo-sand-hoodie-v2.png"),(3,"Unisex","unisex","memo-white-tee-v2.png"),(4,"Oversized","oversized","memo-gray-sweat-v2.png"),(5,"T-Shirts","t-shirts","memo-black-tee-v2.png"),(6,"Hoodies","hoodies","memo-sand-hoodie-v2.png")]
+        for order, name, slug, image_name in category_data:
+            category, _ = Category.objects.update_or_create(slug=slug, defaults={"name":name,"sort_order":order,"is_active":True,"image":f"categories/{image_name}","description":"قطع معاصرة بقَصّات واثقة وخامات مختارة."})
             categories.append(category)
         collection, _ = Collection.objects.update_or_create(slug="drop-01", defaults={"name":"DROP 01","description":"الإصدار الأول من MEMO.","cover_image":"collections/memo-drop-01.png","hero_image":"collections/memo-drop-01.png","is_active":True})
         colors = [Color.objects.update_or_create(slug=slug, defaults={"name":name,"hex_code":hex_code,"sort_order":i})[0] for i,(name,slug,hex_code) in enumerate([("أسود","black","#101010"),("عاجي","ivory","#E8DFD0"),("رملي","sand","#B7A185")])]
@@ -25,10 +26,11 @@ class Command(BaseCommand):
             ("قميص Canvas واسع","canvas-overshirt","MEMO-OS-007",1690,1890,2),
             ("بنطال Line الأسود","line-black-trouser","MEMO-TR-008",1450,None,0),
         ]
+        catalog_images = ["memo-black-tee-v2.png", "memo-sand-hoodie-v2.png", "memo-white-tee-v2.png", "memo-gray-sweat-v2.png"]
         for idx,(name,slug,sku,price,compare,color_idx) in enumerate(products):
             product,_ = Product.objects.update_or_create(slug=slug, defaults={"name":name,"base_sku":sku,"short_description":"قَصّة معاصرة وخامة ثقيلة بانسيابية مدروسة.","description":"قطعة يومية صُممت حول راحة الحركة ووضوح القَصّة. تفاصيل قليلة، محسوبة، وحضور يبقى.","material":"قطن ثقيل فاخر 100%.","care_instructions":"غسيل بارد مع ألوان مشابهة. تجفيف طبيعي.","price":price,"compare_at_price":compare,"category":categories[idx%len(categories)],"status":"active","featured":idx<4,"new_arrival":idx<5,"bestseller":idx in [0,1,3,5]})
             product.collections.add(collection)
-            ProductImage.objects.update_or_create(product=product, sort_order=0, defaults={"image":"products/memo-campaign.png","alt_text":f"{name} — إطلالة MEMO","is_primary":True})
+            ProductImage.objects.update_or_create(product=product, sort_order=0, defaults={"image":f"products/{catalog_images[idx % len(catalog_images)]}","alt_text":f"{name} — إطلالة MEMO","is_primary":True})
             color=colors[color_idx]
             for size_idx,size in enumerate(sizes):
                 stock = 0 if (idx+size_idx)%7==0 else (2 if (idx+size_idx)%5==0 else 9+size_idx)

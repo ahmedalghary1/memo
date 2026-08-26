@@ -14,6 +14,8 @@ function dialog(openButton, closeButton, panel, openClass = 'is-open') {
 
 dialog(qs('[data-menu-open]'), qs('[data-menu-close]'), qs('#mobile-menu'));
 dialog(qs('[data-search-open]'), qs('[data-search-close]'), qs('#search-overlay'));
+const cartOpen=qs('[data-cart-open]'), cartDrawer=qs('#cart-drawer'), cartBackdrop=qs('[data-cart-backdrop]');
+if(cartOpen&&cartDrawer){const close=()=>{cartDrawer.classList.remove('is-open');cartBackdrop?.classList.remove('is-open');body.classList.remove('is-locked');cartOpen.setAttribute('aria-expanded','false');setTimeout(()=>{cartDrawer.hidden=true;if(cartBackdrop)cartBackdrop.hidden=true},300)};cartOpen.addEventListener('click',e=>{e.preventDefault();cartDrawer.hidden=false;if(cartBackdrop)cartBackdrop.hidden=false;requestAnimationFrame(()=>{cartDrawer.classList.add('is-open');cartBackdrop?.classList.add('is-open')});body.classList.add('is-locked');cartOpen.setAttribute('aria-expanded','true');qs('[data-cart-close]',cartDrawer)?.focus()});qs('[data-cart-close]',cartDrawer)?.addEventListener('click',close);cartBackdrop?.addEventListener('click',close);cartDrawer.addEventListener('keydown',e=>{if(e.key==='Escape')close()})}
 
 const menuLinks = qsa('#mobile-menu nav a'); menuLinks.forEach((a,i) => a.style.setProperty('--i', i));
 const header = qs('[data-header]'); let lastY = 0;

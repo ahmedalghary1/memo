@@ -1,6 +1,7 @@
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Count, F, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from apps.catalog.models import Product, ProductVariant
@@ -16,7 +17,11 @@ def overview(request):
     orders = Order.objects.all()
     delivered = orders.exclude(status__in=["cancelled", "returned"])
     revenue = delivered.aggregate(v=Sum("grand_total"))["v"] or 0
-    context = {"revenue": revenue, "order_count": orders.count(), "customer_count": orders.values("customer_email").distinct().count(), "average_order": revenue / max(delivered.count(), 1), "recent_orders": orders[:8], "low_stock": ProductVariant.objects.filter(is_active=True, stock_quantity__lte=F("low_stock_threshold")).select_related("product", "color", "size")[:8]}
+    daily = list(delivered.filter(created_at__gte=timezone.now()-timedelta(days=30)).annotate(day=TruncDate("created_at")).values("day").annotate(total=Sum("grand_total")).order_by("day"))
+    peak = max([float(x["total"]) for x in daily] or [1])
+    chart_points = [{"label": x["day"].strftime("%d/%m"), "height": max(8, int(float(x["total"]) / peak * 100)), "total": x["total"]} for x in daily]
+    status_counts = orders.values("status").annotate(total=Count("id")).order_by("-total")
+    context = {"revenue": revenue, "order_count": orders.count(), "customer_count": orders.values("customer_email").distinct().count(), "average_order": revenue / max(delivered.count(), 1), "recent_orders": orders[:8], "low_stock": ProductVariant.objects.filter(is_active=True, stock_quantity__lte=F("low_stock_threshold")).select_related("product", "color", "size")[:8], "chart_points": chart_points, "status_counts": status_counts}
     return render(request, "dashboard/overview.html", context)
 @staff_required
 def products(request): return render(request, "dashboard/products.html", {"products": Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))})

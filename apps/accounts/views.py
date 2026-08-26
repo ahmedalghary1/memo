@@ -10,7 +10,9 @@ def register(request):
     return render(request, "accounts/register.html", {"form": form})
 
 @login_required
-def dashboard(request): return render(request, "accounts/dashboard.html", {"orders": request.user.orders.prefetch_related("items")[:8]})
+def dashboard(request):
+    orders = request.user.orders.prefetch_related("items")
+    return render(request, "accounts/dashboard.html", {"orders": orders[:8], "order_count": orders.count(), "wishlist_count": request.user.wishlist_items.count(), "address_count": request.user.addresses.count()})
 
 @login_required
 def profile(request): return render(request, "accounts/profile.html", {"addresses": request.user.addresses.all()})

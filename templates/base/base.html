@@ -18,12 +18,15 @@
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/pages.css' %}">
   <link rel="stylesheet" href="{% static 'css/forms-extra.css' %}">
+  <link rel="stylesheet" href="{% static 'css/reference.css' %}">
+  <link rel="stylesheet" href="{% static 'css/reference-fixes.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
   {% include 'components/header.html' %}
   {% include 'components/search-overlay.html' %}
+  {% include 'components/cart-drawer.html' %}
   {% if messages %}<div class="toast-region" aria-live="polite">{% for message in messages %}<div class="toast toast--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
   <main id="main">{% block content %}{% endblock %}</main>
   {% include 'components/footer.html' %}
