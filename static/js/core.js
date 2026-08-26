@@ -35,3 +35,14 @@ if(variantForm){const variants=JSON.parse(variantForm.dataset.variants||'[]'), c
 }
 
 qsa('.toast').forEach(t=>setTimeout(()=>t.remove(),4500));
+
+if(variantForm){
+  const addButton=qs('[data-add-button]',variantForm), buyButton=qs('[data-buy-button]',variantForm);
+  const syncBuy=()=>{if(buyButton)buyButton.disabled=addButton?.disabled??true};
+  new MutationObserver(syncBuy).observe(addButton,{attributes:true,attributeFilter:['disabled']});
+  variantForm.addEventListener('change',()=>queueMicrotask(syncBuy));
+  const firstColor=qs('input[name="color"]',variantForm); if(firstColor&&!qs('input[name="color"]:checked',variantForm))firstColor.click();
+  syncBuy();
+}
+qs('[data-share]')?.addEventListener('click',async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else{await navigator.clipboard.writeText(location.href);alert('تم نسخ رابط المنتج.')}}catch(error){if(error.name!=='AbortError')console.warn(error)}});
+qsa('.drawer-qty').forEach(form=>{const input=qs('input[name="quantity"]',form);qs('[data-qty-minus]',form)?.addEventListener('click',()=>{input.value=Math.max(Number(input.min)||0,Number(input.value)-1);form.requestSubmit()});qs('[data-qty-plus]',form)?.addEventListener('click',()=>{input.value=Math.min(Number(input.max)||99,Number(input.value)+1);form.requestSubmit()})});

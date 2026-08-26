@@ -18,3 +18,7 @@ class CheckoutTests(TestCase):
         order=Order.objects.get(customer_email="guest@example.com"); self.variant.refresh_from_db()
         self.assertRedirects(response,reverse("checkout:success",args=[order.order_number]))
         self.assertEqual(order.items.get().variant_sku,"E1-B-M"); self.assertEqual(self.variant.stock_quantity,2); self.assertEqual(order.grand_total,Decimal("1470"))
+    def test_buy_now_redirects_to_checkout_with_variant_in_cart(self):
+        response=self.client.post(reverse("cart:add"),{"variant_id":self.variant.pk,"quantity":1,"buy_now":"1"})
+        self.assertRedirects(response,reverse("checkout:checkout"))
+        self.assertEqual(self.client.session["memo_cart"][str(self.variant.pk)],1)

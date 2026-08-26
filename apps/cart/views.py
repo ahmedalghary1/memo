@@ -10,10 +10,13 @@ def detail(request): return render(request, "store/cart.html", {"cart": Cart(req
 @require_POST
 def add(request):
     variant = get_object_or_404(ProductVariant, pk=request.POST.get("variant_id"), is_active=True)
+    added = False
     try:
         Cart(request).add(variant, max(1, int(request.POST.get("quantity", 1))))
+        added = True
         messages.success(request, "أُضيفت القطعة إلى الحقيبة.")
     except (ValueError, TypeError) as exc: messages.error(request, str(exc) or "تعذرت إضافة القطعة.")
+    if added and request.POST.get("buy_now"): return redirect("checkout:checkout")
     return redirect(request.POST.get("next") or "cart:detail")
 
 @require_POST
