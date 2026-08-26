@@ -11,3 +11,36 @@ html,body{max-width:100%;overflow-x:clip}body{min-width:320px}.shell{width:min(c
 @media(prefers-reduced-motion:reduce){.product-card__media img{will-change:auto}.site-header{transition:none}.cart-drawer,.filters{transition:none}}
 .variant-form::after{display:none!important}.buy-now{width:100%;min-height:44px;margin-top:8px;background:var(--ref-gold);border-color:var(--ref-gold);color:#111}.pdp-rating{display:flex;align-items:center;gap:7px;font-size:9px;margin:-3px 0 10px;color:#777}.pdp-rating span{color:#d1a23d;letter-spacing:.08em}.pdp-rating a{text-decoration:underline}.pdp-tools{display:flex;justify-content:space-between;gap:8px;margin-top:13px}.pdp-tools form{flex:1}.pdp-tools button{width:100%;border:1px solid var(--ref-line);background:#fff;min-height:38px;font-size:10px}.size-guide{float:left;text-decoration:underline;font-size:10px;font-weight:400}
 .filter-trigger b{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:50%;background:#111;color:#fff;font-size:9px}.results-count{font-size:10px;color:#888}.active-filters{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--ref-line);font-size:9px}.active-filters a{border:1px solid var(--ref-line);background:#fff;padding:4px 8px}.filter-category{display:flex;justify-content:space-between;padding:5px 0;font-size:10px}.filter-category span{color:#999}.filter-category.active{color:#a57929;font-weight:600}.price-range{display:grid;grid-template-columns:1fr 1fr;gap:8px}.price-range label{font-size:9px}.price-range input{width:100%;height:36px;border:1px solid var(--ref-line);padding:5px;margin-top:4px}.clear-filters{display:block;text-align:center}.pagination small{align-self:center;color:#888}
+.drawer-qty {
+    border: 1px solid #34383b;
+    width: 88px;
+    height: 29px;
+    display: grid;
+    grid-template-columns: 28px 1fr 28px;
+    align-items: center;
+}
+
+.drawer-qty button {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    height: 100%;
+    cursor: pointer;
+}
+
+.drawer-qty input {
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    text-align: center;
+    font-size: 10px;
+    appearance: textfield;
+}
+
+.drawer-qty input::-webkit-outer-spin-button,
+.drawer-qty input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
