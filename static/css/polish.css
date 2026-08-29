@@ -10,15 +10,17 @@ html,body{max-width:100%;overflow-x:clip}body{min-width:320px}.shell{width:min(c
 @media(hover:none){.product-card:hover img{transform:none}.category-rail__grid a:hover img{transform:none}.desktop-nav a::after{display:none}}
 @media(prefers-reduced-motion:reduce){.product-card__media img{will-change:auto}.site-header{transition:none}.cart-drawer,.filters{transition:none}}
 
-/* Keep every navigation action inside the header at all viewport sizes. */
+/* Pin the logo and actions to the navbar instead of relying on grid auto-placement. */
+.site-header{overflow:visible}
 .header__inner{position:relative}
-.header-actions{align-self:stretch;display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap}
+.header__inner>.brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
+.header-actions{position:absolute;inset-block:0;inset-inline-end:0;display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;z-index:3}
 .header-actions .icon-btn{flex:0 0 auto}
 
 @media(max-width:767px){
-  .header__inner{display:flex;justify-content:space-between;align-items:center}
-  .header__inner>.brand{position:absolute;left:50%;transform:translateX(-50%);z-index:1}
-  .header-actions{height:100%;gap:0;position:relative;z-index:2}
+  .header__inner{display:block}
+  .header__inner>.mobile-only{position:absolute;inset-block:0;inset-inline-start:0;align-items:center;z-index:3}
+  .header-actions{gap:0}
   .header-actions .desktop-only{display:inline-grid!important}
   .header-actions .icon-btn{width:34px;height:100%}
 }
