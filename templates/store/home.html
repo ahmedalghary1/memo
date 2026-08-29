@@ -7,7 +7,6 @@
     <span class="hero-glow hero-glow--one"></span>
     <span class="hero-glow hero-glow--two"></span>
     <div class="hero-orbit"><i></i><i></i><i></i><span>MEMO</span></div>
-    <div class="hero-sphere"><span></span></div>
     <div class="hero-ribbon"><i></i><i></i><i></i></div>
     <div class="hero-drop"><small>NEW DROP</small><strong>26</strong><span>CAIRO</span></div>
   </div>
@@ -20,7 +19,7 @@
 
 <section class="ref-products shell"><div class="section-title"><h2>المجموعة الجديدة</h2><a href="{% url 'catalog:list' %}?sort=new">عرض الكل</a></div>{% include 'components/product-grid.html' with products=featured_products %}</section>
 
-<section class="essentials-banner shell"><video muted autoplay loop playsinline preload="metadata" poster="{% static 'images/memo-campaign.png' %}" data-pause-offscreen><source src="{% static 'video/memo-film.mp4' %}" type="video/mp4"></video><div><p>MEMO ESSENTIALS</p><h2>قطع أساسية. جودة تدوم.</h2><a class="btn btn--gold" href="{% url 'catalog:list' %}">تسوّق الآن</a></div><button class="play-button" data-video-toggle aria-label="إيقاف الفيديو">Ⅱ</button></section>
+<section class="essentials-banner shell"><video muted autoplay loop playsinline preload="metadata" poster="{% static 'images/memo-campaign.png' %}" data-pause-offscreen><source src="{% static 'video/memo-film.mp4' %}" type="video/mp4"></video><div><p>MEMO ESSENTIALS</p><h2>قطع أساسية. جودة تدوم.</h2><a class="btn btn--gold" href="{% url 'catalog:list' %}">تسوّق الآن</a></div><button class="play-button" type="button" data-video-toggle aria-label="إيقاف الفيديو">Ⅱ</button></section>
 
 <section class="service-strip shell"><div><span>□</span><strong>شحن سريع</strong><small>لكل المحافظات</small></div><div><span>♢</span><strong>جودة مضمونة</strong><small>خامات مختارة</small></div><div><span>▱</span><strong>دفع آمن</strong><small>عند الاستلام</small></div><div><span>◌</span><strong>دعم عملاء</strong><small>نحن هنا للمساعدة</small></div><div><span>↻</span><strong>إرجاع سهل</strong><small>خلال 14 يومًا</small></div></section>
 

@@ -23,8 +23,66 @@ const menuLinks = qsa('#mobile-menu nav a'); menuLinks.forEach((a,i) => a.style.
 const header = qs('[data-header]'); let lastY = 0;
 addEventListener('scroll', () => { const y=scrollY; header?.classList.toggle('is-sticky', y>40); header?.classList.toggle('is-hidden', y>lastY && y>500); lastY=y; }, {passive:true});
 
-const filter = qs('#filters'); const filterOpen=qs('[data-filter-open]'); const filterClose=qs('[data-filter-close]');
-if(filter&&filterOpen){filterOpen.addEventListener('click',()=>{filter.classList.add('is-open');body.classList.add('is-locked');filterOpen.setAttribute('aria-expanded','true')});filterClose?.addEventListener('click',()=>{filter.classList.remove('is-open');body.classList.remove('is-locked');filterOpen.setAttribute('aria-expanded','false')})}
+const filter=qs('#filters'),filterOpen=qs('[data-filter-open]'),filterClose=qs('[data-filter-close]'),filterBackdrop=qs('[data-filter-backdrop]');
+if(filter&&filterOpen){
+  const filterMobile=matchMedia('(max-width:1023px)');
+  const closeFilter=()=>{
+    filter.classList.remove('is-open');filterBackdrop?.classList.remove('is-open');body.classList.remove('is-locked');filterOpen.setAttribute('aria-expanded','false');
+    if(filterMobile.matches)filter.inert=true;
+    setTimeout(()=>{if(filterBackdrop)filterBackdrop.hidden=true},280);
+    filterOpen.focus();
+  };
+  const openFilter=()=>{
+    if(!filterMobile.matches){filter.scrollIntoView({behavior:'smooth',block:'start'});return}
+    filter.inert=false;if(filterBackdrop)filterBackdrop.hidden=false;
+    requestAnimationFrame(()=>{filter.classList.add('is-open');filterBackdrop?.classList.add('is-open')});
+    body.classList.add('is-locked');filterOpen.setAttribute('aria-expanded','true');
+    qs('button,input,select,a',filter)?.focus();
+  };
+  const syncFilterMode=()=>{filter.inert=filterMobile.matches&&!filter.classList.contains('is-open');if(!filterMobile.matches){filterBackdrop?.classList.remove('is-open');if(filterBackdrop)filterBackdrop.hidden=true;body.classList.remove('is-locked')}};
+  filterOpen.addEventListener('click',openFilter);filterClose?.addEventListener('click',closeFilter);filterBackdrop?.addEventListener('click',closeFilter);
+  filter.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){closeFilter();return}
+    if(event.key!=='Tab'||!filterMobile.matches)return;
+    const focusable=qsa('a,button,input,select,[tabindex]:not([tabindex="-1"])',filter).filter(element=>!element.disabled&&element.offsetParent!==null);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+  });
+  filterMobile.addEventListener('change',syncFilterMode);syncFilterMode();
+}
+
+const preserveQuery=(form,allowedKeys=[])=>{
+  const params=new URLSearchParams(location.search);
+  params.forEach((value,key)=>{
+    if(key==='page'||allowedKeys.includes(key)||form.elements.namedItem(key))return;
+    const hidden=document.createElement('input');hidden.type='hidden';hidden.name=key;hidden.value=value;form.append(hidden);
+  });
+};
+const sortForm=qs('.sort-form'),sortSelect=qs('.sort-form select');
+if(sortForm&&sortSelect){
+  sortSelect.removeAttribute('onchange');
+  sortSelect.addEventListener('change',()=>sortForm.requestSubmit());
+  sortForm.addEventListener('submit',event=>preserveQuery(event.currentTarget,['sort']));
+}
+qs('.filters form')?.addEventListener('submit',event=>preserveQuery(event.currentTarget,['size','color','price_min','price_max','available']));
+
+qsa('.pagination a').forEach(link=>{
+  const page=new URL(link.href,location.href).searchParams.get('page');
+  const params=new URLSearchParams(location.search);if(page)params.set('page',page);link.href=`?${params}`;
+});
+qsa('.active-filters a[href="?"]').forEach(link=>{
+  const label=link.textContent.replace('×','').trim();
+  const isSize=label.startsWith('المقاس '),value=isSize?label.replace('المقاس ','').trim():label;
+  const key=isSize?'size':'color',params=new URLSearchParams(location.search),values=params.getAll(key).filter(item=>item!==value);
+  params.delete(key);values.forEach(item=>params.append(key,item));params.delete('page');link.href=`?${params}`;
+});
+
+qsa('.desktop-nav a,.mobile-menu nav a').forEach(link=>{
+  const target=new URL(link.href,location.href);
+  if(target.pathname===location.pathname&&!target.search)link.setAttribute('aria-current','page');
+});
 
 const video=qs('[data-pause-offscreen]'); const videoToggle=qs('[data-video-toggle]');
 if(video){if(matchMedia('(prefers-reduced-motion: reduce)').matches)video.pause();else new IntersectionObserver(([e])=>e.isIntersecting?video.play().catch(()=>{}):video.pause(),{threshold:.15}).observe(video);videoToggle?.addEventListener('click',()=>{if(video.paused){video.play();videoToggle.textContent='إيقاف';videoToggle.setAttribute('aria-label','إيقاف الفيديو')}else{video.pause();videoToggle.textContent='تشغيل';videoToggle.setAttribute('aria-label','تشغيل الفيديو')}})}
