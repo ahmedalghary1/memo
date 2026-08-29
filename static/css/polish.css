@@ -9,6 +9,26 @@ html,body{max-width:100%;overflow-x:clip}body{min-width:320px}.shell{width:min(c
 @media(max-width:360px){.header-actions .icon-btn:first-child{display:none}.brand img{width:60px}.ref-hero{min-height:455px}.ref-hero__copy h1{font-size:2rem}.ref-hero__copy p{font-size:10px}.category-rail__grid>a{flex-basis:38vw}.ref-products .product-grid{grid-template-columns:1fr 1fr}.product-card__info h3{font-size:10px}.product-card__info .swatches{display:none}.shop-results .product-grid{grid-template-columns:1fr 1fr}.pdp-info{padding-inline:14px}.choice-row.sizes{gap:6px}.choice-row.sizes span{min-width:42px}.mobile-buybar button{min-width:135px}.account-stats{grid-template-columns:1fr}.account-stats article{display:flex;align-items:center;justify-content:space-between}.wishlist-list article{grid-template-columns:70px 1fr}.wishlist-list article>form{grid-column:2}.ref-newsletter form{grid-template-columns:1fr}.ref-newsletter button{min-height:44px}}
 @media(hover:none){.product-card:hover img{transform:none}.category-rail__grid a:hover img{transform:none}.desktop-nav a::after{display:none}}
 @media(prefers-reduced-motion:reduce){.product-card__media img{will-change:auto}.site-header{transition:none}.cart-drawer,.filters{transition:none}}
+
+/* Keep every navigation action inside the header at all viewport sizes. */
+.header__inner{position:relative}
+.header-actions{align-self:stretch;display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap}
+.header-actions .icon-btn{flex:0 0 auto}
+
+@media(max-width:767px){
+  .header__inner{display:flex;justify-content:space-between;align-items:center}
+  .header__inner>.brand{position:absolute;left:50%;transform:translateX(-50%);z-index:1}
+  .header-actions{height:100%;gap:0;position:relative;z-index:2}
+  .header-actions .desktop-only{display:inline-grid!important}
+  .header-actions .icon-btn{width:34px;height:100%}
+}
+
+@media(max-width:360px){
+  .header__inner.shell{width:calc(100% - 16px)}
+  .header-actions .icon-btn:first-child{display:inline-grid}
+  .header-actions .icon-btn{width:31px}
+  .brand img{width:56px}
+}
 .variant-form::after{display:none!important}.buy-now{width:100%;min-height:44px;margin-top:8px;background:var(--ref-gold);border-color:var(--ref-gold);color:#111}.pdp-rating{display:flex;align-items:center;gap:7px;font-size:9px;margin:-3px 0 10px;color:#777}.pdp-rating span{color:#d1a23d;letter-spacing:.08em}.pdp-rating a{text-decoration:underline}.pdp-tools{display:flex;justify-content:space-between;gap:8px;margin-top:13px}.pdp-tools form{flex:1}.pdp-tools button{width:100%;border:1px solid var(--ref-line);background:#fff;min-height:38px;font-size:10px}.size-guide{float:left;text-decoration:underline;font-size:10px;font-weight:400}
 .filter-trigger b{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:50%;background:#111;color:#fff;font-size:9px}.results-count{font-size:10px;color:#888}.active-filters{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--ref-line);font-size:9px}.active-filters a{border:1px solid var(--ref-line);background:#fff;padding:4px 8px}.filter-category{display:flex;justify-content:space-between;padding:5px 0;font-size:10px}.filter-category span{color:#999}.filter-category.active{color:#a57929;font-weight:600}.price-range{display:grid;grid-template-columns:1fr 1fr;gap:8px}.price-range label{font-size:9px}.price-range input{width:100%;height:36px;border:1px solid var(--ref-line);padding:5px;margin-top:4px}.clear-filters{display:block;text-align:center}.pagination small{align-self:center;color:#888}
 .drawer-qty {
