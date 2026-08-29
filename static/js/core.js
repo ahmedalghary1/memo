@@ -47,3 +47,34 @@ if(variantForm){
 }
 qs('[data-share]')?.addEventListener('click',async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else{await navigator.clipboard.writeText(location.href);alert('تم نسخ رابط المنتج.')}}catch(error){if(error.name!=='AbortError')console.warn(error)}});
 qsa('.drawer-qty').forEach(form=>{const input=qs('input[name="quantity"]',form);qs('[data-qty-minus]',form)?.addEventListener('click',()=>{input.value=Math.max(Number(input.min)||0,Number(input.value)-1);form.requestSubmit()});qs('[data-qty-plus]',form)?.addEventListener('click',()=>{input.value=Math.min(Number(input.max)||99,Number(input.value)+1);form.requestSubmit()})});
+
+const motionHero=qs('[data-motion-hero]');
+if(motionHero){
+  const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const homeSections=qsa('.category-rail,.ref-products,.essentials-banner,.service-strip,.ref-newsletter,.instagram-strip');
+  homeSections.forEach(section=>{
+    qsa('.product-card,.category-rail__grid>a',section).forEach((item,index)=>item.style.setProperty('--reveal-index',Math.min(index,7)));
+  });
+  document.body.classList.add('home-motion-ready');
+  if(reduceMotion){
+    homeSections.forEach(section=>section.classList.add('home-reveal-visible'));
+  }else{
+    const revealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(entry.isIntersecting){entry.target.classList.add('home-reveal-visible');revealObserver.unobserve(entry.target)}
+    }),{threshold:.12,rootMargin:'0px 0px -45px'});
+    homeSections.forEach(section=>revealObserver.observe(section));
+
+    if(matchMedia('(pointer:fine)').matches){
+      let pointerFrame;
+      const setHeroMotion=(x,y)=>{motionHero.style.setProperty('--hero-x',`${x}px`);motionHero.style.setProperty('--hero-y',`${y}px`)};
+      motionHero.addEventListener('pointermove',event=>{
+        const bounds=motionHero.getBoundingClientRect();
+        const x=((event.clientX-bounds.left)/bounds.width-.5)*18;
+        const y=((event.clientY-bounds.top)/bounds.height-.5)*12;
+        cancelAnimationFrame(pointerFrame);
+        pointerFrame=requestAnimationFrame(()=>setHeroMotion(x,y));
+      });
+      motionHero.addEventListener('pointerleave',()=>setHeroMotion(0,0));
+    }
+  }
+}

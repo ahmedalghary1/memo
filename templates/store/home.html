@@ -1,6 +1,20 @@
 {% extends 'base/base.html' %}{% load static %}{% block body_class %}home reference-home{% endblock %}
 {% block content %}
-<section class="ref-hero"><img src="{% static 'images/memo-campaign.png' %}" alt="إطلالة MEMO الجديدة" width="1680" height="945" fetchpriority="high"><div class="ref-hero__overlay"></div><div class="ref-hero__copy shell"><h1>أسلوبك، هويتك.</h1><p>اكتشف مجموعتنا الجديدة بتصاميم تعكس شخصيتك.</p><div><a class="btn btn--gold" href="{% url 'catalog:list' %}">تسوّق الآن</a><a class="btn btn--outline-light" href="{% url 'catalog:list' %}?sort=new">اكتشف المجموعة</a></div></div><div class="ref-dots"><i></i><i></i><i></i></div></section>
+<section class="ref-hero" data-motion-hero>
+  <img src="{% static 'images/memo-campaign.png' %}" alt="إطلالة MEMO الجديدة" width="1680" height="945" fetchpriority="high">
+  <div class="ref-hero__overlay"></div>
+  <div class="hero-motion" aria-hidden="true">
+    <span class="hero-glow hero-glow--one"></span>
+    <span class="hero-glow hero-glow--two"></span>
+    <div class="hero-orbit"><i></i><i></i><i></i><span>MEMO</span></div>
+    <div class="hero-sphere"><span></span></div>
+    <div class="hero-ribbon"><i></i><i></i><i></i></div>
+    <div class="hero-drop"><small>NEW DROP</small><strong>26</strong><span>CAIRO</span></div>
+  </div>
+  <div class="ref-hero__copy shell"><span class="hero-kicker">MEMO / NEW SEASON</span><h1>أسلوبك، هويتك.</h1><p>اكتشف مجموعتنا الجديدة بتصاميم تعكس شخصيتك.</p><div><a class="btn btn--gold" href="{% url 'catalog:list' %}">تسوّق الآن</a><a class="btn btn--outline-light" href="{% url 'catalog:list' %}?sort=new">اكتشف المجموعة</a></div></div>
+  <div class="hero-scroll" aria-hidden="true"><span></span> اسحب للاستكشاف</div>
+  <div class="ref-dots"><i></i><i></i><i></i></div>
+</section>
 
 <section class="category-rail shell"><div class="section-title"><h2>تسوّق حسب الفئة</h2><a href="{% url 'catalog:list' %}">عرض الكل</a></div><div class="category-rail__grid">{% for category in categories %}<a href="{{ category.get_absolute_url }}"><div>{% if category.image %}<img src="{{ category.image.url }}" alt="{{ category.name }}">{% else %}<img src="{% static 'images/memo-campaign.png' %}" alt="{{ category.name }}">{% endif %}</div><strong>{{ category.name }}</strong><small>تسوّق الآن</small></a>{% empty %}<a href="{% url 'catalog:list' %}"><div><img src="{% static 'images/memo-campaign.png' %}" alt="مجموعة MEMO"></div><strong>كل القطع</strong><small>تسوّق الآن</small></a>{% endfor %}</div></section>
 
