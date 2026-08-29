@@ -1,4 +1,5 @@
 from decimal import Decimal
+import re
 
 from django.test import TestCase
 from django.urls import reverse
@@ -50,6 +51,14 @@ class CheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "هذا الحقل مطلوب", count=2)
         self.assertFalse(Order.objects.exists())
+
+    def test_checkout_exposes_machine_readable_total_for_javascript(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        response = self.client.get(reverse("checkout:checkout"))
+        html = response.content.decode()
+        match = re.search(r'data-order-total="([^"]+)"', html)
+        self.assertIsNotNone(match)
+        self.assertEqual(Decimal(match.group(1)), Decimal("700"))
 
     def test_buy_now_redirects_to_checkout_with_variant_in_cart(self):
         response = self.client.post(

@@ -1,4 +1,4 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load l10n %}
 {% block title %}إتمام الطلب — MEMO{% endblock %}
 {% block body_class %}checkout-page{% endblock %}
 {% block content %}
@@ -11,7 +11,7 @@
       <section><h2><span>02</span>طريقة الشحن</h2>{% include 'components/form-field.html' with field=form.shipping_method %}<p class="delivery-estimate" data-delivery-estimate>الوصول المتوقع خلال 2–5 أيام عمل.</p></section>
       <section><h2><span>03</span>الدفع</h2>{% include 'components/form-field.html' with field=form.payment_method %}<p class="safe-note">الدفع عند الاستلام. يتم تأكيد الطلب هاتفيًا قبل الشحن ولن نطلب منك أي بيانات بنكية.</p></section>
     </div>
-    <aside class="checkout-summary" data-checkout-summary data-order-total="{{ cart.total }}">
+    <aside class="checkout-summary" data-checkout-summary data-order-total="{{ cart.total|unlocalize }}">
       <h2>طلبك <span>{{ cart.count }}</span></h2>
       {% for item in cart %}<div class="summary-item">{% with img=item.product.primary_image %}{% if img %}<img src="{{ img.image.url }}" alt="{{ img.alt_text }}" width="120" height="150">{% endif %}{% endwith %}<div><strong>{{ item.product.name }}</strong><small>{{ item.variant.color.name }} / {{ item.variant.size.name }} × {{ item.quantity }}</small></div><span>{{ item.total|floatformat:0 }} ج.م</span></div>{% endfor %}
       <dl><div><dt>المجموع</dt><dd>{{ cart.subtotal|floatformat:0 }} ج.م</dd></div>{% if cart.discount %}<div><dt>الخصم</dt><dd>−{{ cart.discount|floatformat:0 }} ج.م</dd></div>{% endif %}<div><dt>الشحن</dt><dd data-shipping-total>{{ shipping|floatformat:0 }} ج.م</dd></div><div class="checkout-grand-total"><dt>الإجمالي</dt><dd data-grand-total>{{ cart.total|add:shipping|floatformat:0 }} ج.م</dd></div></dl>
