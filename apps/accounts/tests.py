@@ -39,3 +39,14 @@ class AccountAccessTests(TestCase):
         response = self.client.post(reverse("accounts:address_delete", args=[address.pk]))
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Address.objects.filter(pk=address.pk).exists())
+
+    def test_user_can_update_personal_details(self):
+        user = User.objects.create_user(username="customer", password="safe-password", email="old@example.com")
+        self.client.force_login(user)
+        response = self.client.post(reverse("accounts:profile"), {
+            "save_profile": "1", "first_name": "Memo", "last_name": "Customer", "email": "new@example.com",
+        })
+        self.assertRedirects(response, reverse("accounts:profile"))
+        user.refresh_from_db()
+        self.assertEqual(user.get_full_name(), "Memo Customer")
+        self.assertEqual(user.email, "new@example.com")

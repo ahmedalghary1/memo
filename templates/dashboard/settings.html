@@ -1,0 +1,8 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}إعدادات المتجر — لوحة MEMO{% endblock %}
+{% block content %}
+<div class="dash-page">
+  <div class="dash-title"><div><p>STORE CONFIGURATION</p><h1>إعدادات المتجر</h1></div><span>آخر تحديث {{ store_settings.updated_at|date:'d.m.Y — H:i' }}</span></div>
+  <form class="dash-panel settings-form" method="post" novalidate>{% csrf_token %}{{ form.non_field_errors }}<div class="settings-grid">{% for field in form %}<label><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}</div><button class="dash-btn" type="submit">حفظ الإعدادات</button></form>
+</div>
+{% endblock %}

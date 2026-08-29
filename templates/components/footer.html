@@ -1,10 +1,10 @@
 {% load static %}
 <footer class="site-footer">
   <div class="footer-top shell">
-    <div><img src="{% static 'images/memo-logo-transparent-v2.png' %}" alt="MEMO" width="180" height="120"><p>تصميم هادئ. حضور لا يُنسى.</p></div>
+    <div><img src="{% static 'images/memo-logo-transparent-v2.webp' %}" alt="MEMO" width="180" height="120" loading="lazy"><p>{{ store_settings.brand_tagline }}</p>{% if store_settings.support_email %}<a href="mailto:{{ store_settings.support_email }}">{{ store_settings.support_email }}</a>{% endif %}{% if store_settings.support_phone %}<a href="tel:{{ store_settings.support_phone }}">{{ store_settings.support_phone }}</a>{% endif %}</div>
     <div><h3>المتجر</h3><a href="{% url 'catalog:list' %}">كل القطع</a><a href="{% url 'catalog:list' %}?sort=new">الجديد</a><a href="{% url 'wishlist:detail' %}">المحفوظات</a></div>
     <div><h3>المساعدة</h3><a href="{% url 'orders:track' %}">تتبع طلبك</a><a href="{% url 'core:info' 'shipping' %}">الشحن</a><a href="{% url 'core:info' 'returns' %}">الاستبدال والاسترجاع</a><a href="{% url 'core:info' 'sizes' %}">دليل المقاسات</a><a href="{% url 'core:info' 'contact' %}">تواصل معنا</a></div>
     <div><h3>السياسات</h3><a href="{% url 'core:info' 'privacy' %}">الخصوصية</a><a href="{% url 'core:info' 'terms' %}">الشروط</a><a href="{% url 'core:info' 'about' %}">عن MEMO</a></div>
   </div>
-  <div class="footer-bottom shell"><span>© 2026 MEMO</span><span>CAIRO / EGYPT</span><span>الدفع عند الاستلام</span></div>
+  <div class="footer-bottom shell"><span>© 2026 MEMO</span><span>CAIRO / EGYPT</span><div>{% if store_settings.instagram_url %}<a href="{{ store_settings.instagram_url }}" target="_blank" rel="noopener">INSTAGRAM</a>{% endif %}{% if store_settings.whatsapp_url %}<a href="{{ store_settings.whatsapp_url }}" target="_blank" rel="noopener">WHATSAPP</a>{% endif %}<span>الدفع عند الاستلام</span></div></div>
 </footer>

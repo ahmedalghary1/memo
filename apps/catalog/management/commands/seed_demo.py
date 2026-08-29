@@ -40,7 +40,7 @@ class Command(BaseCommand):
         group,_=Group.objects.get_or_create(name="Owner")
         permissions=Permission.objects.filter(
             Q(codename="manage_orders") |
-            Q(content_type__app_label__in=["catalog", "orders", "marketing"], codename__regex=r"^(add|change|delete|view)_")
+            Q(content_type__app_label__in=["catalog", "orders", "marketing", "core"], codename__regex=r"^(add|change|delete|view)_")
         )
         group.permissions.set(permissions)
         user,created=User.objects.get_or_create(username="memo_owner",defaults={"email":"owner@memo.local","first_name":"MEMO","is_staff":True})

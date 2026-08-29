@@ -33,6 +33,10 @@ def track(request):
     form = OrderTrackingForm(request.POST or None)
     order = None
     not_found = False
+    if request.method == "GET" and request.session.get("last_order"):
+        order = Order.objects.prefetch_related("items", "timeline").filter(order_number=request.session["last_order"]).first()
+        if order:
+            form = OrderTrackingForm(initial={"order_number": order.order_number, "phone": order.customer_phone})
     if request.method == "POST" and form.is_valid():
         number = form.cleaned_data["order_number"]
         phone = form.cleaned_data["phone"]

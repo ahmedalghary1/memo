@@ -1,7 +1,15 @@
 from decimal import Decimal
+from pathlib import Path
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import reverse
+
+
+def optimized_image_url(image_field):
+    if not image_field:
+        return ""
+    optimized_name = str(Path(image_field.name).with_suffix(".webp")).replace("\\", "/")
+    return image_field.storage.url(optimized_name) if image_field.storage.exists(optimized_name) else image_field.url
 
 class TimeStamped(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,6 +29,8 @@ class Category(TimeStamped):
     class Meta: ordering = ["sort_order", "name"]; verbose_name_plural = "Categories"
     def __str__(self): return self.name
     def get_absolute_url(self): return reverse("catalog:category", args=[self.slug])
+    @property
+    def optimized_image_url(self): return optimized_image_url(self.image)
 
 class Collection(TimeStamped):
     name = models.CharField(max_length=120)
@@ -36,6 +46,10 @@ class Collection(TimeStamped):
     seo_description = models.CharField(max_length=300, blank=True)
     class Meta: ordering = ["sort_order", "-created_at"]
     def __str__(self): return self.name
+    @property
+    def optimized_cover_url(self): return optimized_image_url(self.cover_image)
+    @property
+    def optimized_hero_url(self): return optimized_image_url(self.hero_image)
 
 class ProductQuerySet(models.QuerySet):
     def available(self): return self.filter(status="active", category__is_active=True).select_related("category")
@@ -49,6 +63,9 @@ class Product(TimeStamped):
     description = models.TextField(blank=True)
     material = models.CharField(max_length=220, blank=True)
     care_instructions = models.TextField(blank=True)
+    fit_notes = models.CharField(max_length=240, blank=True)
+    model_info = models.CharField(max_length=240, blank=True)
+    measurement_notes = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     compare_at_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -76,7 +93,9 @@ class Product(TimeStamped):
     @property
     def secondary_image(self):
         primary = self.primary_image
-        return self.images.exclude(pk=primary.pk).first() if primary else None
+        if not primary:
+            return None
+        return next((image for image in self.images.all() if image.pk != primary.pk), None)
     @property
     def in_stock(self):
         prefetched = getattr(self, "_prefetched_objects_cache", {}).get("variants")
@@ -91,6 +110,8 @@ class ProductImage(models.Model):
     sort_order = models.PositiveIntegerField(default=0)
     is_primary = models.BooleanField(default=False)
     class Meta: ordering = ["sort_order", "id"]
+    @property
+    def optimized_url(self): return optimized_image_url(self.image)
 
 class Color(models.Model):
     name = models.CharField(max_length=80)

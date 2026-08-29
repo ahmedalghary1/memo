@@ -54,3 +54,7 @@
   .metrics article{min-height:110px}
 }
 html,body,input,textarea,select,button{font-variant-numeric:lining-nums tabular-nums}
+.settings-form{max-width:1050px}.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;margin-bottom:24px}.settings-grid label>span{display:block;color:#aeb5b9;font-size:11px;margin-bottom:7px}.settings-grid input,.settings-grid select,.settings-grid textarea{width:100%;min-height:44px;border:1px solid #3b4348;background:#101518;color:#fff;padding:10px}.settings-grid .field-error{display:block;color:#ef8585;margin-top:5px}@media(max-width:650px){.settings-grid{grid-template-columns:1fr}}
+.dash-pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:18px;font-size:11px}.dash-pagination a{border:1px solid #434b50;padding:8px 14px;color:#dfb85f}
+.dash-sidebar nav a,.dash-top,.metrics span,.metrics article i,.dash-panel table,.dash-panel p,.dash-filters input,.dash-filters select,.dash-filters button,.table-action,.workflow-panel label,.order-timeline small{font-size:11px}.dash-sidebar nav a,.table-action,.dash-filters button,.dash-filters a{min-height:44px}.status{font-size:10px}
+.dash-title-actions{display:flex;align-items:center;gap:12px;font-size:11px}.dash-title-actions>a:not(.dash-btn){text-decoration:underline;color:#d8b35e}@media(max-width:560px){.dash-title-actions{align-items:flex-end;flex-direction:column}}

@@ -2,12 +2,14 @@
 {% block title %}المنتجات — لوحة MEMO{% endblock %}
 {% block content %}
 <div class="dash-page">
-  <div class="dash-title"><div><p>CATALOG</p><h1>المنتجات</h1></div><a class="dash-btn" href="{% url 'admin:catalog_product_add' %}">منتج جديد +</a></div>
+  <div class="dash-title"><div><p>CATALOG</p><h1>المنتجات</h1></div><div class="dash-title-actions"><a href="{% url 'dashboard:products_export' %}">تصدير CSV</a><a class="dash-btn" href="{% url 'admin:catalog_product_add' %}">منتج جديد +</a></div></div>
+  <form class="dash-filters" method="get"><label><span class="sr-only">البحث</span><input name="q" value="{{ query }}" placeholder="اسم المنتج أو الكود أو الفئة"></label><label><span class="sr-only">حالة المنتج</span><select name="status"><option value="">كل الحالات</option>{% for value,label in statuses %}<option value="{{ value }}" {% if active_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button type="submit">بحث</button>{% if query or active_status %}<a href="{% url 'dashboard:products' %}">مسح</a>{% endif %}</form>
   <section class="dash-panel">
     <div class="table-wrap"><table>
       <thead><tr><th>المنتج</th><th>الكود</th><th>الفئة</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th>إجراء</th></tr></thead>
       <tbody>{% for product in products %}<tr><td><a href="{{ product.get_absolute_url }}" target="_blank" rel="noopener">{{ product.name }} ↗</a></td><td>{{ product.base_sku }}</td><td>{{ product.category.name }}</td><td>{{ product.price|floatformat:0 }} ج.م</td><td>{{ product.stock|default:0 }}</td><td><span class="status status--{{ product.status }}">{{ product.get_status_display }}</span></td><td><a class="table-action" href="{% url 'admin:catalog_product_change' product.pk %}">تعديل</a></td></tr>{% empty %}<tr><td colspan="7">لا توجد منتجات.</td></tr>{% endfor %}</tbody>
     </table></div>
   </section>
+  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ active_status }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ active_status }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
 </div>
 {% endblock %}

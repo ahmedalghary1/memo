@@ -10,6 +10,7 @@
     <div class="tracking-result__head"><div><span>رقم الطلب</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></div>
     <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>تم الاستلام</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التأكيد</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم الشحن</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التسليم</span></div></div>
     <dl class="tracking-meta"><div><dt>تاريخ الطلب</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>التوصيل إلى</dt><dd>{{ order.governorate }}، {{ order.area }}</dd></div><div><dt>الإجمالي</dt><dd>{{ order.grand_total|floatformat:0 }} ج.م</dd></div></dl>
+    <div class="tracking-events"><h2>آخر التحديثات</h2>{% for event in order.timeline.all %}<div><i></i><span><strong>{{ event.status_label }}</strong><small>{{ event.created_at|date:'d.m.Y — H:i' }}</small></span></div>{% empty %}<p>تم استلام الطلب وسيظهر أول تحديث بعد مراجعته.</p>{% endfor %}</div><a class="tracking-support" href="{% url 'core:info' 'contact' %}">هل تحتاج مساعدة بخصوص هذا الطلب؟</a>
   </article>
   {% endif %}
 </section>

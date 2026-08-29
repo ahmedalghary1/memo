@@ -1,1 +1,19 @@
-{% extends 'base/base.html' %}{% block title %}المفضلة — MEMO{% endblock %}{% block content %}<section class="wishlist-page shell"><header><h1>المفضلة <sup>({{ items|length }})</sup></h1></header><div class="wishlist-list">{% for item in items %}<article>{% with img=item.product.primary_image %}{% if img %}<img src="{{ img.image.url }}" alt="{{ img.alt_text }}">{% endif %}{% endwith %}<div><h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2><p>{{ item.product.short_description }}</p><strong>{{ item.product.price|floatformat:0 }} ج.م</strong>{% with variant=item.product.variants.first %}{% if variant and variant.stock_quantity %}<form action="{% url 'cart:add' %}" method="post">{% csrf_token %}<input type="hidden" name="variant_id" value="{{ variant.pk }}"><input type="hidden" name="quantity" value="1"><input type="hidden" name="next" value="{% url 'wishlist:detail' %}"><button class="btn btn--dark">إضافة إلى السلة</button></form>{% endif %}{% endwith %}</div><form action="{% url 'wishlist:toggle' item.product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="wishlist-remove" aria-label="إزالة {{ item.product.name }}">♡</button></form></article>{% empty %}<div class="empty-state"><h2>لا توجد قطع محفوظة.</h2><p>احفظ ما يلفت نظرك وارجع إليه في أي وقت.</p><a class="btn btn--dark" href="{% url 'catalog:list' %}">اكتشف القطع</a></div>{% endfor %}</div></section>{% endblock %}
+{% extends 'base/base.html' %}
+{% block title %}المفضلة — MEMO{% endblock %}
+{% block content %}
+<section class="wishlist-page shell">
+  <header><p class="eyebrow">SAVED PIECES</p><h1>المفضلة <sup>({{ items|length }})</sup></h1><p>اختر اللون والمقاس قبل إضافة القطعة إلى السلة.</p></header>
+  <div class="wishlist-list">
+    {% for item in items %}
+    <article>
+      {% with img=item.product.primary_image %}{% if img %}<a href="{{ item.product.get_absolute_url }}"><img src="{{ img.optimized_url }}" alt="{{ img.alt_text }}" loading="lazy"></a>{% endif %}{% endwith %}
+      <div>
+        <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2><p>{{ item.product.short_description }}</p><strong>{{ item.product.price|floatformat:0 }} ج.م</strong>
+        <form class="wishlist-add-form" action="{% url 'cart:add' %}" method="post">{% csrf_token %}<input type="hidden" name="quantity" value="1"><input type="hidden" name="next" value="{% url 'wishlist:detail' %}"><label><span>اللون / المقاس</span><select name="variant_id" required><option value="">اختر قبل الإضافة</option>{% for variant in item.product.variants.all %}{% if variant.is_active and variant.stock_quantity %}<option value="{{ variant.pk }}">{{ variant.color.name }} / {{ variant.size.name }}{% if variant.availability == 'low' %} — متبقي {{ variant.stock_quantity }}{% endif %}</option>{% endif %}{% endfor %}</select></label><button class="btn btn--dark">إضافة إلى السلة</button></form>
+      </div>
+      <form action="{% url 'wishlist:toggle' item.product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="wishlist-remove" aria-label="إزالة {{ item.product.name }}">×</button></form>
+    </article>
+    {% empty %}<div class="empty-state"><h2>لا توجد قطع محفوظة.</h2><p>احفظ ما يلفت نظرك وارجع إليه في أي وقت.</p><a class="btn btn--dark" href="{% url 'catalog:list' %}">اكتشف القطع</a></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

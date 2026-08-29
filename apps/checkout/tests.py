@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from apps.catalog.models import Category, Color, Product, ProductVariant, Size
 from apps.orders.models import Order
+from apps.core.models import StoreSettings
 
 
 class CheckoutTests(TestCase):
@@ -49,7 +50,7 @@ class CheckoutTests(TestCase):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
         response = self.client.post(reverse("checkout:checkout"), self.checkout_data(email="", details=""))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "هذا الحقل مطلوب", count=2)
+        self.assertContains(response, "هذا الحقل مطلوب", count=1)
         self.assertFalse(Order.objects.exists())
 
     def test_checkout_exposes_machine_readable_total_for_javascript(self):
@@ -74,3 +75,26 @@ class CheckoutTests(TestCase):
         )
         self.assertRedirects(response, reverse("checkout:checkout"))
         self.assertEqual(self.client.session["memo_cart"][str(self.variant.pk)], 1)
+
+    def test_checkout_uses_dashboard_shipping_prices(self):
+        settings = StoreSettings.load()
+        settings.standard_shipping = Decimal("85")
+        settings.express_shipping = Decimal("145")
+        settings.save()
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        response = self.client.post(
+            reverse("checkout:checkout"),
+            self.checkout_data(details="", shipping_method="express"),
+        )
+        order = Order.objects.get(customer_email="guest@example.com")
+        self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
+        self.assertEqual(order.shipping_total, Decimal("145"))
+        self.assertEqual(order.grand_total, Decimal("845"))
+
+    def test_checkout_rejects_cart_when_stock_has_sold_out(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        self.variant.stock_quantity = 0
+        self.variant.save(update_fields=["stock_quantity"])
+        response = self.client.get(reverse("checkout:checkout"))
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())

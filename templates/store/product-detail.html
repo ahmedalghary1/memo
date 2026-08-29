@@ -1,10 +1,16 @@
 {% extends 'base/base.html' %}{% load static %}
 {% block title %}{{ product.meta_title|default:product.name }} — MEMO{% endblock %}
+{% block description %}{{ product.meta_description|default:product.short_description }}{% endblock %}
+{% block og_title %}{{ product.name }} — MEMO{% endblock %}
+{% block og_description %}{{ product.short_description }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_image %}{% with image=product.primary_image %}{{ request.scheme }}://{{ request.get_host }}{% if image %}{{ image.optimized_url }}{% else %}{% static 'images/memo-campaign.webp' %}{% endif %}{% endwith %}{% endblock %}
+{% block head %}<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"{{ product.name|escapejs }}","sku":"{{ product.base_sku|escapejs }}","description":"{{ product.short_description|escapejs }}","image":[{% for image in product.images.all %}"{{ request.scheme }}://{{ request.get_host }}{{ image.optimized_url }}"{% if not forloop.last %},{% endif %}{% endfor %}],"brand":{"@type":"Brand","name":"MEMO"},"offers":{"@type":"Offer","priceCurrency":"EGP","price":"{{ product.price }}","availability":"https://schema.org/{% if product.in_stock %}InStock{% else %}OutOfStock{% endif %}","url":"{{ request.build_absolute_uri }}"}}</script>{% endblock %}
 {% block content %}
 <article class="pdp shell">
   <div class="pdp-gallery-wrap">
     <div class="pdp-gallery" data-gallery>
-      {% for image in product.images.all %}<figure><img src="{{ image.image.url }}" alt="{{ image.alt_text }}" width="1000" height="1250" {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}></figure>{% empty %}<figure><img src="{% static 'images/memo-campaign.png' %}" alt="{{ product.name }}" width="1000" height="1250"></figure>{% endfor %}
+      {% for image in product.images.all %}<figure><button class="gallery-image-button{% if forloop.first %} is-active{% endif %}" type="button" data-gallery-image data-index="{{ forloop.counter0 }}" aria-label="عرض صورة {{ forloop.counter }} من {{ product.images.count }}"><img src="{{ image.optimized_url }}" alt="{{ image.alt_text }}" width="1000" height="1250" {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}></button></figure>{% empty %}<figure><button class="gallery-image-button is-active" type="button" data-gallery-image data-index="0" aria-label="تكبير صورة المنتج"><img src="{% static 'images/memo-campaign.webp' %}" alt="{{ product.name }}" width="1000" height="1250"></button></figure>{% endfor %}
     </div>
     {% if product.images.count > 1 %}<div class="gallery-count" aria-live="polite"><span data-gallery-current>1</span> / {{ product.images.count }}</div>{% endif %}
   </div>
@@ -13,7 +19,8 @@
     <p class="sku">SKU: {{ product.base_sku }}</p><h1>{{ product.name }}</h1>
     <div class="pdp-price"><strong>{{ product.price|floatformat:0 }} ج.م</strong>{% if product.compare_at_price %}<del>{{ product.compare_at_price|floatformat:0 }} ج.م</del><span>خصم {{ product.discount_percent }}%</span>{% endif %}</div>
     <p class="pdp-lead">{{ product.short_description }}</p>
-    <div class="pdp-trust"><span><i>✓</i> دفع عند الاستلام</span><span><i>↻</i> استرجاع خلال 14 يومًا</span><span><i>◇</i> خامات مختارة</span></div>
+    <div class="pdp-delivery"><strong>توصيل قياسي خلال 2–5 أيام عمل</strong><span>{{ store_settings.standard_shipping|floatformat:0 }} ج.م · شحن سريع {{ store_settings.express_shipping|floatformat:0 }} ج.م</span></div>
+    <div class="pdp-trust"><span><i>✓</i> دفع عند الاستلام</span><span><i>↻</i> استرجاع خلال {{ store_settings.returns_days }} يومًا</span><span><i>◇</i> خامات مختارة</span></div>
     <form action="{% url 'cart:add' %}" method="post" class="variant-form" data-variant-form data-variants='[{% for v in variants %}{"id":{{ v.id }},"color":"{{ v.color.slug|escapejs }}","size":"{{ v.size.slug|escapejs }}","stock":{{ v.stock_quantity }},"status":"{{ v.availability }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>
       {% csrf_token %}<input type="hidden" name="next" value="{% url 'cart:detail' %}"><input type="hidden" name="variant_id" data-variant-id>
       <fieldset><legend>اللون <span data-selected-color></span></legend><div class="choice-row colors">{% for v in variants %}{% ifchanged v.color_id %}<label><input type="radio" name="color" value="{{ v.color.slug }}" data-label="{{ v.color.name }}"><span style="--swatch:{{ v.color.hex_code }}"><i class="sr-only">{{ v.color.name }}</i></span></label>{% endifchanged %}{% endfor %}</div></fieldset>
@@ -22,10 +29,11 @@
       <div class="qty"><label for="qty">الكمية</label><input id="qty" type="number" name="quantity" min="1" value="1" inputmode="numeric"></div>
       <button class="btn btn--dark add-btn" type="submit" disabled data-add-button>اختر المقاس أولًا</button><button class="btn buy-now" type="submit" name="buy_now" value="1" disabled data-buy-button>اشترِ الآن</button>
     </form>
-    <div class="pdp-tools"><form action="{% url 'wishlist:toggle' product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button>♡ إضافة إلى المفضلة</button></form><button type="button" data-share>↗ مشاركة المنتج</button></div>
-    <div class="pdp-accordions" id="details"><details open><summary>تفاصيل المنتج</summary><p>{{ product.description }}</p></details><details><summary>الخامة والعناية</summary><p>{{ product.material }}<br>{{ product.care_instructions }}</p></details><details><summary>الشحن والاسترجاع</summary><p>الشحن خلال 2–5 أيام عمل. الاسترجاع متاح خلال 14 يومًا للقطع بحالتها الأصلية.</p></details></div>
+    <div class="pdp-tools"><form action="{% url 'wishlist:toggle' product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="{% if product.pk in wishlist_product_ids %}is-active{% endif %}">{% if product.pk in wishlist_product_ids %}♥ محفوظة{% else %}♡ إضافة إلى المفضلة{% endif %}</button></form><button type="button" data-share>↗ مشاركة المنتج</button></div>
+    <div class="pdp-accordions" id="details"><details open><summary>تفاصيل المنتج</summary><p>{{ product.description }}</p>{% if product.fit_notes %}<p><strong>القصة:</strong> {{ product.fit_notes }}</p>{% endif %}{% if product.model_info %}<p><strong>بيانات الموديل:</strong> {{ product.model_info }}</p>{% endif %}</details>{% if product.measurement_notes %}<details><summary>قياسات القطعة</summary><p>{{ product.measurement_notes|linebreaksbr }}</p></details>{% endif %}<details><summary>الخامة والعناية</summary><p>{{ product.material }}<br>{{ product.care_instructions }}</p></details><details><summary>الشحن والاسترجاع</summary><p>الشحن خلال 2–5 أيام عمل. الاسترجاع متاح خلال {{ store_settings.returns_days }} يومًا للقطع بحالتها الأصلية. <a href="{% url 'core:info' 'returns' %}">اقرأ السياسة كاملة</a>.</p></details></div>
   </div>
 </article>
+<div class="product-lightbox" data-product-lightbox role="dialog" aria-modal="true" aria-label="صور {{ product.name }}" hidden><button class="product-lightbox__close" type="button" data-lightbox-close aria-label="إغلاق معرض الصور">×</button><button class="product-lightbox__nav product-lightbox__nav--prev" type="button" data-lightbox-prev aria-label="الصورة السابقة">‹</button><img data-lightbox-image src="" alt=""><button class="product-lightbox__nav product-lightbox__nav--next" type="button" data-lightbox-next aria-label="الصورة التالية">›</button><span data-lightbox-count></span></div>
 <section class="related shell section-space"><div class="section-heading"><h2>قد يعجبك أيضًا</h2></div>{% include 'components/product-grid.html' with products=related %}</section>
 <div class="mobile-buybar"><span>{{ product.price|floatformat:0 }} ج.م</span><button data-mobile-add disabled>اختر المقاس</button></div>
 {% endblock %}

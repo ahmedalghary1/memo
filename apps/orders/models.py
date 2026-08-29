@@ -57,3 +57,5 @@ class OrderEvent(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta: ordering = ["-created_at"]
+    @property
+    def status_label(self): return dict(Order.STATUS).get(self.status, self.status)

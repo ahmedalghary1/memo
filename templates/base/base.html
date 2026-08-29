@@ -5,11 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>{% block title %}MEMO — قطع يومية. حضور غير عادي.{% endblock %}</title>
   <meta name="description" content="{% block description %}MEMO للأزياء المعاصرة — تصميم هادئ، حضور لا يُنسى.{% endblock %}">
-  <link rel="canonical" href="{{ request.build_absolute_uri }}">
-  <meta property="og:title" content="MEMO — Premium Fashion">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/memo-campaign.png' %}">
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+  <meta property="og:title" content="{% block og_title %}MEMO — أزياء معاصرة{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}قطع يومية بقصّات معاصرة وخامات مختارة.{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/memo-campaign.png' %}{% endblock %}">
+  <meta property="og:locale" content="ar_EG">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0A0A0A">
+  <link rel="icon" type="image/webp" href="{% static 'images/memo-logo-transparent-v2.webp' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -20,11 +24,12 @@
   <link rel="stylesheet" href="{% static 'css/forms-extra.css' %}">
   <link rel="stylesheet" href="{% static 'css/reference.css' %}">
   <link rel="stylesheet" href="{% static 'css/reference-fixes.css' %}">
-  <link rel="stylesheet" href="{% static 'css/polish.css' %}?v=20260829-12">
+  <link rel="stylesheet" href="{% static 'css/polish.css' %}?v=20260829-13">
   {% block head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}{% if store_settings.announcement_text %} has-announcement{% endif %}">
   <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  {% if store_settings.announcement_text %}<div class="announcement-bar">{{ store_settings.announcement_text }}</div>{% endif %}
   {% include 'components/header.html' %}
   {% include 'components/search-overlay.html' %}
   {% include 'components/cart-drawer.html' %}
@@ -34,7 +39,7 @@
   {% include 'components/footer.html' %}
   <button class="back-to-top" type="button" data-back-to-top aria-label="العودة إلى أعلى الصفحة">↑</button>
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
-  <script type="module" src="{% static 'js/core.js' %}?v=20260829-13"></script>
+  <script type="module" src="{% static 'js/core.js' %}?v=20260829-15"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

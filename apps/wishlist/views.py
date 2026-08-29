@@ -6,7 +6,11 @@ from apps.catalog.models import Product
 from .models import WishlistItem
 
 @login_required
-def detail(request): return render(request, "accounts/wishlist.html", {"items": request.user.wishlist_items.select_related("product").prefetch_related("product__images")})
+def detail(request):
+    items = request.user.wishlist_items.select_related("product").prefetch_related(
+        "product__images", "product__variants__color", "product__variants__size",
+    )
+    return render(request, "accounts/wishlist.html", {"items": items})
 @login_required
 @require_POST
 def toggle(request, product_id):

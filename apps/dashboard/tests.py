@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderEvent
+from apps.core.models import StoreSettings
 
 
 class DashboardPermissionTests(TestCase):
@@ -40,3 +41,32 @@ class DashboardPermissionTests(TestCase):
         self.assertRedirects(response, reverse("dashboard:order_detail", args=[order.order_number]))
         self.assertEqual(order.status, "confirmed")
         self.assertTrue(OrderEvent.objects.filter(order=order, status="confirmed", created_by=self.user).exists())
+
+    def test_invalid_order_status_jump_is_rejected(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            subtotal=Decimal("700"), shipping_total=Decimal("70"), grand_total=Decimal("770"),
+            customer_name="Customer", customer_phone="0100000000", customer_email="guest@example.com",
+            governorate="القاهرة", area="المعادي", address_line="Street",
+        )
+        self.client.post(
+            reverse("dashboard:order_update", args=[order.order_number]),
+            {"status": "shipped", "payment_status": "pending", "note": "skip"},
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.status, "new")
+
+    def test_authorized_staff_can_update_store_settings(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("dashboard:settings"), {
+            "brand_tagline": "Everyday essentials", "announcement_text": "New drop",
+            "support_email": "support@example.com", "support_phone": "01000000000",
+            "whatsapp_url": "", "instagram_url": "", "business_hours": "10-20",
+            "standard_shipping": "80", "express_shipping": "140", "returns_days": "21",
+        })
+        self.assertRedirects(response, reverse("dashboard:settings"))
+        settings = StoreSettings.load()
+        self.assertEqual(settings.standard_shipping, Decimal("80"))
+        self.assertEqual(settings.returns_days, 21)

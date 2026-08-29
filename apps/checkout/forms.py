@@ -1,21 +1,27 @@
 import re
 from django import forms
 from apps.core.numbers import latin_digits
+from apps.core.choices import EGYPT_GOVERNORATES
 
 class CheckoutForm(forms.Form):
     name = forms.CharField(label="الاسم الكامل", max_length=120)
     phone = forms.CharField(label="رقم الهاتف", max_length=30)
     email = forms.EmailField(label="البريد الإلكتروني")
-    governorate = forms.CharField(label="المحافظة", max_length=80)
+    governorate = forms.ChoiceField(label="المحافظة", choices=[("", "اختر المحافظة")] + EGYPT_GOVERNORATES)
     area = forms.CharField(label="المنطقة", max_length=100)
     address = forms.CharField(label="العنوان", max_length=240)
-    details = forms.CharField(label="المبنى، الطابق، الشقة", max_length=200)
+    details = forms.CharField(label="المبنى، الطابق، الشقة", max_length=200, required=False)
     notes = forms.CharField(label="علامة مميزة أو ملاحظات", widget=forms.Textarea(attrs={"rows": 3}), required=False)
     shipping_method = forms.ChoiceField(label="طريقة الشحن", choices=[("standard", "شحن قياسي — 70 ج.م"), ("express", "شحن سريع — 120 ج.م")])
     payment_method = forms.ChoiceField(label="طريقة الدفع", choices=[("cash", "الدفع عند الاستلام")], widget=forms.RadioSelect)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, store_settings=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if store_settings:
+            self.fields["shipping_method"].choices = [
+                ("standard", f"شحن قياسي — {store_settings.standard_shipping:.0f} ج.م"),
+                ("express", f"شحن سريع — {store_settings.express_shipping:.0f} ج.م"),
+            ]
         autocomplete = {"name": "name", "phone": "tel", "email": "email", "governorate": "address-level1", "area": "address-level2", "address": "street-address", "details": "address-line2"}
         placeholders = {"name": "الاسم كما سيظهر على الطلب", "phone": "01xxxxxxxxx", "email": "name@example.com", "governorate": "مثال: القاهرة", "area": "مثال: المعادي", "address": "اسم الشارع ورقم العقار", "details": "المبنى، الطابق ورقم الشقة", "notes": "اختياري"}
         for name, field in self.fields.items():

@@ -2,7 +2,7 @@
 {% block title %}الطلبات — لوحة MEMO{% endblock %}
 {% block content %}
 <div class="dash-page">
-  <div class="dash-title"><div><p>COMMERCE</p><h1>الطلبات</h1></div><span>{{ orders|length }} طلب</span></div>
+  <div class="dash-title"><div><p>COMMERCE</p><h1>الطلبات</h1></div><div class="dash-title-actions"><span>{{ page_obj.paginator.count }} طلب</span><a href="{% url 'dashboard:orders_export' %}?q={{ query|urlencode }}&status={{ active_status }}">تصدير CSV</a></div></div>
   <form class="dash-filters" method="get">
     <label><span class="sr-only">البحث</span><input name="q" value="{{ query }}" placeholder="رقم الطلب أو هاتف العميل"></label>
     <label><span class="sr-only">حالة الطلب</span><select name="status"><option value="">كل الحالات</option>{% for value,label in statuses %}<option value="{{ value }}" {% if active_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
@@ -12,5 +12,6 @@
     <thead><tr><th>الطلب</th><th>العميل</th><th>التاريخ</th><th>الحالة</th><th>الدفع</th><th>الإجمالي</th><th>إجراء</th></tr></thead>
     <tbody>{% for order in orders %}<tr><td><a href="{% url 'dashboard:order_detail' order.order_number %}">{{ order.order_number }}</a></td><td>{{ order.customer_name }}<small>{{ order.customer_phone }}</small></td><td>{{ order.created_at|date:'d.m.Y' }}</td><td><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></td><td>{{ order.get_payment_status_display }}</td><td>{{ order.grand_total|floatformat:0 }} ج.م</td><td><a class="table-action" href="{% url 'dashboard:order_detail' order.order_number %}">إدارة</a></td></tr>{% empty %}<tr><td colspan="7">لا توجد طلبات مطابقة.</td></tr>{% endfor %}</tbody>
   </table></div></section>
+  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ active_status }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ active_status }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
 </div>
 {% endblock %}

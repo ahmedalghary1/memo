@@ -5,11 +5,13 @@ from apps.catalog.models import Category, Collection, Product, ProductImage
 from apps.marketing.models import NewsletterSubscriber
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.core.paginator import Paginator
+from .forms import ContactMessageForm
 
 def home(request):
     products = Product.objects.available().prefetch_related("images", "variants__color", "variants__size")
     context = {
-        "featured_products": products.filter(featured=True)[:4],
+        "featured_products": products.filter(new_arrival=True)[:4],
         "best_sellers": products.filter(bestseller=True)[:6],
         "categories": Category.objects.filter(is_active=True)[:6],
         "featured_collection": Collection.objects.filter(is_active=True).first(),
@@ -24,7 +26,9 @@ def search(request):
         products = products.filter(Q(name__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q) | Q(collections__name__icontains=q)).distinct()
     else:
         products = products.none()
-    return render(request, "store/search.html", {"query": q, "products": products})
+    products = products.prefetch_related("images", "variants__color", "variants__size")
+    page_obj = Paginator(products, 12).get_page(request.GET.get("page"))
+    return render(request, "store/search.html", {"query": q, "products": page_obj, "page_obj": page_obj})
 
 
 def search_suggestions(request):
@@ -41,7 +45,7 @@ def search_suggestions(request):
             "category": product.category.name,
             "price": f"{product.price:.0f}",
             "url": product.get_absolute_url(),
-            "image": product.primary_image.image.url if product.primary_image else "",
+            "image": product.primary_image.optimized_url if product.primary_image else "",
         }
         for product in products
     ]})
@@ -63,10 +67,17 @@ def info_page(request, page):
         "privacy": ("الخصوصية", "نستخدم بياناتك لتنفيذ الطلب وخدمتك فقط، ولا نبيع بيانات العملاء أو نشاركها لأغراض إعلانية خارجية."),
         "terms": ("الشروط", "تخضع الطلبات لتأكيد المخزون وبيانات التوصيل. الأسعار المعروضة بالجنيه المصري وتشمل الضرائب المطبقة."),
         "sizes": ("دليل المقاسات", "اختر مقاسك المعتاد لقَصّة MEMO الواسعة. قياسات كل قطعة تُراجع قبل الإطلاق، ويمكنك التواصل معنا قبل الطلب."),
-        "contact": ("تواصل معنا", "للدعم بخصوص الطلبات، اكتب إلى support@memo.example مع رقم الطلب وسنرد خلال يوم عمل."),
+        "contact": ("تواصل معنا", "أرسل استفسارك أو بيانات طلبك مباشرة إلى فريق خدمة العملاء."),
     }
     title, content = pages.get(page, pages["about"])
-    return render(request, "store/info-page.html", {"title": title, "page_content": content})
+    contact_form = None
+    if page == "contact":
+        contact_form = ContactMessageForm(request.POST or None)
+        if request.method == "POST" and contact_form.is_valid():
+            contact_form.save()
+            messages.success(request, "وصلت رسالتك إلى فريق MEMO وسنتابعها في أقرب وقت.")
+            return redirect("core:info", page="contact")
+    return render(request, "store/info-page.html", {"title": title, "page_content": content, "page": page, "contact_form": contact_form})
 
 def error_403(request, exception=None): return render(request, "errors/403.html", status=403)
 def error_404(request, exception=None): return render(request, "errors/404.html", status=404)

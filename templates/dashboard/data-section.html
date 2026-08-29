@@ -7,5 +7,6 @@
     <thead><tr>{% for field in fields %}<th>{{ field }}</th>{% endfor %}{% if section != 'customers' and section != 'settings' %}<th>إجراء</th>{% endif %}</tr></thead>
     <tbody>{% for row in rows %}<tr>{% for field in fields %}<td>{{ row|field_value:field }}</td>{% endfor %}{% if section != 'customers' and section != 'settings' %}{% admin_change_url row as edit_url %}<td>{% if edit_url %}<a class="table-action" href="{{ edit_url }}">تعديل</a>{% endif %}</td>{% endif %}</tr>{% empty %}<tr><td colspan="9">لا توجد بيانات في هذا القسم بعد.</td></tr>{% endfor %}</tbody>
   </table></div></section>
+  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
 </div>
 {% endblock %}

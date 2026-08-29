@@ -7,9 +7,9 @@
     <nav><a href="{% url 'accounts:dashboard' %}">الطلبات</a><a href="{% url 'wishlist:detail' %}">المحفوظات</a><a class="active" href="{% url 'accounts:profile' %}">الملف والعناوين</a><a href="{% url 'accounts:password_change' %}">الأمان</a></nav>
   </aside>
   <div class="account-content">
-    <div class="account-section-head"><div><p class="eyebrow">PROFILE</p><h2>الملف الشخصي</h2></div></div>
-    <div class="profile-summary"><div><span>الاسم</span><strong>{{ user.get_full_name|default:user.username }}</strong></div><div><span>البريد</span><strong>{{ user.email|default:'غير مضاف' }}</strong></div></div>
-    <div class="account-section-head account-section-head--addresses"><div><p class="eyebrow">DELIVERY</p><h2>عناوين التوصيل</h2></div>{% if editing_address %}<a href="{% url 'accounts:profile' %}">إلغاء التعديل</a>{% endif %}</div>
+    <div class="account-section-head" id="profile"><div><p class="eyebrow">PROFILE</p><h2>الملف الشخصي</h2></div></div>
+    <form class="profile-edit-form" method="post" novalidate>{% csrf_token %}<div class="form-grid">{% for field in profile_form %}{% include 'components/form-field.html' with field=field %}{% endfor %}</div><button class="btn btn--dark" type="submit" name="save_profile">حفظ البيانات</button></form>
+    <div class="account-section-head account-section-head--addresses" id="addresses"><div><p class="eyebrow">DELIVERY</p><h2>عناوين التوصيل</h2></div>{% if editing_address %}<a href="{% url 'accounts:profile' %}">إلغاء التعديل</a>{% endif %}</div>
     <div class="address-grid">
       {% for address in addresses %}
       <article class="address-card{% if address.is_default %} address-card--default{% endif %}">
@@ -24,7 +24,7 @@
       <div class="account-section-head"><div><p class="eyebrow">{% if editing_address %}EDIT ADDRESS{% else %}NEW ADDRESS{% endif %}</p><h2>{% if editing_address %}تعديل العنوان{% else %}إضافة عنوان{% endif %}</h2></div></div>
       {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="form-grid">{% for field in form %}{% if field.name == 'address_line' or field.name == 'notes' %}<div class="field-span-2">{% include 'components/form-field.html' with field=field %}</div>{% else %}{% include 'components/form-field.html' with field=field %}{% endif %}{% endfor %}</div>
-      <button class="btn btn--dark" type="submit">حفظ العنوان</button>
+      <button class="btn btn--dark" type="submit" name="save_address">حفظ العنوان</button>
     </form>
   </div>
 </section>

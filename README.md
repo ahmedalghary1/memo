@@ -10,6 +10,7 @@ python -m venv .venv
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_demo
+python manage.py optimize_images
 python manage.py runserver
 ```
 
@@ -17,7 +18,7 @@ python manage.py runserver
 
 ## الإنتاج
 
-انسخ `.env.example` إلى `.env` واضبط `SECRET_KEY` و`ALLOWED_HOSTS` و`CSRF_TRUSTED_ORIGINS`. استخدم `config.settings.production`، شغّل `collectstatic`، وقدّم `/media/` من object storage أو خادم وسائط موثوق. طبقة الدفع في `apps/checkout/services.py` abstraction بلا مفاتيح وهمية.
+انسخ `.env.example` إلى `.env` واضبط `SECRET_KEY` و`ALLOWED_HOSTS` و`CSRF_TRUSTED_ORIGINS` وإعدادات SMTP. استخدم `config.settings.production`، شغّل `optimize_images` بعد رفع صور جديدة ثم `collectstatic`، وقدّم `/media/` من object storage أو خادم وسائط موثوق. طبقة الدفع في `apps/checkout/services.py` abstraction بلا مفاتيح وهمية.
 
 ## التحقق
 

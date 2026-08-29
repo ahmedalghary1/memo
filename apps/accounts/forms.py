@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from apps.orders.models import Address
 from apps.core.numbers import latin_digits
+from apps.core.choices import EGYPT_GOVERNORATES
 
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(label="الاسم الأول")
@@ -15,7 +16,21 @@ class RegisterForm(UserCreationForm):
         return email
 
 
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
+        labels = {"first_name": "الاسم الأول", "last_name": "اسم العائلة", "email": "البريد الإلكتروني"}
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("هذا البريد مستخدم في حساب آخر.")
+        return email
+
+
 class AddressForm(forms.ModelForm):
+    governorate = forms.ChoiceField(label="المحافظة", choices=[("", "اختر المحافظة")] + EGYPT_GOVERNORATES)
     class Meta:
         model = Address
         fields = (

@@ -9,11 +9,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+from django.http import HttpResponse
+import csv
 
 from apps.catalog.models import Category, Collection, Color, Product, ProductImage, ProductVariant, Size
 from apps.marketing.models import NewsletterSubscriber
+from apps.core.models import ContactMessage, StoreSettings
 from apps.orders.models import Coupon, Order, OrderEvent
-from .forms import OrderWorkflowForm
+from .forms import OrderWorkflowForm, StoreSettingsForm
 
 
 def staff_required(view):
@@ -34,11 +38,13 @@ def overview(request):
         .annotate(day=TruncDate("created_at"))
         .values("day").annotate(total=Sum("grand_total")).order_by("day")
     )
-    peak = max([float(item["total"]) for item in daily] or [1])
-    chart_points = [
-        {"label": item["day"].strftime("%d/%m"), "height": max(8, int(float(item["total"]) / peak * 100)), "total": item["total"]}
-        for item in daily
-    ]
+    daily_totals = {item["day"]: item["total"] for item in daily}
+    days = [timezone.localdate() - timedelta(days=offset) for offset in range(29, -1, -1)]
+    peak = max([float(value) for value in daily_totals.values()] or [1])
+    chart_points = []
+    for index, day in enumerate(days):
+        total = daily_totals.get(day, 0)
+        chart_points.append({"label": day.strftime("%d/%m") if index % 5 == 0 or index == 29 else "", "height": max(2, int(float(total) / peak * 100)) if total else 1, "total": total})
     status_counts = list(orders.values("status").annotate(total=Count("id")).order_by("-total"))
     status_labels = dict(Order.STATUS)
     status_colors = ["#d1a23d", "#4e8e64", "#5574a4", "#9b6844", "#803f3f", "#785786", "#4d7779"]
@@ -69,7 +75,23 @@ def overview(request):
 @staff_required
 def products(request):
     products_qs = Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))
-    return render(request, "dashboard/products.html", {"products": products_qs})
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "")
+    if query: products_qs = products_qs.filter(Q(name__icontains=query) | Q(base_sku__icontains=query) | Q(category__name__icontains=query))
+    if status in dict(Product.STATUS): products_qs = products_qs.filter(status=status)
+    page_obj = Paginator(products_qs, 25).get_page(request.GET.get("page"))
+    return render(request, "dashboard/products.html", {"products": page_obj, "page_obj": page_obj, "query": query, "active_status": status, "statuses": Product.STATUS})
+
+
+@staff_required
+def products_export(request):
+    products_qs = Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="memo-products.csv"'
+    response.write("\ufeff")
+    writer = csv.writer(response); writer.writerow(["المنتج", "الكود", "الفئة", "السعر", "المخزون", "الحالة"])
+    for product in products_qs: writer.writerow([product.name, product.base_sku, product.category.name, product.price, product.stock or 0, product.get_status_display()])
+    return response
 
 
 @staff_required
@@ -79,7 +101,23 @@ def orders(request):
     query = request.GET.get("q", "").strip()
     if status in dict(Order.STATUS): orders_qs = orders_qs.filter(status=status)
     if query: orders_qs = orders_qs.filter(Q(order_number__icontains=query) | Q(customer_phone__icontains=query) | Q(customer_name__icontains=query))
-    return render(request, "dashboard/orders.html", {"orders": orders_qs, "statuses": Order.STATUS, "active_status": status, "query": query})
+    page_obj = Paginator(orders_qs, 25).get_page(request.GET.get("page"))
+    return render(request, "dashboard/orders.html", {"orders": page_obj, "page_obj": page_obj, "statuses": Order.STATUS, "active_status": status, "query": query})
+
+
+@staff_required
+def orders_export(request):
+    orders_qs = Order.objects.all()
+    status = request.GET.get("status")
+    query = request.GET.get("q", "").strip()
+    if status in dict(Order.STATUS): orders_qs = orders_qs.filter(status=status)
+    if query: orders_qs = orders_qs.filter(Q(order_number__icontains=query) | Q(customer_phone__icontains=query) | Q(customer_name__icontains=query))
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="memo-orders.csv"'
+    response.write("\ufeff")
+    writer = csv.writer(response); writer.writerow(["رقم الطلب", "العميل", "الهاتف", "البريد", "الحالة", "الدفع", "الإجمالي", "التاريخ"])
+    for order in orders_qs: writer.writerow([order.order_number, order.customer_name, order.customer_phone, order.customer_email, order.get_status_display(), order.get_payment_status_display(), order.grand_total, order.created_at.isoformat()])
+    return response
 
 
 @staff_required
@@ -106,6 +144,17 @@ def order_update(request, order_number):
 
 
 @staff_required
+def settings_view(request):
+    store_settings = StoreSettings.load()
+    form = StoreSettingsForm(request.POST or None, instance=store_settings)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "تم حفظ إعدادات المتجر.")
+        return redirect("dashboard:settings")
+    return render(request, "dashboard/settings.html", {"form": form, "store_settings": store_settings})
+
+
+@staff_required
 def data_section(request, section):
     sections = {
         "categories": ("الفئات", "CATEGORY STRUCTURE", Category.objects.select_related("parent"), ["name", "parent", "is_active", "sort_order"], "admin:catalog_category_add"),
@@ -117,8 +166,10 @@ def data_section(request, section):
         "inventory": ("المخزون", "INVENTORY", ProductVariant.objects.select_related("product", "color", "size"), ["product", "color", "size", "sku", "stock_quantity", "is_active"], "admin:catalog_productvariant_add"),
         "media": ("الوسائط", "MEDIA LIBRARY", ProductImage.objects.select_related("product"), ["product", "alt_text", "sort_order", "is_primary"], "admin:catalog_productimage_add"),
         "subscribers": ("المشتركون", "NEWSLETTER", NewsletterSubscriber.objects.all(), ["email", "is_active", "created_at"], "admin:marketing_newslettersubscriber_add"),
+        "messages": ("رسائل التواصل", "CUSTOMER SUPPORT", ContactMessage.objects.all(), ["name", "email", "phone", "subject", "status", "created_at"], None),
         "settings": ("الإعدادات", "STORE SETTINGS", [{"setting": "اللغة", "value": settings.LANGUAGE_CODE}, {"setting": "المنطقة الزمنية", "value": settings.TIME_ZONE}, {"setting": "وضع التشغيل", "value": "تطوير" if settings.DEBUG else "إنتاج"}, {"setting": "العملة", "value": "EGP"}], ["setting", "value"], None),
     }
     title, label, rows, fields, add_route = sections.get(section, sections["inventory"])
     add_url = reverse(add_route) if add_route else ""
-    return render(request, "dashboard/data-section.html", {"title": title, "label": label, "rows": rows, "fields": fields, "section": section, "add_url": add_url})
+    page_obj = Paginator(rows, 30).get_page(request.GET.get("page"))
+    return render(request, "dashboard/data-section.html", {"title": title, "label": label, "rows": page_obj, "page_obj": page_obj, "fields": fields, "section": section, "add_url": add_url})

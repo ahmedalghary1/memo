@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard-reference.css' %}">
-  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20260829-3">
+  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20260829-4">
 </head>
 <body>
   <aside class="dash-sidebar" id="dashboard-menu">
@@ -29,7 +29,8 @@
       <a href="{% url 'dashboard:data_section' 'inventory' %}">المخزون</a>
       <a href="{% url 'dashboard:data_section' 'media' %}">الوسائط</a>
       <a href="{% url 'dashboard:data_section' 'subscribers' %}">المشتركون</a>
-      <a href="{% url 'dashboard:data_section' 'settings' %}">الإعدادات</a>
+      <a href="{% url 'dashboard:data_section' 'messages' %}">رسائل التواصل</a>
+      <a href="{% url 'dashboard:settings' %}">الإعدادات</a>
     </nav>
     <div><a href="{% url 'core:home' %}">عرض المتجر ↗</a><span>{{ user.get_full_name|default:user.username }}</span></div>
   </aside>

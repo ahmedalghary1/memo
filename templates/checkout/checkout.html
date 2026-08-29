@@ -7,15 +7,16 @@
   <form method="post" class="checkout-layout" data-checkout-form>{% csrf_token %}
     <div class="checkout-form">
       {{ form.non_field_errors }}
+      {% if addresses %}<section class="saved-address-section"><h2><span>00</span>عنوان محفوظ</h2><label class="saved-address-label" for="saved-address">اختر عنوانًا أو أدخل عنوانًا جديدًا</label><select id="saved-address" data-saved-address><option value="">عنوان جديد</option>{% for address in addresses %}<option value="{{ address.pk }}" data-name="{{ address.name }}" data-phone="{{ address.phone }}" data-governorate="{{ address.governorate }}" data-area="{{ address.area }}" data-address="{{ address.address_line }}" data-building="{{ address.building }}" data-floor="{{ address.floor }}" data-apartment="{{ address.apartment }}" data-notes="{{ address.notes }}" {% if address.is_default %}selected{% endif %}>{{ address.name }} — {{ address.governorate }}، {{ address.area }}{% if address.is_default %} (الافتراضي){% endif %}</option>{% endfor %}</select></section>{% endif %}
       <section><h2><span>01</span>بيانات التواصل والتوصيل</h2><p class="form-intro">الحقول بعلامة النجمة مطلوبة لضمان وصول الطلب دون تأخير.</p><div class="form-grid">{% for field in form %}{% if field.name == 'shipping_method' or field.name == 'payment_method' %}{% else %}{% include 'components/form-field.html' %}{% endif %}{% endfor %}</div></section>
       <section><h2><span>02</span>طريقة الشحن</h2>{% include 'components/form-field.html' with field=form.shipping_method %}<p class="delivery-estimate" data-delivery-estimate>الوصول المتوقع خلال 2–5 أيام عمل.</p></section>
       <section><h2><span>03</span>الدفع</h2>{% include 'components/form-field.html' with field=form.payment_method %}<p class="safe-note">الدفع عند الاستلام. يتم تأكيد الطلب هاتفيًا قبل الشحن ولن نطلب منك أي بيانات بنكية.</p></section>
     </div>
-    <aside class="checkout-summary" data-checkout-summary data-order-total="{{ cart.total|unlocalize }}">
-      <h2>طلبك <span>{{ cart.count }}</span></h2>
-      {% for item in cart %}<div class="summary-item">{% with img=item.product.primary_image %}{% if img %}<img src="{{ img.image.url }}" alt="{{ img.alt_text }}" width="120" height="150">{% endif %}{% endwith %}<div><strong>{{ item.product.name }}</strong><small>{{ item.variant.color.name }} / {{ item.variant.size.name }} × {{ item.quantity }}</small></div><span>{{ item.total|floatformat:0 }} ج.م</span></div>{% endfor %}
+    <aside class="checkout-summary" data-checkout-summary data-order-total="{{ cart.total|unlocalize }}" data-standard-shipping="{{ store_settings.standard_shipping|unlocalize }}" data-express-shipping="{{ store_settings.express_shipping|unlocalize }}">
+      <details data-checkout-summary-details open><summary>طلبك <span>{{ cart.count }} قطعة</span></summary>
+      {% for item in cart %}<div class="summary-item">{% with img=item.product.primary_image %}{% if img %}<img src="{{ img.optimized_url }}" alt="{{ img.alt_text }}" width="120" height="150">{% endif %}{% endwith %}<div><strong>{{ item.product.name }}</strong><small>{{ item.variant.color.name }} / {{ item.variant.size.name }} × {{ item.quantity }}</small></div><span>{{ item.total|floatformat:0 }} ج.م</span></div>{% endfor %}
       <dl><div><dt>المجموع</dt><dd>{{ cart.subtotal|floatformat:0 }} ج.م</dd></div>{% if cart.discount %}<div><dt>الخصم</dt><dd>−{{ cart.discount|floatformat:0 }} ج.م</dd></div>{% endif %}<div><dt>الشحن</dt><dd data-shipping-total>{{ shipping|floatformat:0 }} ج.م</dd></div><div class="checkout-grand-total"><dt>الإجمالي</dt><dd data-grand-total>{{ cart.total|add:shipping|floatformat:0 }} ج.م</dd></div></dl>
-      <button class="btn btn--dark" type="submit">تأكيد الطلب</button><small>بإتمام الطلب، أنت توافق على شروط البيع وسياسة الاسترجاع.</small>
+      </details><button class="btn btn--dark" type="submit">تأكيد الطلب</button><small>بإتمام الطلب، أنت توافق على <a href="{% url 'core:info' 'terms' %}" target="_blank">شروط البيع</a> و<a href="{% url 'core:info' 'returns' %}" target="_blank">سياسة الاسترجاع</a>.</small>
     </aside>
   </form>
 </section>

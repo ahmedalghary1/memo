@@ -11,6 +11,7 @@ class Cart:
         self.request = request
         self.session = request.session
         self.data = self.session.get(self.SESSION_KEY, {})
+        self._items_cache = None
         if request.user.is_authenticated and self.session.get("memo_cart_merged_user") != request.user.pk:
             for saved in CartItem.objects.filter(user=request.user).select_related("variant"):
                 key = str(saved.variant_id)
@@ -29,19 +30,29 @@ class Cart:
     def remove(self, variant_id): self.data.pop(str(variant_id), None); self.save()
     def clear(self):
         self.session.pop(self.SESSION_KEY, None); self.session.pop(self.COUPON_KEY, None); self.session.modified = True; self.data = {}
+        self._items_cache = []
         if self.request.user.is_authenticated: CartItem.objects.filter(user=self.request.user).delete()
     def save(self):
+        self._items_cache = None
         self.session[self.SESSION_KEY] = self.data; self.session.modified = True
         if self.request.user.is_authenticated:
             CartItem.objects.filter(user=self.request.user).exclude(variant_id__in=self.data.keys()).delete()
             for variant_id, quantity in self.data.items(): CartItem.objects.update_or_create(user=self.request.user, variant_id=variant_id, defaults={"quantity": quantity})
     def __iter__(self):
-        variants = ProductVariant.objects.filter(pk__in=self.data).select_related("product", "color", "size").prefetch_related("product__images")
+        if self._items_cache is not None:
+            return iter(self._items_cache)
+        items = []
+        variants = ProductVariant.objects.filter(
+            pk__in=self.data, is_active=True, product__status="active", product__category__is_active=True,
+        ).select_related("product", "color", "size").prefetch_related("product__images")
         for variant in variants:
             quantity = min(int(self.data[str(variant.pk)]), variant.stock_quantity)
-            yield {"variant": variant, "product": variant.product, "quantity": quantity, "unit_price": variant.effective_price, "total": variant.effective_price * quantity}
+            if quantity > 0:
+                items.append({"variant": variant, "product": variant.product, "quantity": quantity, "unit_price": variant.effective_price, "total": variant.effective_price * quantity})
+        self._items_cache = items
+        return iter(items)
     @property
-    def count(self): return sum(int(q) for q in self.data.values())
+    def count(self): return sum(item["quantity"] for item in self)
     @property
     def subtotal(self): return sum((item["total"] for item in self), Decimal("0.00"))
     def apply_coupon(self, code):
