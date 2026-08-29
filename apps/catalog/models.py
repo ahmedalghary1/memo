@@ -70,7 +70,19 @@ class Product(TimeStamped):
             return int((self.compare_at_price - self.price) / self.compare_at_price * 100)
         return 0
     @property
-    def primary_image(self): return self.images.filter(is_primary=True).first() or self.images.first()
+    def primary_image(self):
+        images = list(self.images.all())
+        return next((image for image in images if image.is_primary), images[0] if images else None)
+    @property
+    def secondary_image(self):
+        primary = self.primary_image
+        return self.images.exclude(pk=primary.pk).first() if primary else None
+    @property
+    def in_stock(self):
+        prefetched = getattr(self, "_prefetched_objects_cache", {}).get("variants")
+        if prefetched is not None:
+            return any(variant.is_active and variant.stock_quantity > 0 for variant in prefetched)
+        return self.variants.filter(is_active=True, stock_quantity__gt=0).exists()
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")

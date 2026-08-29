@@ -1,1 +1,11 @@
-{% extends 'base/base.html' %}{% block title %}البحث — MEMO{% endblock %}{% block content %}<section class="search-page shell"><p class="eyebrow">SEARCH / MEMO</p><h1>{% if query %}نتائج “{{ query }}”{% else %}ابحث في MEMO{% endif %}</h1><form><input name="q" value="{{ query }}" placeholder="اسم القطعة، الكود، أو المجموعة"><button class="btn btn--dark">بحث</button></form>{% include 'components/product-grid.html' with products=products %}</section>{% endblock %}
+{% extends 'base/base.html' %}
+{% block title %}البحث — MEMO{% endblock %}
+{% block content %}
+<section class="search-page shell">
+  <p class="eyebrow">SEARCH / MEMO</p>
+  <h1>{% if query %}نتائج “{{ query }}”{% else %}ابحث في MEMO{% endif %}</h1>
+  <form action="{% url 'core:search' %}"><label class="sr-only" for="page-search">ابحث عن قطعة</label><input id="page-search" name="q" value="{{ query }}" placeholder="اسم القطعة، الكود، أو المجموعة" required><button class="btn btn--dark">بحث</button></form>
+  {% if query %}<p class="search-count">{{ products|length }} نتيجة مطابقة</p>{% endif %}
+  {% include 'components/product-grid.html' with products=products %}
+</section>
+{% endblock %}

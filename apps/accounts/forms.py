@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from apps.orders.models import Address
 
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(label="الاسم الأول")
@@ -11,3 +12,35 @@ class RegisterForm(UserCreationForm):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email__iexact=email).exists(): raise forms.ValidationError("هذا البريد مستخدم بالفعل.")
         return email
+
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = Address
+        fields = (
+            "name", "phone", "governorate", "area", "address_line",
+            "building", "floor", "apartment", "notes", "is_default",
+        )
+        labels = {
+            "name": "اسم المستلم",
+            "phone": "رقم الهاتف",
+            "governorate": "المحافظة",
+            "area": "المنطقة / المدينة",
+            "address_line": "اسم الشارع والعنوان",
+            "building": "رقم المبنى",
+            "floor": "الدور",
+            "apartment": "الشقة",
+            "notes": "علامة مميزة أو ملاحظات",
+            "is_default": "استخدامه كعنوان افتراضي",
+        }
+        widgets = {
+            "phone": forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}),
+            "address_line": forms.TextInput(attrs={"autocomplete": "street-address"}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean_phone(self):
+        phone = "".join(character for character in self.cleaned_data["phone"] if character.isdigit() or character == "+")
+        if len(phone.replace("+", "")) < 10:
+            raise forms.ValidationError("أدخل رقم هاتف صحيحًا لا يقل عن 10 أرقام.")
+        return phone

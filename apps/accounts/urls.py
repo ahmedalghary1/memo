@@ -12,5 +12,6 @@ urlpatterns = [
     path("reset/done/", auth.PasswordResetCompleteView.as_view(template_name="accounts/password-reset-complete.html"), name="password_reset_complete"),
     path("password-change/", auth.PasswordChangeView.as_view(template_name="accounts/password-change.html", success_url="/account/"), name="password_change"),
     path("profile/", views.profile, name="profile"),
+    path("profile/addresses/<int:pk>/delete/", views.address_delete, name="address_delete"),
     path("", views.dashboard, name="dashboard"),
 ]

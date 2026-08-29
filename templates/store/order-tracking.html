@@ -1,0 +1,16 @@
+{% extends 'base/base.html' %}
+{% block title %}تتبع طلبك — MEMO{% endblock %}
+{% block content %}
+<section class="tracking-page shell">
+  <header><p class="eyebrow">ORDER TRACKING</p><h1>أين طلبك؟</h1><p>أدخل رقم الطلب ورقم الهاتف نفسه المستخدم أثناء الشراء.</p></header>
+  <form class="tracking-form" method="post" novalidate>{% csrf_token %}{% for field in form %}{% include 'components/form-field.html' with field=field %}{% endfor %}<button class="btn btn--dark" type="submit">تتبع الطلب</button></form>
+  {% if not_found %}<div class="tracking-alert" role="alert"><strong>لم نتمكن من العثور على الطلب.</strong><p>راجع رقم الطلب والهاتف ثم حاول مرة أخرى.</p></div>{% endif %}
+  {% if order %}
+  <article class="tracking-result">
+    <div class="tracking-result__head"><div><span>رقم الطلب</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></div>
+    <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>تم الاستلام</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التأكيد</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم الشحن</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التسليم</span></div></div>
+    <dl class="tracking-meta"><div><dt>تاريخ الطلب</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>التوصيل إلى</dt><dd>{{ order.governorate }}، {{ order.area }}</dd></div><div><dt>الإجمالي</dt><dd>{{ order.grand_total|floatformat:0 }} ج.م</dd></div></dl>
+  </article>
+  {% endif %}
+</section>
+{% endblock %}

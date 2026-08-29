@@ -136,3 +136,42 @@ if(motionHero){
     }
   }
 }
+
+const checkoutForm=qs('[data-checkout-form]'),checkoutSummary=qs('[data-checkout-summary]');
+if(checkoutForm&&checkoutSummary){
+  const shippingPrices={standard:70,express:120};
+  const shippingTotal=qs('[data-shipping-total]',checkoutSummary),grandTotal=qs('[data-grand-total]',checkoutSummary),estimate=qs('[data-delivery-estimate]');
+  const baseTotal=Number(checkoutSummary.dataset.orderTotal||0);
+  const money=value=>`${Math.round(value).toLocaleString('ar-EG')} ج.م`;
+  const updateCheckoutTotal=()=>{
+    const method=qs('input[name="shipping_method"]:checked',checkoutForm)?.value||qs('select[name="shipping_method"]',checkoutForm)?.value||'standard';
+    const shipping=shippingPrices[method]??shippingPrices.standard;
+    if(shippingTotal)shippingTotal.textContent=money(shipping);
+    if(grandTotal)grandTotal.textContent=money(baseTotal+shipping);
+    if(estimate)estimate.textContent=method==='express'?'الوصول المتوقع خلال 1–2 يوم عمل.':'الوصول المتوقع خلال 2–5 أيام عمل.';
+  };
+  qsa('input[name="shipping_method"],select[name="shipping_method"]',checkoutForm).forEach(input=>input.addEventListener('change',updateCheckoutTotal));
+  checkoutForm.addEventListener('submit',()=>{const button=qs('button[type="submit"]',checkoutForm);if(button){button.disabled=true;button.textContent='جارٍ تسجيل الطلب…'}});
+  updateCheckoutTotal();
+}
+
+const liveSearch=qs('[data-live-search]');
+if(liveSearch){
+  const input=qs('input[type="search"]',liveSearch),results=qs('#search-live-results');let timer,controller;
+  const escapeHtml=value=>String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  input?.addEventListener('input',()=>{
+    clearTimeout(timer);controller?.abort();const query=input.value.trim();
+    if(query.length<2){results.replaceChildren();input.setAttribute('aria-expanded','false');return}
+    results.innerHTML='<p class="search-loading">جارٍ البحث…</p>';
+    timer=setTimeout(async()=>{controller=new AbortController();try{const url=new URL(liveSearch.dataset.suggestUrl,location.origin);url.searchParams.set('q',query);const response=await fetch(url,{signal:controller.signal,headers:{'X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error('search failed');const data=await response.json();results.innerHTML=data.results.length?data.results.map(item=>`<a href="${escapeHtml(item.url)}">${item.image?`<img src="${escapeHtml(item.image)}" alt="" width="52" height="66">`:''}<span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.category)} · ${escapeHtml(item.price)} ج.م</small></span></a>`).join(''):'<p class="search-loading">لا توجد نتائج مطابقة.</p>';input.setAttribute('aria-expanded',String(data.results.length>0));}catch(error){if(error.name!=='AbortError')results.replaceChildren()}},220);
+  });
+}
+
+const backToTop=qs('[data-back-to-top]');
+if(backToTop){addEventListener('scroll',()=>backToTop.classList.toggle('is-visible',scrollY>700),{passive:true});backToTop.addEventListener('click',()=>scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));}
+
+const gallery=qs('[data-gallery]'),galleryCurrent=qs('[data-gallery-current]');
+if(gallery&&galleryCurrent){let galleryFrame;gallery.addEventListener('scroll',()=>{cancelAnimationFrame(galleryFrame);galleryFrame=requestAnimationFrame(()=>{const figures=qsa('figure',gallery),center=gallery.scrollLeft+gallery.clientWidth/2;let closest=0,distance=Infinity;figures.forEach((figure,index)=>{const figureCenter=figure.offsetLeft+figure.offsetWidth/2;const nextDistance=Math.abs(figureCenter-center);if(nextDistance<distance){distance=nextDistance;closest=index}});galleryCurrent.textContent=String(closest+1)})},{passive:true});}
+
+const networkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+if(video&&(networkConnection?.saveData||networkConnection?.effectiveType?.includes('2g'))){video.pause();video.removeAttribute('autoplay');qsa('source',video).forEach(source=>{source.dataset.src=source.src;source.removeAttribute('src')});video.load();if(videoToggle){videoToggle.textContent='تشغيل';videoToggle.setAttribute('aria-label','تشغيل الفيديو')}}

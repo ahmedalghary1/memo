@@ -25,6 +25,10 @@ def overview(request):
     orders = Order.objects.all()
     delivered = orders.exclude(status__in=["cancelled", "returned"])
     revenue = delivered.aggregate(v=Sum("grand_total"))["v"] or 0
+    now = timezone.now()
+    current_revenue = delivered.filter(created_at__gte=now - timedelta(days=30)).aggregate(v=Sum("grand_total"))["v"] or 0
+    previous_revenue = delivered.filter(created_at__gte=now - timedelta(days=60), created_at__lt=now - timedelta(days=30)).aggregate(v=Sum("grand_total"))["v"] or 0
+    growth_percent = ((current_revenue - previous_revenue) / previous_revenue * 100) if previous_revenue else None
     daily = list(
         delivered.filter(created_at__gte=timezone.now() - timedelta(days=30))
         .annotate(day=TruncDate("created_at"))
@@ -37,9 +41,19 @@ def overview(request):
     ]
     status_counts = list(orders.values("status").annotate(total=Count("id")).order_by("-total"))
     status_labels = dict(Order.STATUS)
-    for item in status_counts: item["status"] = status_labels.get(item["status"], item["status"])
+    status_colors = ["#d1a23d", "#4e8e64", "#5574a4", "#9b6844", "#803f3f", "#785786", "#4d7779"]
+    total_orders = max(sum(item["total"] for item in status_counts), 1)
+    donut_segments, start = [], 0
+    for index, item in enumerate(status_counts):
+        item["code"] = item["status"]
+        item["status"] = status_labels.get(item["status"], item["status"])
+        item["color"] = status_colors[index % len(status_colors)]
+        end = start + item["total"] / total_orders * 100
+        donut_segments.append(f"{item['color']} {start:.2f}% {end:.2f}%")
+        start = end
     context = {
         "revenue": revenue,
+        "growth_percent": growth_percent,
         "order_count": orders.count(),
         "customer_count": orders.exclude(customer_email="").values("customer_email").distinct().count(),
         "average_order": revenue / max(delivered.count(), 1),
@@ -47,6 +61,7 @@ def overview(request):
         "low_stock": ProductVariant.objects.filter(is_active=True, stock_quantity__lte=F("low_stock_threshold")).select_related("product", "color", "size")[:8],
         "chart_points": chart_points,
         "status_counts": status_counts,
+        "donut_background": f"conic-gradient({', '.join(donut_segments)})" if donut_segments else "#2b3135",
     }
     return render(request, "dashboard/overview.html", context)
 

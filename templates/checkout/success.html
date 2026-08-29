@@ -1,1 +1,11 @@
-{% extends 'base/base.html' %}{% block title %}تم استلام طلبك — MEMO{% endblock %}{% block content %}<section class="success-page shell"><div class="success-mark">M</div><p class="eyebrow">ORDER RECEIVED</p><h1>طلبك وصلنا.</h1><p>شكرًا {{ order.customer_name }}. سنراجع التفاصيل ونتواصل معك لتأكيد الشحن.</p><div class="order-ticket"><span>رقم الطلب</span><strong>{{ order.order_number }}</strong><span>الإجمالي</span><strong>{{ order.grand_total|floatformat:0 }} ج.م</strong></div><a class="btn btn--dark" href="{% url 'catalog:list' %}">العودة للمتجر</a></section>{% endblock %}
+{% extends 'base/base.html' %}
+{% block title %}تم استلام طلبك — MEMO{% endblock %}
+{% block content %}
+<section class="success-page shell">
+  <div class="success-mark">✓</div><p class="eyebrow">ORDER RECEIVED</p><h1>طلبك وصلنا.</h1>
+  <p>شكرًا {{ order.customer_name }}. سنراجع التفاصيل ونتواصل معك لتأكيد الشحن.</p>
+  <div class="order-ticket"><span>رقم الطلب</span><strong>{{ order.order_number }}</strong><span>الإجمالي</span><strong>{{ order.grand_total|floatformat:0 }} ج.م</strong></div>
+  <p class="success-note">احتفظ برقم الطلب ورقم هاتفك لتتمكن من متابعة الحالة في أي وقت.</p>
+  <div class="success-actions"><a class="btn btn--dark" href="{% url 'orders:track' %}">تتبع الطلب</a><a class="btn" href="{% url 'catalog:list' %}">العودة للمتجر</a></div>
+</section>
+{% endblock %}

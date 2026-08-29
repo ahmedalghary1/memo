@@ -1,5 +1,6 @@
 from django.db.models import Prefetch
 from django.shortcuts import render
+from django.http import JsonResponse
 from apps.catalog.models import Category, Collection, Product, ProductImage
 from apps.marketing.models import NewsletterSubscriber
 from django.contrib import messages
@@ -24,6 +25,26 @@ def search(request):
     else:
         products = products.none()
     return render(request, "store/search.html", {"query": q, "products": products})
+
+
+def search_suggestions(request):
+    q = request.GET.get("q", "").strip()
+    if len(q) < 2:
+        return JsonResponse({"results": []})
+    from django.db.models import Q
+    products = Product.objects.available().filter(
+        Q(name__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q)
+    ).distinct().prefetch_related("images")[:6]
+    return JsonResponse({"results": [
+        {
+            "name": product.name,
+            "category": product.category.name,
+            "price": f"{product.price:.0f}",
+            "url": product.get_absolute_url(),
+            "image": product.primary_image.image.url if product.primary_image else "",
+        }
+        for product in products
+    ]})
 
 def newsletter(request):
     if request.method == "POST":
