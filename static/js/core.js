@@ -5,10 +5,11 @@ const qsa = (s, root = document) => [...root.querySelectorAll(s)];
 function dialog(openButton, closeButton, panel, openClass = 'is-open') {
   if (!openButton || !panel) return;
   let previous;
-  const focusables = () => qsa('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])', panel).filter(el => !el.disabled);
+  const focusables = () => qsa('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])', panel).filter(el => !el.disabled && el.tabIndex !== -1);
   const open = () => { previous = document.activeElement; panel.hidden = false; requestAnimationFrame(() => panel.classList.add(openClass)); body.classList.add('is-locked'); openButton.setAttribute('aria-expanded','true'); focusables()[0]?.focus(); };
   const close = () => { panel.classList.remove(openClass); body.classList.remove('is-locked'); openButton.setAttribute('aria-expanded','false'); setTimeout(() => panel.hidden = true, 360); previous?.focus(); };
   openButton.addEventListener('click', open); closeButton?.addEventListener('click', close);
+  qsa('[data-dialog-dismiss]', panel).forEach(button => button.addEventListener('click', close));
   panel.addEventListener('keydown', e => { if (e.key === 'Escape') close(); if (e.key === 'Tab') { const f = focusables(); if (!f.length) return; const first=f[0], last=f.at(-1); if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()} } });
 }
 

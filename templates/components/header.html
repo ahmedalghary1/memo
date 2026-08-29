@@ -17,9 +17,25 @@
     </div>
   </div>
   <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="القائمة" hidden>
-    <button class="icon-btn menu-close" data-menu-close><span class="sr-only">إغلاق</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
-    <div class="menu-brand">MEMO <small>القاهرة / 2026</small></div>
-    <nav>{% for label,url in mobile_menu_links %}<a href="{{ url }}">{{ label }}</a>{% empty %}<a href="{% url 'core:home' %}">الرئيسية</a><a href="{% url 'catalog:list' %}">المتجر</a>{% for cat in nav_categories %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'accounts:dashboard' %}">حسابي</a>{% endfor %}</nav>
-    <p>قطع يومية. حضور غير عادي.</p>
+    <button class="mobile-menu__backdrop" type="button" data-dialog-dismiss tabindex="-1" aria-label="إغلاق القائمة"></button>
+    <aside class="mobile-menu__panel">
+      <header class="mobile-menu__header">
+        <a class="mobile-menu__logo" href="{% url 'core:home' %}" aria-label="MEMO الرئيسية"><img src="{% static 'images/memo-logo-transparent-v2.png' %}" alt="MEMO" width="1536" height="1024"></a>
+        <div><strong>القائمة</strong><small>MEMO / CAIRO</small></div>
+        <button class="icon-btn menu-close" type="button" data-menu-close><span class="sr-only">إغلاق</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+      </header>
+      <div class="mobile-menu__body">
+        <p class="mobile-menu__eyebrow">استكشف MEMO</p>
+        <nav>{% for label,url in mobile_menu_links %}<a href="{{ url }}"><span>{{ label }}</span></a>{% empty %}<a href="{% url 'core:home' %}"><span>الرئيسية</span></a><a href="{% url 'catalog:list' %}"><span>المتجر</span></a>{% for cat in nav_categories %}<a href="{{ cat.get_absolute_url }}"><span>{{ cat.name }}</span></a>{% endfor %}<a href="{% url 'core:info' 'about' %}"><span>من نحن</span></a>{% endfor %}</nav>
+      </div>
+      <footer class="mobile-menu__footer">
+        <div class="mobile-menu__shortcuts">
+          <a href="{% url 'accounts:dashboard' %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg><span>حسابي</span></a>
+          <a href="{% url 'wishlist:detail' %}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>المفضلة</span></a>
+          <a href="{% url 'cart:detail' %}"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg><span>السلة{% if cart_count %} ({{ cart_count }}){% endif %}</span></a>
+        </div>
+        <p>قطع يومية، بحضور غير عادي.</p>
+      </footer>
+    </aside>
   </div>
 </header>
