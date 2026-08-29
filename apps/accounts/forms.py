@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from apps.orders.models import Address
+from apps.core.numbers import latin_digits
 
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(label="الاسم الأول")
@@ -40,7 +41,14 @@ class AddressForm(forms.ModelForm):
         }
 
     def clean_phone(self):
-        phone = "".join(character for character in self.cleaned_data["phone"] if character.isdigit() or character == "+")
+        phone = "".join(character for character in latin_digits(self.cleaned_data["phone"]) if character.isdigit() or character == "+")
         if len(phone.replace("+", "")) < 10:
             raise forms.ValidationError("أدخل رقم هاتف صحيحًا لا يقل عن 10 أرقام.")
         return phone
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name, value in cleaned_data.items():
+            if isinstance(value, str):
+                cleaned_data[field_name] = latin_digits(value)
+        return cleaned_data

@@ -1,5 +1,6 @@
 import re
 from django import forms
+from apps.core.numbers import latin_digits
 
 class CheckoutForm(forms.Form):
     name = forms.CharField(label="الاسم الكامل", max_length=120)
@@ -29,7 +30,7 @@ class CheckoutForm(forms.Form):
         return name
 
     def clean_phone(self):
-        phone = re.sub(r"[\s()\-]", "", self.cleaned_data["phone"])
+        phone = re.sub(r"[\s()\-]", "", latin_digits(self.cleaned_data["phone"]))
         normalized = phone[1:] if phone.startswith("+") else phone
         if not normalized.isdigit() or not 10 <= len(normalized) <= 15:
             raise forms.ValidationError("أدخل رقم هاتف صحيحًا من 10 إلى 15 رقمًا.")
@@ -37,3 +38,10 @@ class CheckoutForm(forms.Form):
 
     def clean_email(self):
         return self.cleaned_data["email"].strip().lower()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name, value in cleaned_data.items():
+            if isinstance(value, str):
+                cleaned_data[field_name] = latin_digits(value)
+        return cleaned_data

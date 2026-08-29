@@ -60,6 +60,14 @@ class CheckoutTests(TestCase):
         self.assertIsNotNone(match)
         self.assertEqual(Decimal(match.group(1)), Decimal("700"))
 
+    def test_checkout_normalizes_arabic_digits_before_saving(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        data = self.checkout_data(phone="٠١٠١٢٣٤٥٦٧٨", details="الدور ٢، شقة ٤")
+        self.client.post(reverse("checkout:checkout"), data)
+        order = Order.objects.get(customer_email="guest@example.com")
+        self.assertEqual(order.customer_phone, "01012345678")
+        self.assertEqual(order.address_details, "الدور 2، شقة 4")
+
     def test_buy_now_redirects_to_checkout_with_variant_in_cart(self):
         response = self.client.post(
             reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1, "buy_now": "1"},

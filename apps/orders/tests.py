@@ -27,3 +27,10 @@ class GuestOrderTrackingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.order.customer_email)
         self.assertContains(response, "لم نتمكن من العثور على الطلب")
+
+    def test_tracking_accepts_arabic_digits_but_displays_latin_number(self):
+        response = self.client.post(reverse("orders:track"), {
+            "order_number": self.order.order_number, "phone": "٠١٠١٢٣٤٥٦٧٨",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.order.order_number)

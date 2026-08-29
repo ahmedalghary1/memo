@@ -53,3 +53,4 @@
   table{min-width:650px}
   .metrics article{min-height:110px}
 }
+html,body,input,textarea,select,button{font-variant-numeric:lining-nums tabular-nums}

@@ -143,7 +143,7 @@ if(checkoutForm&&checkoutSummary){
   const shippingTotal=qs('[data-shipping-total]',checkoutSummary),grandTotal=qs('[data-grand-total]',checkoutSummary),estimate=qs('[data-delivery-estimate]');
   const normalizeNumber=value=>Number(String(value??'').replace(/[٠-٩]/g,digit=>'٠١٢٣٤٥٦٧٨٩'.indexOf(digit)).replace(/[٬,\s]/g,'').replace('٫','.'));
   const parsedTotal=normalizeNumber(checkoutSummary.dataset.orderTotal),baseTotal=Number.isFinite(parsedTotal)?parsedTotal:0;
-  const money=value=>`${Math.round(Number.isFinite(value)?value:0).toLocaleString('ar-EG')} ج.م`;
+  const money=value=>`${Math.round(Number.isFinite(value)?value:0).toLocaleString('en-US')} ج.م`;
   const updateCheckoutTotal=()=>{
     const method=qs('input[name="shipping_method"]:checked',checkoutForm)?.value||qs('select[name="shipping_method"]',checkoutForm)?.value||'standard';
     const shipping=shippingPrices[method]??shippingPrices.standard;

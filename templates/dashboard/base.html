@@ -1,5 +1,5 @@
 {% load static %}<!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar-u-nu-latn" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard-reference.css' %}">
-  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20260829-2">
+  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20260829-3">
 </head>
 <body>
   <aside class="dash-sidebar" id="dashboard-menu">
@@ -39,6 +39,7 @@
     {% if messages %}<div class="dash-messages" aria-live="polite">{% for message in messages %}<div class="dash-message dash-message--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
+  <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
   <script src="{% static 'js/dashboard.js' %}?v=20260829-2" defer></script>
 </body>
 </html>

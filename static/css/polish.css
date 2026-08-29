@@ -420,3 +420,4 @@ button,a,select,input,textarea{touch-action:manipulation}
 @media(hover:none){.product-card__secondary{display:none}.product-card__cta{display:none}}
 @media(prefers-reduced-motion:reduce){.back-to-top,.product-card__cta,.product-card__primary,.product-card__secondary{transition:none}}
 .tracking-result__head>.status{padding:7px 10px;background:#f2eadb;color:#76551d;font-size:10px}
+html,body,input,textarea,select,button{font-variant-numeric:lining-nums tabular-nums}
