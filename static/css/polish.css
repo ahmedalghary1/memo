@@ -13,13 +13,14 @@ html,body{max-width:100%;overflow-x:clip}body{min-width:320px}.shell{width:min(c
 /* Pin the logo and actions to the navbar instead of relying on grid auto-placement. */
 .site-header{overflow:visible}
 .header__inner{position:relative}
-.header__inner>.brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
+.header__inner>.brand{position:absolute;left:auto;inset-inline-start:0;top:50%;transform:translateY(-50%);z-index:2}
+.header__inner>.desktop-nav{padding-inline-start:110px}
 .header-actions{position:absolute;inset-block:0;inset-inline-end:0;display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;z-index:3}
 .header-actions .icon-btn{flex:0 0 auto}
 
 @media(max-width:767px){
   .header__inner{display:block}
-  .header__inner>.mobile-only{position:absolute;inset-block:0;inset-inline-start:0;align-items:center;z-index:3}
+  .header__inner>.mobile-only{position:absolute;inset-block:0;inset-inline-start:72px;align-items:center;z-index:3}
   .header-actions{gap:0}
   .header-actions .desktop-only{display:inline-grid!important}
   .header-actions .icon-btn{width:34px;height:100%}
