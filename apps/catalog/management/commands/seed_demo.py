@@ -1,6 +1,7 @@
 from datetime import timedelta
 from django.contrib.auth.models import Group, Permission, User
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 from apps.catalog.models import Category, Collection, Color, Product, ProductImage, ProductVariant, Size
 from apps.orders.models import Coupon
@@ -37,7 +38,10 @@ class Command(BaseCommand):
                 ProductVariant.objects.update_or_create(product=product,color=color,size=size,defaults={"sku":f"{sku}-{color.slug.upper()}-{size.name}","stock_quantity":stock,"is_active":True,"low_stock_threshold":3})
         Coupon.objects.update_or_create(code="MEMO10", defaults={"discount_type":"percentage","value":10,"min_order":1000,"max_discount":300,"starts_at":timezone.now()-timedelta(days=1),"ends_at":timezone.now()+timedelta(days=90),"usage_limit":500,"per_user_limit":1,"is_active":True})
         group,_=Group.objects.get_or_create(name="Owner")
-        permissions=Permission.objects.filter(codename__in=["manage_orders","view_product","add_product","change_product","view_productvariant","change_productvariant","view_order","change_order"])
+        permissions=Permission.objects.filter(
+            Q(codename="manage_orders") |
+            Q(content_type__app_label__in=["catalog", "orders", "marketing"], codename__regex=r"^(add|change|delete|view)_")
+        )
         group.permissions.set(permissions)
         user,created=User.objects.get_or_create(username="memo_owner",defaults={"email":"owner@memo.local","first_name":"MEMO","is_staff":True})
         if created: user.set_password("ChangeMe123!"); user.save()

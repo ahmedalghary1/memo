@@ -1,45 +1,109 @@
 from datetime import timedelta
-from django.contrib.auth.decorators import login_required, permission_required
-from django.db.models import Count, F, Sum
-from django.db.models.functions import TruncDate
-from django.shortcuts import get_object_or_404, render
-from django.utils import timezone
-from apps.catalog.models import Product, ProductVariant
-from apps.orders.models import Order
-from apps.catalog.models import Category, Collection, ProductImage
-from apps.orders.models import Coupon
-from django.conf import settings
 
-def staff_required(view): return login_required(permission_required("orders.manage_orders", raise_exception=True)(view))
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Count, F, Q, Sum
+from django.db.models.functions import TruncDate
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from apps.catalog.models import Category, Collection, Color, Product, ProductImage, ProductVariant, Size
+from apps.marketing.models import NewsletterSubscriber
+from apps.orders.models import Coupon, Order, OrderEvent
+from .forms import OrderWorkflowForm
+
+
+def staff_required(view):
+    return login_required(permission_required("orders.manage_orders", raise_exception=True)(view))
+
 
 @staff_required
 def overview(request):
     orders = Order.objects.all()
     delivered = orders.exclude(status__in=["cancelled", "returned"])
     revenue = delivered.aggregate(v=Sum("grand_total"))["v"] or 0
-    daily = list(delivered.filter(created_at__gte=timezone.now()-timedelta(days=30)).annotate(day=TruncDate("created_at")).values("day").annotate(total=Sum("grand_total")).order_by("day"))
-    peak = max([float(x["total"]) for x in daily] or [1])
-    chart_points = [{"label": x["day"].strftime("%d/%m"), "height": max(8, int(float(x["total"]) / peak * 100)), "total": x["total"]} for x in daily]
-    status_counts = orders.values("status").annotate(total=Count("id")).order_by("-total")
-    context = {"revenue": revenue, "order_count": orders.count(), "customer_count": orders.values("customer_email").distinct().count(), "average_order": revenue / max(delivered.count(), 1), "recent_orders": orders[:8], "low_stock": ProductVariant.objects.filter(is_active=True, stock_quantity__lte=F("low_stock_threshold")).select_related("product", "color", "size")[:8], "chart_points": chart_points, "status_counts": status_counts}
+    daily = list(
+        delivered.filter(created_at__gte=timezone.now() - timedelta(days=30))
+        .annotate(day=TruncDate("created_at"))
+        .values("day").annotate(total=Sum("grand_total")).order_by("day")
+    )
+    peak = max([float(item["total"]) for item in daily] or [1])
+    chart_points = [
+        {"label": item["day"].strftime("%d/%m"), "height": max(8, int(float(item["total"]) / peak * 100)), "total": item["total"]}
+        for item in daily
+    ]
+    status_counts = list(orders.values("status").annotate(total=Count("id")).order_by("-total"))
+    status_labels = dict(Order.STATUS)
+    for item in status_counts: item["status"] = status_labels.get(item["status"], item["status"])
+    context = {
+        "revenue": revenue,
+        "order_count": orders.count(),
+        "customer_count": orders.exclude(customer_email="").values("customer_email").distinct().count(),
+        "average_order": revenue / max(delivered.count(), 1),
+        "recent_orders": orders[:8],
+        "low_stock": ProductVariant.objects.filter(is_active=True, stock_quantity__lte=F("low_stock_threshold")).select_related("product", "color", "size")[:8],
+        "chart_points": chart_points,
+        "status_counts": status_counts,
+    }
     return render(request, "dashboard/overview.html", context)
+
+
 @staff_required
-def products(request): return render(request, "dashboard/products.html", {"products": Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))})
+def products(request):
+    products_qs = Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))
+    return render(request, "dashboard/products.html", {"products": products_qs})
+
+
 @staff_required
-def orders(request): return render(request, "dashboard/orders.html", {"orders": Order.objects.prefetch_related("items")})
+def orders(request):
+    orders_qs = Order.objects.prefetch_related("items")
+    status = request.GET.get("status")
+    query = request.GET.get("q", "").strip()
+    if status in dict(Order.STATUS): orders_qs = orders_qs.filter(status=status)
+    if query: orders_qs = orders_qs.filter(Q(order_number__icontains=query) | Q(customer_phone__icontains=query) | Q(customer_name__icontains=query))
+    return render(request, "dashboard/orders.html", {"orders": orders_qs, "statuses": Order.STATUS, "active_status": status, "query": query})
+
+
 @staff_required
-def order_detail(request, order_number): return render(request, "dashboard/order-detail.html", {"order": get_object_or_404(Order.objects.prefetch_related("items", "timeline"), order_number=order_number)})
+def order_detail(request, order_number):
+    order = get_object_or_404(Order.objects.prefetch_related("items", "timeline"), order_number=order_number)
+    return render(request, "dashboard/order-detail.html", {"order": order, "workflow_form": OrderWorkflowForm(instance=order)})
+
+
+@staff_required
+@require_POST
+def order_update(request, order_number):
+    order = get_object_or_404(Order, order_number=order_number)
+    previous_status = order.status
+    form = OrderWorkflowForm(request.POST, instance=order)
+    if form.is_valid():
+        order = form.save()
+        note = form.cleaned_data["note"].strip()
+        if previous_status != order.status or note:
+            OrderEvent.objects.create(order=order, status=order.status, note=note or "تم تحديث حالة الطلب", created_by=request.user)
+        messages.success(request, "تم تحديث الطلب بنجاح.")
+    else:
+        messages.error(request, "تعذر تحديث الطلب. راجع البيانات وحاول مرة أخرى.")
+    return redirect("dashboard:order_detail", order_number=order.order_number)
+
 
 @staff_required
 def data_section(request, section):
     sections = {
-        "categories": ("الفئات", "CATEGORY STRUCTURE", Category.objects.select_related("parent"), ["name", "parent", "is_active", "sort_order"]),
-        "collections": ("المجموعات", "COLLECTIONS", Collection.objects.all(), ["name", "starts_at", "ends_at", "is_active"]),
-        "customers": ("العملاء", "CUSTOMERS", Order.objects.values("customer_name", "customer_phone", "customer_email").annotate(order_count=Count("id"), spend=Sum("grand_total")).order_by("-spend"), ["customer_name", "customer_phone", "order_count", "spend"]),
-        "coupons": ("الكوبونات", "PROMOTIONS", Coupon.objects.all(), ["code", "discount_type", "value", "uses"]),
-        "inventory": ("المخزون", "INVENTORY", ProductVariant.objects.select_related("product", "color", "size"), ["product", "color", "size", "stock_quantity"]),
-        "media": ("الوسائط", "MEDIA LIBRARY", ProductImage.objects.select_related("product"), ["product", "alt_text", "sort_order", "is_primary"]),
-        "settings": ("الإعدادات", "STORE SETTINGS", [{"setting":"اللغة","value":settings.LANGUAGE_CODE},{"setting":"المنطقة الزمنية","value":settings.TIME_ZONE},{"setting":"وضع التشغيل","value":"تطوير" if settings.DEBUG else "إنتاج"},{"setting":"العملة","value":"EGP"}], ["setting", "value"]),
+        "categories": ("الفئات", "CATEGORY STRUCTURE", Category.objects.select_related("parent"), ["name", "parent", "is_active", "sort_order"], "admin:catalog_category_add"),
+        "collections": ("المجموعات", "COLLECTIONS", Collection.objects.all(), ["name", "starts_at", "ends_at", "is_active"], "admin:catalog_collection_add"),
+        "colors": ("الألوان", "PRODUCT COLORS", Color.objects.all(), ["name", "slug", "hex_code", "sort_order"], "admin:catalog_color_add"),
+        "sizes": ("المقاسات", "PRODUCT SIZES", Size.objects.all(), ["name", "slug", "sort_order"], "admin:catalog_size_add"),
+        "customers": ("العملاء", "CUSTOMERS", Order.objects.values("customer_name", "customer_phone", "customer_email").annotate(order_count=Count("id"), spend=Sum("grand_total")).order_by("-spend"), ["customer_name", "customer_phone", "customer_email", "order_count", "spend"], None),
+        "coupons": ("الكوبونات", "PROMOTIONS", Coupon.objects.all(), ["code", "discount_type", "value", "uses", "is_active"], "admin:orders_coupon_add"),
+        "inventory": ("المخزون", "INVENTORY", ProductVariant.objects.select_related("product", "color", "size"), ["product", "color", "size", "sku", "stock_quantity", "is_active"], "admin:catalog_productvariant_add"),
+        "media": ("الوسائط", "MEDIA LIBRARY", ProductImage.objects.select_related("product"), ["product", "alt_text", "sort_order", "is_primary"], "admin:catalog_productimage_add"),
+        "subscribers": ("المشتركون", "NEWSLETTER", NewsletterSubscriber.objects.all(), ["email", "is_active", "created_at"], "admin:marketing_newslettersubscriber_add"),
+        "settings": ("الإعدادات", "STORE SETTINGS", [{"setting": "اللغة", "value": settings.LANGUAGE_CODE}, {"setting": "المنطقة الزمنية", "value": settings.TIME_ZONE}, {"setting": "وضع التشغيل", "value": "تطوير" if settings.DEBUG else "إنتاج"}, {"setting": "العملة", "value": "EGP"}], ["setting", "value"], None),
     }
-    title, label, rows, fields = sections.get(section, sections["inventory"])
-    return render(request, "dashboard/data-section.html", {"title": title, "label": label, "rows": rows, "fields": fields, "section": section})
+    title, label, rows, fields, add_route = sections.get(section, sections["inventory"])
+    add_url = reverse(add_route) if add_route else ""
+    return render(request, "dashboard/data-section.html", {"title": title, "label": label, "rows": rows, "fields": fields, "section": section, "add_url": add_url})

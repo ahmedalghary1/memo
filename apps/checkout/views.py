@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.contrib import messages
 from django.db import transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from apps.cart.services import Cart
 from apps.catalog.models import InventoryMovement, ProductVariant
 from apps.orders.models import Order, OrderEvent, OrderItem
@@ -39,6 +39,10 @@ def checkout(request):
     return render(request, "checkout/checkout.html", {"form": form, "cart": cart, "shipping": shipping})
 
 def success(request, order_number):
-    if request.session.get("last_order") != order_number and not request.user.is_authenticated: return redirect("core:home")
-    order = Order.objects.get(order_number=order_number)
+    order = get_object_or_404(Order, order_number=order_number)
+    if request.user.is_authenticated:
+        if order.user_id and order.user_id != request.user.id: return redirect("accounts:dashboard")
+        if not order.user_id and request.session.get("last_order") != order_number: return redirect("core:home")
+    elif request.session.get("last_order") != order_number:
+        return redirect("core:home")
     return render(request, "checkout/success.html", {"order": order})

@@ -1,1 +1,55 @@
 .dash-menu{border:1px solid #343b40;background:#171d21;color:#fff;min-height:36px;padding:0 12px}.dash-scrim{display:none}.dash-locked{overflow:hidden}.dash-brand:focus-visible,.dash-sidebar a:focus-visible{outline:2px solid #d1a23d;outline-offset:2px}@media(max-width:900px){.dash-sidebar{right:0;left:auto;transform:translateX(105%);transition:transform .28s ease}.dash-sidebar.is-open{transform:none}.dash-scrim{display:block;position:fixed;z-index:9;inset:0;background:#0009;opacity:0;pointer-events:none;transition:opacity .28s}.dash-scrim.is-open{opacity:1;pointer-events:auto}.dash-top{position:sticky;top:0;z-index:8;background:#101518}.dash-page{padding-top:20px}}@media(max-width:560px){.dash-title{align-items:flex-start}.dash-title h1{font-size:22px}.dash-title>span{display:none}.dash-panel{padding:16px}.metrics strong{font-size:20px}.bars{height:170px}.dash-top>a{display:none}.table-wrap{margin-inline:-16px;padding-inline:16px}}
+
+/* Complete dashboard interaction and responsive polish */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dash-sidebar{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#343b40 transparent}
+.dash-sidebar nav a:first-child{background:transparent;color:#aaa}
+.dash-sidebar nav a[aria-current="page"]{background:#1c2023;color:#d1a23d;font-weight:600}
+.dash-sidebar nav a{min-height:38px;display:flex;align-items:center}
+.dash-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border:0;transition:transform .18s,filter .18s}
+.dash-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.dash-btn--muted{background:#252c30;color:#d9dddf}
+.table-action{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border:1px solid #4a5156;color:#dcb45c!important;font-weight:500!important;white-space:nowrap}
+.table-action:hover{background:#d1a23d;color:#111!important;border-color:#d1a23d}
+.dash-messages{position:fixed;z-index:30;top:72px;left:24px;width:min(360px,calc(100% - 32px));display:grid;gap:8px}
+.dash-message{padding:13px 16px;background:#20272b;border-inline-start:3px solid #d1a23d;box-shadow:0 12px 34px #0005;font-size:11px}
+.dash-message--success{border-color:#55b87a}.dash-message--error{border-color:#e87979}
+.dash-filters{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:12px;background:#171d21;border:1px solid #2b3135}
+.dash-filters label:first-child{flex:1}
+.dash-filters input,.dash-filters select,.workflow-panel input,.workflow-panel select,.workflow-panel textarea{width:100%;min-height:42px;border:1px solid #3a4247;background:#101518;color:#e9ecee;padding:9px 11px;font:inherit}
+.dash-filters select{min-width:170px}
+.dash-filters button{min-height:42px;border:0;background:#d1a23d;color:#111;padding:0 20px;font:inherit}
+.dash-filters>a{padding:8px;color:#aeb5b9;font-size:10px}
+.dash-grid--order{align-items:start}
+.dash-grid--order>div,.dash-grid--order>aside{display:grid;gap:14px}
+.workflow-panel form p{margin:0 0 14px}
+.workflow-panel label{display:block;margin-bottom:6px;color:#aeb5b9;font-size:10px}
+.workflow-panel textarea{resize:vertical}
+.workflow-panel .dash-btn{width:100%}
+.order-timeline article{position:relative;display:grid;grid-template-columns:14px 1fr;gap:10px;padding-bottom:18px}
+.order-timeline article:not(:last-child)::before{content:"";position:absolute;right:5px;top:12px;bottom:0;width:1px;background:#343b40}
+.order-timeline article>i{position:relative;z-index:1;width:11px;height:11px;margin-top:4px;border-radius:50%;background:#d1a23d;box-shadow:0 0 0 4px #d1a23d1c}
+.order-timeline strong{font-size:11px}.order-timeline p{margin:3px 0!important}.order-timeline small{color:#778087;font-size:8px}
+.dash-panel a[href^="tel:"],.dash-panel a[href^="mailto:"]{color:#d8b25e}
+
+@media(max-width:900px){
+  .dash-sidebar{padding-bottom:max(22px,env(safe-area-inset-bottom))}
+  .dash-title{gap:14px;flex-wrap:wrap}
+  .dash-filters{flex-wrap:wrap}
+  .dash-filters label:first-child{flex:1 1 100%}
+  .dash-filters label:not(:first-child){flex:1}
+  .dash-filters select{min-width:0}
+  .dash-grid--order>aside{grid-row:auto}
+}
+
+@media(max-width:560px){
+  .dash-page{padding-inline:12px}
+  .dash-title{align-items:center}
+  .dash-title .dash-btn{width:100%}
+  .dash-panel{border-radius:2px}
+  .dash-filters{margin-inline:0;padding:10px}
+  .dash-filters label,.dash-filters button{flex:1 1 100%!important}
+  .dash-messages{top:64px;left:16px}
+  table{min-width:650px}
+  .metrics article{min-height:110px}
+}

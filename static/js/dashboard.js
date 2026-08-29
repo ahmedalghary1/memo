@@ -6,3 +6,11 @@ menuButton?.addEventListener('click',()=>{const opening=!sidebar.classList.conta
 scrim?.addEventListener('click',closeMenu);
 sidebar?.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();menuButton?.focus()}});
 addEventListener('resize',()=>{if(innerWidth>900)closeMenu()});
+
+const navLinks=[...document.querySelectorAll('.dash-sidebar nav a')];
+const activeLink=navLinks.sort((a,b)=>new URL(b.href).pathname.length-new URL(a.href).pathname.length).find(link=>{
+  const path=new URL(link.href).pathname;
+  return location.pathname===path||(path!=='/dashboard/'&&location.pathname.startsWith(path));
+});
+activeLink?.setAttribute('aria-current','page');
+navLinks.forEach(link=>link.addEventListener('click',()=>{if(innerWidth<=900)closeMenu()}));

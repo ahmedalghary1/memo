@@ -369,3 +369,40 @@ button,a,select,input,textarea{touch-action:manipulation}
 @media(prefers-reduced-motion:reduce){
     .btn,.icon-btn,.product-card,.product-card__media img,.wish-form .icon-btn,.cart-item,.order-row,.filters,.filter-backdrop{transition:none!important}
 }
+
+/* Inner pages and checkout responsiveness */
+.field input[dir="ltr"]{text-align:left}
+.field input:required,.field select:required,.field textarea:required{background-image:linear-gradient(90deg,#d1a23d,#d1a23d);background-repeat:no-repeat;background-size:3px 100%;background-position:right top}
+.field ul{list-style:none;padding:0;margin:8px 0;display:grid;gap:7px}
+.field ul label{min-height:44px;display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--ref-line);background:#fff;cursor:pointer}
+.field ul input[type="radio"],.field ul input[type="checkbox"]{width:18px;height:18px;accent-color:#b88932}
+.account aside nav>a,.account aside nav button{min-height:48px;display:flex;align-items:center}
+.success-page{padding-inline:18px}
+.success-page .btn{margin-top:12px}
+.order-ticket strong{overflow-wrap:anywhere}
+.site-footer a{min-height:28px;display:flex;align-items:center}
+
+@media(max-width:767px){
+    .checkout-layout{display:flex;flex-direction:column}
+    .checkout-form{order:0}
+    .checkout-summary{order:1}
+    .checkout-form section{margin-bottom:36px}
+    .checkout-form h2{font-size:18px}
+    .safe-note{display:block;padding:10px 12px;background:#f6f1e7;border-inline-start:3px solid #c99a3e;line-height:1.75}
+    .account aside{margin-bottom:24px}
+    .account aside nav{grid-template-columns:1fr 1fr;gap:1px;background:var(--ref-line);border:1px solid var(--ref-line)}
+    .account aside nav>a,.account aside nav button{padding:11px;background:#fff;border:0;font-size:11px}
+    .success-page{padding-top:120px;min-height:75svh}
+    .order-ticket{margin-block:28px;padding:18px 8px}
+    .site-footer a{min-height:36px;margin:4px 0}
+}
+
+@media(max-width:430px){
+    .account aside nav{grid-template-columns:1fr}
+    .account-stats{grid-template-columns:1fr!important}
+    .account-stats article{display:flex;align-items:center;justify-content:space-between;text-align:initial}
+    .order-ticket{grid-template-columns:1fr;gap:5px;text-align:right}
+    .order-ticket strong{margin-bottom:10px}
+    .success-page h1{font-size:30px}
+    .field{margin-bottom:17px}
+}

@@ -1,1 +1,11 @@
-{% extends 'dashboard/base.html' %}{% load dashboard_tags %}{% block content %}<div class="dash-page"><div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div><a class="dash-btn" href="{% url 'admin:index' %}">إدارة متقدمة ↗</a></div><section class="dash-panel"><div class="table-wrap"><table><thead><tr>{% for field in fields %}<th>{{ field }}</th>{% endfor %}</tr></thead><tbody>{% for row in rows %}<tr>{% for field in fields %}<td>{{ row|field_value:field }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="8">لا توجد بيانات في هذا القسم بعد.</td></tr>{% endfor %}</tbody></table></div></section></div>{% endblock %}
+{% extends 'dashboard/base.html' %}{% load dashboard_tags %}
+{% block title %}{{ title }} — لوحة MEMO{% endblock %}
+{% block content %}
+<div class="dash-page">
+  <div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div>{% if add_url %}<a class="dash-btn" href="{{ add_url }}">إضافة جديد +</a>{% else %}<a class="dash-btn dash-btn--muted" href="{% url 'admin:index' %}">الإدارة المتقدمة ↗</a>{% endif %}</div>
+  <section class="dash-panel"><div class="table-wrap"><table>
+    <thead><tr>{% for field in fields %}<th>{{ field }}</th>{% endfor %}{% if section != 'customers' and section != 'settings' %}<th>إجراء</th>{% endif %}</tr></thead>
+    <tbody>{% for row in rows %}<tr>{% for field in fields %}<td>{{ row|field_value:field }}</td>{% endfor %}{% if section != 'customers' and section != 'settings' %}{% admin_change_url row as edit_url %}<td>{% if edit_url %}<a class="table-action" href="{{ edit_url }}">تعديل</a>{% endif %}</td>{% endif %}</tr>{% empty %}<tr><td colspan="9">لا توجد بيانات في هذا القسم بعد.</td></tr>{% endfor %}</tbody>
+  </table></div></section>
+</div>
+{% endblock %}
