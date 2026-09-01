@@ -1,0 +1,60 @@
+/* MEMO page motion: the canvas arrives first, then content enters in small waves. */
+html.motion-capable body::after{
+  content:"";
+  position:fixed;
+  z-index:2000;
+  inset:0;
+  pointer-events:none;
+  background:var(--motion-canvas,var(--memo-ivory,#f5f1e9));
+  animation:memo-canvas-reveal .82s cubic-bezier(.76,0,.24,1) .06s both;
+}
+
+body.dashboard-shell{--motion-canvas:#101518}
+
+body.page-motion-ready [data-page-motion-item]{
+  opacity:0;
+  transform:translate3d(var(--motion-x,0),var(--motion-y,24px),0) rotate(var(--motion-rotate,0deg));
+  filter:blur(3px);
+  transition:
+    opacity .68s cubic-bezier(.2,.72,.2,1),
+    transform .9s cubic-bezier(.16,1,.3,1),
+    filter .72s ease;
+  transition-delay:calc(var(--motion-start-delay,0ms) + var(--motion-order,0) * 72ms);
+  will-change:opacity,transform,filter;
+}
+
+body.page-motion-ready [data-page-motion-group].is-page-visible [data-page-motion-item],
+body.page-motion-ready [data-page-motion-item].is-page-visible{
+  opacity:1;
+  transform:translate3d(0,0,0) rotate(0);
+  filter:blur(0);
+}
+
+body.page-motion-ready.motion-settled [data-page-motion-item]{will-change:auto}
+
+@keyframes memo-canvas-reveal{
+  0%{clip-path:inset(0 0 0 0);opacity:1}
+  72%{opacity:1}
+  99%{clip-path:inset(100% 0 0 0);opacity:1}
+  100%{clip-path:inset(100% 0 0 0);opacity:0;visibility:hidden}
+}
+
+@media(max-width:767px){
+  body.page-motion-ready [data-page-motion-item]{
+    --motion-x:0px!important;
+    --motion-y:18px!important;
+    --motion-rotate:0deg!important;
+    transition-duration:.58s,.76s,.58s;
+    transition-delay:calc(var(--motion-start-delay,0ms) + var(--motion-order,0) * 48ms);
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  html.motion-capable body::after{display:none}
+  body.page-motion-ready [data-page-motion-item]{
+    opacity:1!important;
+    transform:none!important;
+    filter:none!important;
+    transition:none!important;
+  }
+}

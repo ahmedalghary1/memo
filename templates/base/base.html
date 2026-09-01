@@ -13,6 +13,7 @@
   <meta property="og:locale" content="ar_EG">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0A0A0A">
+  <script>document.documentElement.classList.add('motion-capable')</script>
   <link rel="icon" type="image/webp" href="{% static 'images/memo-logo-transparent-v2.webp' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +27,7 @@
   <link rel="stylesheet" href="{% static 'css/reference-fixes.css' %}">
   <link rel="stylesheet" href="{% static 'css/polish.css' %}?v=20260829-13">
   <link rel="stylesheet" href="{% static 'css/mobile.css' %}?v=20260830-1">
+  <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=20260901-1">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}{% if store_settings.announcement_text %} has-announcement{% endif %}">
@@ -40,6 +42,7 @@
   {% include 'components/footer.html' %}
   <button class="back-to-top" type="button" data-back-to-top aria-label="العودة إلى أعلى الصفحة">↑</button>
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
+  <script src="{% static 'js/motion.js' %}?v=20260901-1" defer></script>
   <script type="module" src="{% static 'js/core.js' %}?v=20260829-15"></script>
   {% block scripts %}{% endblock %}
 </body>
