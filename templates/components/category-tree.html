@@ -1,0 +1,16 @@
+{% for node in nodes %}
+  {% if node.active_children %}
+    <details class="category-tree__branch{% if category.pk == node.pk %} is-active{% endif %}" style="--tree-depth:{{ node.depth }}" {% if category.pk == node.pk or category.parent_id == node.pk or category.parent.parent_id == node.pk %}open{% endif %}>
+      <summary>
+        <span>{{ node.name }}</span>
+        <span class="category-tree__meta"><b>{{ node.active_product_count }}</b><i aria-hidden="true">+</i></span>
+      </summary>
+      <div class="category-tree__children">
+        <a class="category-tree__all{% if category.pk == node.pk %} active{% endif %}" href="{{ node.get_absolute_url }}">عرض كل {{ node.name }}</a>
+        {% include 'components/category-tree.html' with nodes=node.active_children category=category only %}
+      </div>
+    </details>
+  {% else %}
+    <a class="category-tree__leaf{% if category.pk == node.pk %} active{% endif %}" style="--tree-depth:{{ node.depth }}" href="{{ node.get_absolute_url }}"><span>{{ node.name }}</span><b>{{ node.active_product_count }}</b></a>
+  {% endif %}
+{% endfor %}

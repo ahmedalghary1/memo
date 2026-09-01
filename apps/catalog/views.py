@@ -39,9 +39,12 @@ def product_list(request, slug=None):
     direct_counts = dict(Product.objects.filter(status="active", category__in=categories).values_list("category_id").annotate(total=Count("id")))
     def subtree_count(item):
         return direct_counts.get(item.pk, 0) + sum(subtree_count(child) for child in children.get(item.pk, []))
-    for item in all_categories: item.active_product_count = subtree_count(item)
+    for item in all_categories:
+        item.active_product_count = subtree_count(item)
+        item.active_children = children.get(item.pk, [])
+    category_roots = children.get(None, [])
     category_children = children.get(category.pk, []) if category else children.get(None, [])
-    return render(request, "store/collection.html", {"page_obj": page, "category": category, "category_children": category_children, "sizes": Size.objects.all(), "colors": Color.objects.all(), "all_categories": all_categories, "selected_sizes": size, "selected_colors": color, "selected_size_objects": Size.objects.filter(slug__in=size), "selected_color_objects": Color.objects.filter(slug__in=color), "active_filter_count": len(size)+len(color)+bool(request.GET.get("available"))+bool(request.GET.get("price_min"))+bool(request.GET.get("price_max"))})
+    return render(request, "store/collection.html", {"page_obj": page, "category": category, "category_children": category_children, "category_roots": category_roots, "sizes": Size.objects.all(), "colors": Color.objects.all(), "all_categories": all_categories, "selected_sizes": size, "selected_colors": color, "selected_size_objects": Size.objects.filter(slug__in=size), "selected_color_objects": Color.objects.filter(slug__in=color), "active_filter_count": len(size)+len(color)+bool(request.GET.get("available"))+bool(request.GET.get("price_min"))+bool(request.GET.get("price_max"))})
 
 def product_detail(request, slug):
     product = get_object_or_404(Product.objects.available().prefetch_related("images", "variants__color", "variants__size"), slug=slug)

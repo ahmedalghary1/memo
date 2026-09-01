@@ -34,3 +34,10 @@ class CategoryHierarchyTests(TestCase):
     def test_parent_category_includes_products_from_third_level(self):
         response = self.client.get(reverse("catalog:category", args=[self.men.slug]))
         self.assertContains(response, self.product.name)
+
+    def test_sidebar_renders_expandable_tree_and_opens_active_path(self):
+        response = self.client.get(reverse("catalog:category", args=[self.jeans.slug]))
+        self.assertContains(response, 'class="category-tree"')
+        self.assertContains(response, 'class="category-tree__branch"', count=2)
+        self.assertContains(response, "عرض كل رجالي")
+        self.assertContains(response, "عرض كل بناطيل")
