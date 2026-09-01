@@ -3,7 +3,7 @@
     <details class="category-tree__branch{% if category.pk == node.pk %} is-active{% endif %}" style="--tree-depth:{{ node.depth }}" {% if category.pk == node.pk or category.parent_id == node.pk or category.parent.parent_id == node.pk %}open{% endif %}>
       <summary>
         <span>{{ node.name }}</span>
-        <span class="category-tree__meta"><b>{{ node.active_product_count }}</b><i aria-hidden="true">+</i></span>
+        <span class="category-tree__meta"><b>{{ node.active_product_count }}</b><i aria-hidden="true"></i><span class="sr-only">فتح أو إغلاق الأقسام الفرعية</span></span>
       </summary>
       <div class="category-tree__children">
         <a class="category-tree__all{% if category.pk == node.pk %} active{% endif %}" href="{{ node.get_absolute_url }}">عرض كل {{ node.name }}</a>

@@ -433,18 +433,23 @@ button,a,select,input,textarea{touch-action:manipulation}
 .filter-category[style*="--category-depth:1"] .filter-category__name::before,.filter-category[style*="--category-depth:2"] .filter-category__name::before{content:"↳";margin-inline-end:6px;color:#b18432}
 .category-tree{display:grid;gap:2px}
 .category-tree details{margin:0;border:0}
-.category-tree summary,.category-tree__leaf{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;padding:7px 8px 7px 6px;padding-inline-start:calc(8px + var(--tree-depth,0) * 12px);border-radius:3px;font-size:11px;cursor:pointer;list-style:none;transition:background .18s,color .18s}
+.category-tree summary,.category-tree__leaf{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:7px 8px 7px 6px;padding-inline-start:calc(8px + var(--tree-depth,0) * 12px);border:1px solid transparent;border-radius:5px;font-size:11px;cursor:pointer;list-style:none;transition:background .2s,color .2s,border-color .2s,box-shadow .2s}
 .category-tree summary::-webkit-details-marker{display:none}
 .category-tree summary:hover,.category-tree__leaf:hover{background:#f5f1e9;color:#8c641f}
 .category-tree__meta{display:flex;align-items:center;gap:9px;color:#999}
 .category-tree__meta b,.category-tree__leaf b{font-size:9px;font-weight:400;color:#999}
-.category-tree__meta i{display:grid;place-items:center;width:20px;height:20px;border:1px solid #ded8cd;border-radius:50%;font-size:14px;font-style:normal;line-height:1;transition:transform .22s,background .22s,color .22s}
-.category-tree details[open]>summary .category-tree__meta i{transform:rotate(45deg);background:#111;color:#fff;border-color:#111}
+.category-tree__meta i{position:relative;display:grid;place-items:center;width:24px;height:24px;border:1px solid #ded4c2;border-radius:50%;background:#fbf8f1;color:#8c6929;font-style:normal;transition:transform .24s cubic-bezier(.2,.75,.2,1),background .2s,border-color .2s}
+.category-tree__meta i::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(135deg);transition:transform .24s cubic-bezier(.2,.75,.2,1)}
+.category-tree details[open]>summary .category-tree__meta i{background:#f2e4c7;border-color:#d5b36d}
+.category-tree details[open]>summary .category-tree__meta i::before{transform:rotate(45deg)}
 .category-tree__children{display:grid;position:relative}
+.category-tree details[open]>.category-tree__children{animation:category-children-in .26s ease both}
 .category-tree__children::before{content:"";position:absolute;inset-block:2px 5px;inset-inline-start:calc(15px + var(--tree-depth,0) * 12px);width:1px;background:#e5dfd4}
 .category-tree__all{min-height:34px;display:flex;align-items:center;padding-inline-start:calc(22px + var(--tree-depth,0) * 12px);font-size:9px;color:#9a722a;text-decoration:underline;text-underline-offset:3px}
-.category-tree__leaf.active,.category-tree__branch.is-active>summary,.category-tree__all.active{background:#111;color:#fff;font-weight:600}
-.category-tree__leaf.active b{color:#d8b566}
+.category-tree__leaf.active,.category-tree__branch.is-active>summary{background:linear-gradient(90deg,#fffaf0,#f5e8cd);color:#76531b;border-color:#e5cca0;box-shadow:inset -3px 0 #c6973e,0 5px 16px #8b64200b;font-weight:600}
+.category-tree__all.active{color:#76531b;font-weight:700;text-decoration-color:#c6973e}
+.category-tree__leaf.active b,.category-tree__branch.is-active>summary .category-tree__meta b{display:grid;place-items:center;min-width:21px;height:21px;padding-inline:5px;border-radius:99px;background:#c6973e;color:#fff}
+@keyframes category-children-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 .category-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:10px;color:#777}
 .category-children{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
 .category-children a{display:flex;align-items:center;justify-content:space-between;gap:20px;min-width:145px;padding:11px 14px;border:1px solid var(--ref-line);background:#fff;font-size:11px}
