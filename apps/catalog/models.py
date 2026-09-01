@@ -1,5 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import reverse
@@ -17,6 +18,7 @@ class TimeStamped(models.Model):
     class Meta: abstract = True
 
 class Category(TimeStamped):
+    MAX_LEVELS = 3
     name = models.CharField(max_length=120)
     slug = models.SlugField(unique=True, allow_unicode=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
@@ -27,10 +29,39 @@ class Category(TimeStamped):
     seo_title = models.CharField(max_length=160, blank=True)
     seo_description = models.CharField(max_length=300, blank=True)
     class Meta: ordering = ["sort_order", "name"]; verbose_name_plural = "Categories"
-    def __str__(self): return self.name
+    def __str__(self): return f"{'— ' * self.depth}{self.name}"
     def get_absolute_url(self): return reverse("catalog:category", args=[self.slug])
     @property
     def optimized_image_url(self): return optimized_image_url(self.image)
+    @property
+    def depth(self):
+        depth, ancestor, seen = 0, self.parent, set()
+        while ancestor and ancestor.pk not in seen:
+            seen.add(ancestor.pk)
+            depth += 1
+            ancestor = ancestor.parent
+        return depth
+    @property
+    def display_name(self): return f"{'↳ ' * self.depth}{self.name}"
+    @property
+    def ancestors(self):
+        items, ancestor, seen = [], self.parent, set()
+        while ancestor and ancestor.pk not in seen:
+            seen.add(ancestor.pk)
+            items.append(ancestor)
+            ancestor = ancestor.parent
+        return list(reversed(items))
+    def clean(self):
+        super().clean()
+        level, ancestor, seen = 1, self.parent, set()
+        while ancestor:
+            if ancestor.pk == self.pk or ancestor.pk in seen:
+                raise ValidationError({"parent": "لا يمكن وضع القسم داخل نفسه أو داخل أحد أقسامه الفرعية."})
+            seen.add(ancestor.pk)
+            level += 1
+            if level > self.MAX_LEVELS:
+                raise ValidationError({"parent": "الحد الأقصى هو ثلاثة مستويات: رئيسي، فرعي، وفرعي داخلي."})
+            ancestor = ancestor.parent
 
 class Collection(TimeStamped):
     name = models.CharField(max_length=120)

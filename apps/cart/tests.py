@@ -15,10 +15,12 @@ class CartTests(TestCase):
         color=Color.objects.create(name="أسود",slug="black",hex_code="#000000"); size=Size.objects.create(name="M",slug="m")
         self.variant=ProductVariant.objects.create(product=p,color=color,size=size,sku="T1-B-M",stock_quantity=3)
         self.request=RequestFactory().get("/"); self.request.user=AnonymousUser(); SessionMiddleware(lambda r:None).process_request(self.request); self.request.session.save()
-    def test_totals_and_stock_limit(self):
+    def test_totals_without_artificial_quantity_limit(self):
         cart=Cart(self.request); cart.add(self.variant,2)
         self.assertEqual(cart.count,2); self.assertEqual(cart.subtotal,Decimal("1000"))
-        with self.assertRaises(ValueError): cart.add(self.variant,2)
+        cart.add(self.variant,100)
+        self.assertEqual(cart.count,102)
+        self.assertEqual(cart.subtotal,Decimal("51000"))
     def test_percentage_coupon(self):
         cart=Cart(self.request); cart.add(self.variant,2)
         Coupon.objects.create(code="SAVE10",discount_type="percentage",value=10,min_order=500,starts_at=timezone.now()-timedelta(days=1),ends_at=timezone.now()+timedelta(days=1))

@@ -15,7 +15,7 @@
     {% if product.images.count > 1 %}<div class="gallery-count" aria-live="polite"><span data-gallery-current>1</span> / {{ product.images.count }}</div>{% endif %}
   </div>
   <div class="pdp-info">
-    <nav class="breadcrumb" aria-label="مسار الصفحة"><a href="{% url 'core:home' %}">الرئيسية</a><span>/</span><a href="{% url 'catalog:list' %}">المتجر</a><span>/</span><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></nav>
+    <nav class="breadcrumb" aria-label="مسار الصفحة"><a href="{% url 'core:home' %}">الرئيسية</a><span>/</span><a href="{% url 'catalog:list' %}">المتجر</a>{% for ancestor in product.category.ancestors %}<span>/</span><a href="{{ ancestor.get_absolute_url }}">{{ ancestor.name }}</a>{% endfor %}<span>/</span><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></nav>
     <p class="sku">SKU: {{ product.base_sku }}</p><h1>{{ product.name }}</h1>
     <div class="pdp-price"><strong>{{ product.price|floatformat:0 }} ج.م</strong>{% if product.compare_at_price %}<del>{{ product.compare_at_price|floatformat:0 }} ج.م</del><span>خصم {{ product.discount_percent }}%</span>{% endif %}</div>
     <p class="pdp-lead">{{ product.short_description }}</p>
@@ -26,7 +26,7 @@
       <fieldset><legend>اللون <span data-selected-color></span></legend><div class="choice-row colors">{% for v in variants %}{% ifchanged v.color_id %}<label><input type="radio" name="color" value="{{ v.color.slug }}" data-label="{{ v.color.name }}"><span style="--swatch:{{ v.color.hex_code }}"><i class="sr-only">{{ v.color.name }}</i></span></label>{% endifchanged %}{% endfor %}</div></fieldset>
       <fieldset><legend>المقاس <a class="size-guide" href="{% url 'core:info' 'sizes' %}">دليل المقاسات</a></legend><div class="choice-row sizes">{% for v in variants %}{% ifchanged v.size_id %}<label><input type="radio" name="size" value="{{ v.size.slug }}"><span>{{ v.size.name }}</span></label>{% endifchanged %}{% endfor %}</div></fieldset>
       <p class="stock-message" data-stock aria-live="polite">اختر اللون والمقاس لمعرفة التوفر.</p>
-      <div class="qty"><label for="qty">الكمية</label><input id="qty" type="number" name="quantity" min="1" value="1" inputmode="numeric"></div>
+      <div class="qty"><label for="qty">الكمية</label><div class="quantity-stepper" data-quantity-stepper><button type="button" data-qty-minus aria-label="إنقاص الكمية">−</button><input id="qty" type="number" name="quantity" min="1" value="1" inputmode="numeric" aria-live="polite"><button type="button" data-qty-plus aria-label="زيادة الكمية">+</button></div></div>
       <button class="btn btn--dark add-btn" type="submit" disabled data-add-button>اختر المقاس أولًا</button><button class="btn buy-now" type="submit" name="buy_now" value="1" disabled data-buy-button>اشترِ الآن</button>
     </form>
     <div class="pdp-tools"><form action="{% url 'wishlist:toggle' product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="{% if product.pk in wishlist_product_ids %}is-active{% endif %}">{% if product.pk in wishlist_product_ids %}♥ محفوظة{% else %}♡ إضافة إلى المفضلة{% endif %}</button></form><button type="button" data-share>↗ مشاركة المنتج</button></div>

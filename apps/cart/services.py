@@ -15,14 +15,14 @@ class Cart:
         if request.user.is_authenticated and self.session.get("memo_cart_merged_user") != request.user.pk:
             for saved in CartItem.objects.filter(user=request.user).select_related("variant"):
                 key = str(saved.variant_id)
-                self.data[key] = min(saved.variant.stock_quantity, int(self.data.get(key, 0)) + saved.quantity)
+                self.data[key] = int(self.data.get(key, 0)) + saved.quantity
             self.session["memo_cart_merged_user"] = request.user.pk
             self.save()
     def add(self, variant, quantity=1, replace=False):
         key = str(variant.pk)
         current = int(self.data.get(key, 0))
         requested = quantity if replace else current + quantity
-        if not variant.is_active or variant.stock_quantity < requested:
+        if not variant.is_active:
             raise ValueError("الكمية المطلوبة غير متاحة.")
         if requested <= 0: self.data.pop(key, None)
         else: self.data[key] = requested
@@ -46,7 +46,7 @@ class Cart:
             pk__in=self.data, is_active=True, product__status="active", product__category__is_active=True,
         ).select_related("product", "color", "size").prefetch_related("product__images")
         for variant in variants:
-            quantity = min(int(self.data[str(variant.pk)]), variant.stock_quantity)
+            quantity = int(self.data[str(variant.pk)])
             if quantity > 0:
                 items.append({"variant": variant, "product": variant.product, "quantity": quantity, "unit_price": variant.effective_price, "total": variant.effective_price * quantity})
         self._items_cache = items

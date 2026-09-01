@@ -3,7 +3,7 @@
   <div class="header__inner shell">
     <div class="header-primary">
       <a class="brand" href="{% url 'core:home' %}" aria-label="MEMO الرئيسية"><img src="{% static 'images/memo-logo-transparent-v2.webp' %}" alt="MEMO" width="384" height="256"></a>
-      <button class="icon-btn mobile-only" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">فتح القائمة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
+      <button class="icon-btn mobile-only menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">فتح القائمة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
       <nav class="desktop-nav" aria-label="التنقل الرئيسي">
         <a href="{% url 'core:home' %}">الرئيسية</a><a href="{% url 'catalog:list' %}">المتجر</a>
         {% for cat in nav_categories|slice:':3' %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'core:info' 'about' %}">من نحن</a>

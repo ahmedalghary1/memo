@@ -13,7 +13,7 @@ def home(request):
     context = {
         "featured_products": products.filter(new_arrival=True)[:4],
         "best_sellers": products.filter(bestseller=True)[:6],
-        "categories": Category.objects.filter(is_active=True)[:6],
+        "categories": Category.objects.filter(is_active=True, parent__isnull=True)[:6],
         "featured_collection": Collection.objects.filter(is_active=True).first(),
     }
     return render(request, "store/home.html", context)

@@ -157,7 +157,7 @@ def settings_view(request):
 @staff_required
 def data_section(request, section):
     sections = {
-        "categories": ("الفئات", "CATEGORY STRUCTURE", Category.objects.select_related("parent"), ["name", "parent", "is_active", "sort_order"], "admin:catalog_category_add"),
+        "categories": ("الفئات", "CATEGORY STRUCTURE", Category.objects.select_related("parent", "parent__parent"), ["display_name", "parent", "is_active", "sort_order"], "admin:catalog_category_add"),
         "collections": ("المجموعات", "COLLECTIONS", Collection.objects.all(), ["name", "starts_at", "ends_at", "is_active"], "admin:catalog_collection_add"),
         "colors": ("الألوان", "PRODUCT COLORS", Color.objects.all(), ["name", "slug", "hex_code", "sort_order"], "admin:catalog_color_add"),
         "sizes": ("المقاسات", "PRODUCT SIZES", Size.objects.all(), ["name", "slug", "sort_order"], "admin:catalog_size_add"),

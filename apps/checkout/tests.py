@@ -91,10 +91,19 @@ class CheckoutTests(TestCase):
         self.assertEqual(order.shipping_total, Decimal("145"))
         self.assertEqual(order.grand_total, Decimal("845"))
 
-    def test_checkout_rejects_cart_when_stock_has_sold_out(self):
+    def test_checkout_keeps_unlimited_cart_when_stock_has_sold_out(self):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
         self.variant.stock_quantity = 0
         self.variant.save(update_fields=["stock_quantity"])
         response = self.client.get(reverse("checkout:checkout"))
-        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
+
+    def test_checkout_accepts_quantity_above_recorded_stock(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 25})
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        order = Order.objects.get(customer_email="guest@example.com")
+        self.variant.refresh_from_db()
+        self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
+        self.assertEqual(order.items.get().quantity, 25)
+        self.assertEqual(self.variant.stock_quantity, 0)

@@ -102,7 +102,18 @@ if(variantForm){
   syncBuy();
 }
 qs('[data-share]')?.addEventListener('click',async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else{await navigator.clipboard.writeText(location.href);alert('تم نسخ رابط المنتج.')}}catch(error){if(error.name!=='AbortError')console.warn(error)}});
-qsa('.drawer-qty').forEach(form=>{const input=qs('input[name="quantity"]',form);qs('[data-qty-minus]',form)?.addEventListener('click',()=>{input.value=Math.max(Number(input.min)||0,Number(input.value)-1);form.requestSubmit()});qs('[data-qty-plus]',form)?.addEventListener('click',()=>{input.value=Math.min(Number(input.max)||99,Number(input.value)+1);form.requestSubmit()})});
+qsa('[data-quantity-stepper]').forEach(stepper=>{
+  const input=qs('input[name="quantity"]',stepper),minimum=Math.max(1,Number(input?.min)||1);
+  if(!input)return;
+  const commit=value=>{
+    input.value=String(Math.max(minimum,Number.isFinite(value)?Math.trunc(value):minimum));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    if(stepper.matches('form[data-auto-submit]'))stepper.requestSubmit();
+  };
+  qs('[data-qty-minus]',stepper)?.addEventListener('click',()=>commit(Number(input.value)-1));
+  qs('[data-qty-plus]',stepper)?.addEventListener('click',()=>commit(Number(input.value)+1));
+  input.addEventListener('change',()=>{const normalized=Math.max(minimum,Math.trunc(Number(input.value))||minimum);input.value=String(normalized)});
+});
 
 const motionHero=qs('[data-motion-hero]');
 if(motionHero){
