@@ -24,11 +24,11 @@ class Coupon(models.Model):
     def __str__(self): return self.code
 
 class Order(models.Model):
-    STATUS = [("new","جديد"),("confirmed","تم التأكيد"),("preparing","جاري التجهيز"),("shipped","تم الشحن"),("delivered","تم التسليم"),("cancelled","ملغي"),("returned","مرتجع")]
+    STATUS = [("pending_confirmation", "بانتظار التأكيد"),("new","جديد"),("confirmed","تم التأكيد"),("preparing","جاري التجهيز"),("shipped","تم الشحن"),("delivered","تم التسليم"),("cancelled","ملغي"),("returned","مرتجع")]
     PAYMENT = [("pending","بانتظار الدفع"),("paid","مدفوع"),("failed","فشل"),("refunded","مسترد")]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="orders")
     order_number = models.CharField(max_length=24, unique=True, editable=False)
-    status = models.CharField(max_length=15, choices=STATUS, default="new")
+    status = models.CharField(max_length=24, choices=STATUS, default="new")
     payment_status = models.CharField(max_length=15, choices=PAYMENT, default="pending")
     fulfillment_status = models.CharField(max_length=30, default="unfulfilled")
     subtotal = models.DecimalField(max_digits=10, decimal_places=2); discount_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -38,6 +38,9 @@ class Order(models.Model):
     governorate = models.CharField(max_length=80); area = models.CharField(max_length=100); address_line = models.CharField(max_length=240)
     address_details = models.CharField(max_length=200, blank=True); notes = models.TextField(blank=True); payment_method = models.CharField(max_length=40, default="cash")
     created_at = models.DateTimeField(auto_now_add=True); updated_at = models.DateTimeField(auto_now=True)
+    whatsapp_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    confirmation_method = models.CharField(max_length=24, blank=True)
     class Meta: ordering = ["-created_at"]; permissions = [("manage_orders", "Can manage store orders")]
     def save(self, *args, **kwargs):
         if not self.order_number: self.order_number = f"MEMO-{secrets.token_hex(4).upper()}"
@@ -59,3 +62,15 @@ class OrderEvent(models.Model):
     class Meta: ordering = ["-created_at"]
     @property
     def status_label(self): return dict(Order.STATUS).get(self.status, self.status)
+
+
+class WhatsAppWebhookEvent(models.Model):
+    event_id = models.CharField(max_length=255, unique=True)
+    event_name = models.CharField(max_length=80, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return self.event_id

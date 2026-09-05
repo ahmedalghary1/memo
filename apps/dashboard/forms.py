@@ -6,6 +6,7 @@ from apps.core.models import StoreSettings
 
 class OrderWorkflowForm(forms.ModelForm):
     TRANSITIONS = {
+        "pending_confirmation": {"pending_confirmation", "confirmed", "cancelled"},
         "new": {"new", "confirmed", "cancelled"},
         "confirmed": {"confirmed", "preparing", "cancelled"},
         "preparing": {"preparing", "shipped", "cancelled"},

@@ -1,7 +1,9 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-memo-secret-change-me")
 DEBUG = False
 ALLOWED_HOSTS = [x.strip() for x in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x.strip()]
@@ -62,3 +64,20 @@ STORAGES = {
 }
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
+EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
+EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "")
+EVOLUTION_WEBHOOK_SECRET = os.getenv("EVOLUTION_WEBHOOK_SECRET", "")
+EVOLUTION_HTTP_TIMEOUT = int(os.getenv("EVOLUTION_HTTP_TIMEOUT", "15"))
+EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS = int(os.getenv("EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS", "604800"))
+STORE_NAME = os.getenv("STORE_NAME", "MEMO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "apps.orders.whatsapp": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

@@ -1,5 +1,6 @@
 from decimal import Decimal
 import re
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -45,6 +46,24 @@ class CheckoutTests(TestCase):
         self.assertEqual(order.items.get().variant_sku, "E1-B-M")
         self.assertEqual(self.variant.stock_quantity, 2)
         self.assertEqual(order.grand_total, Decimal("1470"))
+        self.assertEqual(order.status, "pending_confirmation")
+
+    @patch("apps.checkout.views.send_order_confirmation_safely", return_value=True)
+    def test_confirmation_is_scheduled_after_order_commit(self, mocked_send):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        order = Order.objects.get(customer_email="guest@example.com")
+        mocked_send.assert_called_once_with(order.pk)
+
+    @patch("apps.checkout.views.send_order_confirmation_safely", return_value=False)
+    def test_whatsapp_failure_does_not_roll_back_order(self, mocked_send):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        order = Order.objects.get(customer_email="guest@example.com")
+        self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
+        mocked_send.assert_called_once_with(order.pk)
 
     def test_guest_checkout_requires_complete_contact_and_address(self):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})

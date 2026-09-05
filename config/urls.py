@@ -14,6 +14,7 @@ urlpatterns = [
     path("wishlist/", include("apps.wishlist.urls")),
     path("checkout/", include("apps.checkout.urls")),
     path("orders/", include("apps.orders.urls")),
+    path("api/whatsapp/", include("apps.orders.whatsapp.urls")),
     path("account/", include("apps.accounts.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
     path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),

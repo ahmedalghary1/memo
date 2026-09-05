@@ -27,3 +27,22 @@ python manage.py check
 python manage.py test
 python manage.py collectstatic --noinput
 ```
+
+## تأكيد الطلبات عبر WhatsApp (Evolution API v2)
+
+أضف قيم `EVOLUTION_API_URL` و`EVOLUTION_API_KEY` و`EVOLUTION_INSTANCE` و`EVOLUTION_WEBHOOK_SECRET` إلى ملف `.env`، ثم نفّذ:
+
+```powershell
+python manage.py migrate
+python manage.py test apps.checkout apps.orders
+```
+
+اضبط Evolution API لإرسال حدث `MESSAGES_UPSERT` إلى:
+
+```text
+https://your-store.example/api/whatsapp/webhook/
+```
+
+يجب أن يصل الطلب مع header باسم `X-Webhook-Secret` وقيمته المطابقة لـ`EVOLUTION_WEBHOOK_SECRET`. إذا كانت نسخة Evolution أو إعداد الـwebhook لا يدعم إضافة header مخصص، أضفه في reverse proxy موثوق أمام Django؛ لا تضع السر في query string. عطّل خيار `webhook_by_events` أو تأكد أن عنوان الحدث النهائي ما زال يطابق المسار أعلاه.
+
+بعد إنشاء الطلب تصبح حالته `pending_confirmation`. يرسل Django التفاصيل وأزرار التأكيد والإلغاء بعد نجاح transaction، ثم يستخدم رسالة `1`/`2` بديلة إذا لم تدعم القناة الأزرار. لا يعالج الرد الرقمي إلا عندما يوجد طلب معلّق واحد فقط لنفس رقم WhatsApp.
