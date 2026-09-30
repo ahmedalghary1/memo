@@ -16,7 +16,24 @@ python manage.py runserver
 
 افتح `http://127.0.0.1:8000/`. بيانات العرض: `memo_owner` / `ChangeMe123!`، وكود الخصم `MEMO10`. غيّر كلمة المرور فور أول دخول.
 
-## الإنتاج
+## التشغيل عبر Docker (على سيرفر Hostinger VPS KVM 2)
+
+تم تجهيز المشروع بحاوية تطبيق وحاوية Nginx مهيأة لخدمة الملفات الثابتة والوسائط، مع إمكانية استضافة مواقع أخرى على نفس السيرفر:
+
+1. انسخ `.env.example` إلى `.env` واضبط بياناتك:
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+2. ابنِ وشغّل الحاويات:
+   ```bash
+   docker compose up -d --build
+   ```
+3. تم ضبط المنفذ الافتراضي على `8001` (`MEMO_PORT=8001`) لمنع تعارض البورتات مع أي مواقع أخرى على نفس السيرفر:
+   - للربط مع Nginx الرئيسي على السيرفر لتفعيل SSL/Let's Encrypt وتوجيه الدومين، وجه `proxy_pass http://127.0.0.1:8001;`.
+   - إذا كان هذا هو الموقع الوحيد وتريد ربطه بالبورت 80 مباشرة دون بروكسي خارجي، عدّل في `.env`: `MEMO_PORT=80`.
+
+## الإنتاج العادي (بدون Docker)
 
 انسخ `.env.example` إلى `.env` واضبط `SECRET_KEY` و`ALLOWED_HOSTS` و`CSRF_TRUSTED_ORIGINS` وإعدادات SMTP. استخدم `config.settings.production`، شغّل `optimize_images` بعد رفع صور جديدة ثم `collectstatic`، وقدّم `/media/` من object storage أو خادم وسائط موثوق. طبقة الدفع في `apps/checkout/services.py` abstraction بلا مفاتيح وهمية.
 
