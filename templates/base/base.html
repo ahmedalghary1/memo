@@ -41,8 +41,11 @@
   <main id="main">{% block content %}{% endblock %}</main>
   {% include 'components/footer.html' %}
   <button class="back-to-top" type="button" data-back-to-top aria-label="العودة إلى أعلى الصفحة">↑</button>
+  <script src="{% static 'vendor/gsap.min.js' %}" defer></script>
+  <script src="{% static 'vendor/ScrollTrigger.min.js' %}" defer></script>
+  <script src="{% static 'vendor/three.min.js' %}" defer></script>
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
-  <script src="{% static 'js/motion.js' %}?v=20260901-1" defer></script>
+  <script src="{% static 'js/motion.js' %}?v=20260930-2" defer></script>
   <script type="module" src="{% static 'js/core.js' %}?v=20260829-15"></script>
   {% block scripts %}{% endblock %}
 </body>

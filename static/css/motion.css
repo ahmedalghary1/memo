@@ -1,60 +1,607 @@
-/* MEMO page motion: the canvas arrives first, then content enters in small waves. */
-html.motion-capable body::after{
-  content:"";
-  position:fixed;
-  z-index:2000;
-  inset:0;
-  pointer-events:none;
-  background:var(--motion-canvas,var(--memo-ivory,#f5f1e9));
-  animation:memo-canvas-reveal .82s cubic-bezier(.76,0,.24,1) .06s both;
+/* ==========================================================================
+   MEMO — Professional Motion & Interaction Design System
+   Aesthetic: Contemporary Arabic Luxury / Editorial Fashion
+   Built to adhere strictly to SKILL-professional-web-motion.md
+   ========================================================================== */
+
+/* 1. Global Luxury Canvas Reveal (Page Load Transition) */
+html.motion-capable body::after {
+  content: "";
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  pointer-events: none;
+  background: var(--motion-canvas, var(--memo-ivory, #f5f0e7));
+  animation: memo-canvas-reveal 0.78s cubic-bezier(0.76, 0, 0.24, 1) 0.05s both;
 }
 
-body.dashboard-shell{--motion-canvas:#101518}
-
-body.page-motion-ready [data-page-motion-item]{
-  opacity:0;
-  transform:translate3d(var(--motion-x,0),var(--motion-y,24px),0) rotate(var(--motion-rotate,0deg));
-  filter:blur(3px);
-  transition:
-    opacity .68s cubic-bezier(.2,.72,.2,1),
-    transform .9s cubic-bezier(.16,1,.3,1),
-    filter .72s ease;
-  transition-delay:calc(var(--motion-start-delay,0ms) + var(--motion-order,0) * 72ms);
-  will-change:opacity,transform,filter;
+body.dashboard-shell {
+  --motion-canvas: #101518;
 }
 
-body.page-motion-ready [data-page-motion-group].is-page-visible [data-page-motion-item],
-body.page-motion-ready [data-page-motion-item].is-page-visible{
-  opacity:1;
-  transform:translate3d(0,0,0) rotate(0);
-  filter:blur(0);
-}
-
-body.page-motion-ready.motion-settled [data-page-motion-item]{will-change:auto}
-
-@keyframes memo-canvas-reveal{
-  0%{clip-path:inset(0 0 0 0);opacity:1}
-  72%{opacity:1}
-  99%{clip-path:inset(100% 0 0 0);opacity:1}
-  100%{clip-path:inset(100% 0 0 0);opacity:0;visibility:hidden}
-}
-
-@media(max-width:767px){
-  body.page-motion-ready [data-page-motion-item]{
-    --motion-x:0px!important;
-    --motion-y:18px!important;
-    --motion-rotate:0deg!important;
-    transition-duration:.58s,.76s,.58s;
-    transition-delay:calc(var(--motion-start-delay,0ms) + var(--motion-order,0) * 48ms);
+@keyframes memo-canvas-reveal {
+  0% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  68% {
+    opacity: 1;
+  }
+  99% {
+    clip-path: inset(100% 0 0 0);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
-@media(prefers-reduced-motion:reduce){
-  html.motion-capable body::after{display:none}
-  body.page-motion-ready [data-page-motion-item]{
-    opacity:1!important;
-    transform:none!important;
-    filter:none!important;
-    transition:none!important;
+/* 2. GSAP Integration: Disable conflicting CSS transitions when GSAP is active */
+body.gsap-active .home-motion-ready .category-rail,
+body.gsap-active .home-motion-ready .ref-products,
+body.gsap-active .home-motion-ready .essentials-banner,
+body.gsap-active .home-motion-ready .service-strip,
+body.gsap-active .home-motion-ready .ref-newsletter,
+body.gsap-active .home-motion-ready .instagram-strip,
+body.gsap-active .home-motion-ready .product-card,
+body.gsap-active .home-motion-ready .category-rail__grid > a {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+body.gsap-active .hero-kicker,
+body.gsap-active .ref-hero__copy h1,
+body.gsap-active .ref-hero__copy > p,
+body.gsap-active .ref-hero__copy > div {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+body.gsap-active .ref-hero > img {
+  animation: none !important;
+}
+
+/* Fallback for non-GSAP systems */
+body.page-motion-ready:not(.gsap-active) [data-page-motion-item] {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.72, 0.2, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--motion-start-delay, 0ms) + var(--motion-order, 0) * 65ms);
+}
+
+body.page-motion-ready:not(.gsap-active) [data-page-motion-group].is-page-visible [data-page-motion-item],
+body.page-motion-ready:not(.gsap-active) [data-page-motion-item].is-page-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* 3. Three.js Hero Ambient Atmosphere Canvas */
+.hero-webgl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.88;
+  mix-blend-mode: screen;
+  transition: opacity 0.8s ease;
+}
+
+.hero-webgl.is-faded {
+  opacity: 0;
+}
+
+/* 4. Hero Section Enhancements */
+.ref-hero {
+  will-change: transform;
+}
+
+.ref-hero > img {
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.hero-scroll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.hero-scroll:hover {
+  color: var(--memo-gold, #c9a35c);
+}
+
+.hero-scroll span {
+  display: inline-block;
+  width: 1px;
+  height: 38px;
+  background: linear-gradient(180deg, var(--memo-gold, #c9a35c), transparent);
+  animation: memo-scroll-pulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes memo-scroll-pulse {
+  0% {
+    transform: scaleY(0.2);
+    transform-origin: top;
+    opacity: 0.3;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+    opacity: 1;
+  }
+  50.1% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0.2);
+    transform-origin: bottom;
+    opacity: 0.3;
+  }
+}
+
+/* 5. Header & Navigation Micro-interactions */
+.site-header {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              backdrop-filter 0.4s ease;
+}
+
+.site-header.is-sticky {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  background-color: rgba(10, 10, 10, 0.95) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--memo-ivory, #f5f0e7) !important;
+}
+
+/* Nav links in sticky navbar */
+.site-header.is-sticky .desktop-nav a {
+  color: var(--memo-ivory, #f5f0e7) !important;
+  font-weight: 500;
+  opacity: 0.94;
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.site-header.is-sticky .desktop-nav a:hover,
+.site-header.is-sticky .desktop-nav a[aria-current="page"] {
+  color: var(--memo-gold, #c9a35c) !important;
+  opacity: 1;
+}
+
+.site-header.is-sticky .desktop-nav a::after {
+  background: linear-gradient(90deg, var(--memo-gold, #c9a35c), var(--memo-gold-light, #dfc487)) !important;
+}
+
+/* Icons & Action buttons in sticky navbar */
+.site-header.is-sticky .icon-btn,
+.site-header.is-sticky .mobile-only,
+.site-header.is-sticky .menu-trigger {
+  color: var(--memo-ivory, #f5f0e7) !important;
+  opacity: 0.94;
+  transition: color 0.24s ease, transform 0.24s ease, opacity 0.24s ease;
+}
+
+.site-header.is-sticky .icon-btn:hover,
+.site-header.is-sticky .mobile-only:hover,
+.site-header.is-sticky .menu-trigger:hover {
+  color: var(--memo-gold, #c9a35c) !important;
+  opacity: 1;
+}
+
+.site-header.is-sticky .icon-btn svg,
+.site-header.is-sticky .mobile-only svg,
+.site-header.is-sticky .menu-trigger svg {
+  stroke: currentColor !important;
+  color: inherit !important;
+}
+
+.site-header.is-sticky .cart-link {
+  color: var(--memo-ivory, #f5f0e7) !important;
+}
+
+.site-header.is-sticky .cart-link b {
+  background: var(--memo-gold, #c9a35c) !important;
+  color: #0a0a0a !important;
+  border-color: #0a0a0a !important;
+}
+
+.site-header.is-sticky .brand img {
+  filter: brightness(1.1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4)) !important;
+}
+
+@media (max-width: 767px) {
+  .site-header.is-sticky {
+    background-color: rgba(10, 10, 10, 0.95) !important;
+    color: var(--memo-ivory, #f5f0e7) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .site-header.is-sticky .header-actions .icon-btn,
+  .site-header.is-sticky .header-primary > .mobile-only {
+    color: var(--memo-ivory, #f5f0e7) !important;
+  }
+  .site-header.is-sticky .header-actions .icon-btn:active,
+  .site-header.is-sticky .header-primary > .mobile-only:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+  }
+}
+
+.cart-link b {
+  display: inline-grid;
+  place-items: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease;
+}
+
+.cart-link b.pulse {
+  animation: memo-badge-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes memo-badge-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); background-color: var(--memo-gold, #c9a35c); color: #111; }
+  100% { transform: scale(1); }
+}
+
+/* 6. Product Cards & Grids Micro-interactions */
+.product-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) {
+  .product-card:hover {
+    transform: translateY(-4px);
+  }
+  .product-card:hover .product-card__primary {
+    transform: scale(1.04);
+  }
+  .product-card:hover .product-card__cta {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.product-card__media {
+  overflow: hidden;
+  position: relative;
+}
+
+.product-card__primary,
+.product-card__secondary {
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+}
+
+.product-card__cta {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease;
+  transform: translateY(12px);
+  opacity: 0;
+}
+
+.wish-form .icon-btn {
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.wish-form .icon-btn:hover {
+  transform: scale(1.18);
+  color: #cf384d;
+}
+
+.wish-form .icon-btn:active {
+  transform: scale(0.85);
+}
+
+.wish-form .icon-btn.is-active svg {
+  fill: currentColor;
+  color: #cf384d;
+  animation: memo-heart-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes memo-heart-pop {
+  0% { transform: scale(0.65); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* 7. Category Rail Micro-interactions */
+.category-rail__grid > a {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-rail__grid > a > div {
+  overflow: hidden;
+}
+
+.category-rail__grid > a > div img {
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) {
+  .category-rail__grid > a:hover > div img {
+    transform: scale(1.07);
+  }
+  .category-rail__grid > a:hover strong {
+    color: var(--memo-gold, #c9a35c);
+  }
+}
+
+.category-rail__grid > a strong {
+  transition: color 0.28s ease;
+}
+
+/* 8. Essentials Video Banner */
+.essentials-banner {
+  position: relative;
+  overflow: hidden;
+}
+
+.essentials-banner video {
+  will-change: transform;
+}
+
+.play-button {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease;
+}
+
+.play-button:hover {
+  transform: scale(1.12);
+  background: rgba(201, 163, 92, 0.85);
+  color: #0a0a0a;
+}
+
+.play-button:active {
+  transform: scale(0.92);
+}
+
+/* 9. Service Strip Micro-interactions */
+.service-strip > div {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease;
+}
+
+@media (hover: hover) {
+  .service-strip > div:hover {
+    transform: translateY(-3px);
+  }
+  .service-strip > div:hover svg {
+    transform: scale(1.12);
+    stroke: var(--memo-gold, #c9a35c);
+  }
+}
+
+.service-strip > div svg {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease;
+}
+
+/* 10. Buttons & Interactive Forms */
+.btn--gold {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease;
+}
+
+@media (hover: hover) {
+  .btn--gold:hover {
+    box-shadow: 0 8px 24px rgba(201, 163, 92, 0.28);
+    transform: translateY(-2px);
+  }
+}
+
+.btn--gold:active {
+  transform: translateY(1px);
+}
+
+.btn--dark {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease,
+              box-shadow 0.28s ease;
+}
+
+@media (hover: hover) {
+  .btn--dark:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  }
+}
+
+.btn--dark:active {
+  transform: translateY(1px);
+}
+
+.ref-newsletter button {
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.ref-newsletter button:hover {
+  transform: scale(1.02);
+  filter: brightness(1.08);
+}
+
+.ref-newsletter input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--memo-gold, #c9a35c);
+}
+
+/* 11. Lookbook / Instagram Gallery */
+.instagram-strip > div:last-child a {
+  position: relative;
+  overflow: hidden;
+}
+
+.instagram-strip img {
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+}
+
+@media (hover: hover) {
+  .instagram-strip > div:last-child a:hover img {
+    transform: scale(1.06);
+    filter: brightness(1.04);
+  }
+}
+
+/* 12. Product Detail Page (PDP) Interactive Micro-motion */
+.gallery-image-button {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.gallery-image-button.is-active {
+  border-color: var(--memo-gold, #c9a35c);
+  transform: scale(0.98);
+}
+
+.choice-row label span {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s ease,
+              box-shadow 0.24s ease;
+}
+
+.choice-row label:hover span {
+  transform: translateY(-1px);
+}
+
+.choice-row input:checked + span {
+  border-color: var(--memo-gold, #c9a35c);
+  box-shadow: 0 0 0 1.5px var(--memo-gold, #c9a35c);
+}
+
+.quantity-stepper button {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
+}
+
+.quantity-stepper button:active {
+  transform: scale(0.85);
+}
+
+.mobile-buybar {
+  transform: translateY(100%);
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.38s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-buybar.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pdp-accordions details summary {
+  transition: color 0.25s ease;
+}
+
+.pdp-accordions details summary:hover {
+  color: var(--memo-gold, #c9a35c);
+}
+
+/* 13. Back to Top Floating Button */
+.back-to-top {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 900;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--ref-line, #e9e5de);
+  background: var(--memo-white, #fcfbf8);
+  color: var(--memo-text-primary, #111);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px) scale(0.88);
+  transition: opacity 0.35s ease,
+              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.35s,
+              background-color 0.25s,
+              color 0.25s;
+}
+
+.back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.back-to-top:hover {
+  background: var(--memo-black, #0a0a0a);
+  color: var(--memo-gold, #c9a35c);
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.back-to-top:active {
+  transform: translateY(0) scale(0.94);
+}
+
+/* 14. Cart Drawer Smooth Reveal */
+.cart-drawer {
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 15. Dashboard Low-Motion Enhancements */
+body.dashboard-shell .dash-card,
+body.dashboard-shell .dash-panel {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.dashboard-shell .dash-sidebar nav a {
+  transition: background-color 0.2s ease, color 0.2s ease, padding 0.2s ease;
+}
+
+body.dashboard-shell .dash-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--memo-gold, #c9a35c);
+  padding-inline-start: 16px;
+}
+
+/* 16. Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  html.motion-capable body::after {
+    display: none !important;
+  }
+  .hero-webgl {
+    display: none !important;
+  }
+  .hero-scroll span,
+  .hero-glow,
+  .hero-orbit,
+  .hero-ribbon i {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .product-card,
+  .service-strip > div,
+  .category-rail__grid > a {
+    transform: none !important;
   }
 }

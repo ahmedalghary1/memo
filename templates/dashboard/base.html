@@ -42,8 +42,10 @@
     {% if messages %}<div class="dash-messages" aria-live="polite">{% for message in messages %}<div class="dash-message dash-message--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
+  <script src="{% static 'vendor/gsap.min.js' %}" defer></script>
+  <script src="{% static 'vendor/ScrollTrigger.min.js' %}" defer></script>
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
-  <script src="{% static 'js/motion.js' %}?v=20260901-1" defer></script>
+  <script src="{% static 'js/motion.js' %}?v=20260930-2" defer></script>
   <script src="{% static 'js/dashboard.js' %}?v=20260829-2" defer></script>
 </body>
 </html>
