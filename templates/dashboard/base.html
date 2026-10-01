@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard-reference.css' %}">
-  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20260829-4">
+  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20261001-1">
   <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=20260901-1">
 </head>
 <body class="dashboard-shell">
@@ -33,12 +33,13 @@
       <a href="{% url 'dashboard:data_section' 'subscribers' %}">المشتركون</a>
       <a href="{% url 'dashboard:data_section' 'messages' %}">رسائل التواصل</a>
       <a href="{% url 'dashboard:settings' %}">الإعدادات</a>
+      {% if user.is_superuser %}<a href="{% url 'dashboard:team' %}">فريق العمل</a>{% endif %}
     </nav>
-    <div><a href="{% url 'core:home' %}">عرض المتجر ↗</a><span>{{ user.get_full_name|default:user.username }}</span></div>
+    <div><a href="{% url 'core:home' %}">عرض المتجر ↗</a><a href="{% url 'accounts:password_change' %}">تغيير كلمة المرور</a><span>{{ user.get_full_name|default:user.username }}</span></div>
   </aside>
   <button class="dash-scrim" type="button" aria-label="إغلاق القائمة"></button>
   <main class="dash-main">
-    <header class="dash-top"><button class="dash-menu" type="button" aria-controls="dashboard-menu" aria-expanded="false">القائمة</button><span>{% now 'l، d F' %}</span><a href="{% url 'admin:index' %}">الإدارة المتقدمة</a></header>
+    <header class="dash-top"><button class="dash-menu" type="button" aria-controls="dashboard-menu" aria-expanded="false">القائمة</button><span>{% now 'l، d F' %}</span><form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}<button class="dash-logout" type="submit">تسجيل الخروج</button></form></header>
     {% if messages %}<div class="dash-messages" aria-live="polite">{% for message in messages %}<div class="dash-message dash-message--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>

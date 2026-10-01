@@ -5,7 +5,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderEvent
-from apps.core.models import StoreSettings
+from apps.catalog.models import Category, Color, InventoryMovement, Product, ProductVariant, Size
+from apps.core.models import ContactMessage, StoreSettings
 
 
 class DashboardPermissionTests(TestCase):
@@ -23,7 +24,7 @@ class DashboardPermissionTests(TestCase):
 
     def test_guest_dashboard_redirects_to_login(self):
         response = self.client.get(reverse("dashboard:overview"))
-        self.assertRedirects(response, f"{reverse('accounts:login')}?next={reverse('dashboard:overview')}")
+        self.assertRedirects(response, f"{reverse('dashboard:login')}?next={reverse('dashboard:overview')}")
 
     def test_authorized_staff_can_update_order_workflow(self):
         self.grant_dashboard()
@@ -70,3 +71,88 @@ class DashboardPermissionTests(TestCase):
         settings = StoreSettings.load()
         self.assertEqual(settings.standard_shipping, Decimal("80"))
         self.assertEqual(settings.returns_days, 21)
+
+    def login_authorized(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+
+    def test_dashboard_has_no_django_admin_dependency(self):
+        self.login_authorized()
+        response = self.client.get(reverse("dashboard:overview"))
+        self.assertNotContains(response, "/django-admin/")
+
+    def test_staff_can_create_unicode_category_and_product_natively(self):
+        self.login_authorized()
+        response = self.client.post(reverse("dashboard:section_create", args=["categories"]), {
+            "name": "ملابس عربية", "slug": "ملابس-عربية", "description": "", "sort_order": 1,
+            "seo_title": "", "seo_description": "", "is_active": "on",
+        })
+        category = Category.objects.get(slug="ملابس-عربية")
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["categories", category.pk]))
+
+        response = self.client.post(reverse("dashboard:product_create"), {
+            "name": "تيشيرت عربي", "slug": "تيشيرت-عربي", "base_sku": "AR-TEE",
+            "category": category.pk, "short_description": "", "description": "", "material": "",
+            "care_instructions": "", "fit_notes": "", "model_info": "", "measurement_notes": "",
+            "price": "500", "compare_at_price": "", "cost_price": "", "status": "active",
+            "meta_title": "", "meta_description": "",
+        })
+        product = Product.objects.get(slug="تيشيرت-عربي")
+        self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+
+    def test_inventory_edit_creates_audit_movement(self):
+        self.login_authorized()
+        category = Category.objects.create(name="فئة", slug="فئة")
+        product = Product.objects.create(name="قطعة", slug="قطعة", base_sku="P-1", price=100, category=category, status="active")
+        color = Color.objects.create(name="أسود", slug="أسود", hex_code="#000000")
+        size = Size.objects.create(name="وسط", slug="وسط")
+        variant = ProductVariant.objects.create(product=product, color=color, size=size, sku="P-1-B-M", stock_quantity=3)
+        response = self.client.post(reverse("dashboard:section_edit", args=["inventory", variant.pk]), {
+            "product": product.pk, "color": color.pk, "size": size.pk, "sku": variant.sku,
+            "stock_quantity": 8, "price_override": "", "is_active": "on", "low_stock_threshold": 3,
+        })
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["inventory", variant.pk]))
+        movement = InventoryMovement.objects.get(variant=variant)
+        self.assertEqual(movement.quantity, 5)
+        self.assertEqual(movement.created_by, self.user)
+
+    def test_staff_can_edit_order_customer_details(self):
+        self.login_authorized()
+        order = Order.objects.create(
+            subtotal=100, grand_total=100, customer_name="قديم", customer_phone="01000000000",
+            customer_email="old@example.com", governorate="القاهرة", area="وسط البلد", address_line="شارع 1",
+        )
+        response = self.client.post(reverse("dashboard:order_details_update", args=[order.order_number]), {
+            "customer_name": "اسم جديد", "customer_phone": "01111111111", "customer_email": "new@example.com",
+            "governorate": "الجيزة", "area": "الدقي", "address_line": "شارع 2", "address_details": "الدور 3", "notes": "اتصال قبل الوصول",
+        })
+        order.refresh_from_db()
+        self.assertRedirects(response, reverse("dashboard:order_detail", args=[order.order_number]))
+        self.assertEqual(order.customer_name, "اسم جديد")
+        self.assertTrue(OrderEvent.objects.filter(order=order, note__contains="بيانات العميل").exists())
+
+    def test_staff_can_review_and_close_contact_message(self):
+        self.login_authorized()
+        contact = ContactMessage.objects.create(name="عميل", email="client@example.com", subject="سؤال", message="تفاصيل السؤال")
+        response = self.client.post(reverse("dashboard:section_edit", args=["messages", contact.pk]), {"status": "closed"})
+        contact.refresh_from_db()
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["messages", contact.pk]))
+        self.assertEqual(contact.status, "closed")
+
+    def test_only_superuser_can_manage_team_and_create_dashboard_user(self):
+        self.login_authorized()
+        response = self.client.get(reverse("dashboard:team"))
+        self.assertEqual(response.status_code, 403)
+
+        owner = User.objects.create_superuser("owner", "owner@example.com", "StrongPass123!")
+        self.client.force_login(owner)
+        response = self.client.post(reverse("dashboard:team_member_create"), {
+            "username": "operator", "first_name": "عضو", "last_name": "الفريق",
+            "email": "operator@example.com", "is_active": "on",
+            "password1": "AnotherStrong123!", "password2": "AnotherStrong123!",
+            "can_manage_dashboard": "on",
+        })
+        self.assertEqual(response.status_code, 302)
+        operator = User.objects.get(username="operator")
+        self.assertTrue(operator.check_password("AnotherStrong123!"))
+        self.assertTrue(operator.has_perm("orders.manage_orders"))

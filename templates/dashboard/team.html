@@ -1,0 +1,18 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}فريق العمل — لوحة MEMO{% endblock %}
+{% block content %}
+<div class="dash-page">
+  <div class="dash-title"><div><p>TEAM ACCESS</p><h1>فريق العمل</h1></div><a class="dash-btn" href="{% url 'dashboard:team_member_create' %}">إضافة مستخدم +</a></div>
+  <form class="dash-filters" method="get"><label><span class="sr-only">البحث</span><input name="q" value="{{ query }}" placeholder="الاسم أو البريد أو اسم المستخدم"></label><button type="submit">بحث</button>{% if query %}<a href="{% url 'dashboard:team' %}">مسح</a>{% endif %}</form>
+  <section class="dash-panel"><div class="table-wrap"><table>
+    <thead><tr><th>اسم المستخدم</th><th>الاسم</th><th>البريد الإلكتروني</th><th>نوع الحساب</th><th>الحالة</th><th>إجراء</th></tr></thead>
+    <tbody>{% for member in members %}<tr>
+      <td>{{ member.username }}</td><td>{{ member.get_full_name|default:'—' }}</td><td>{{ member.email|default:'—' }}</td>
+      <td>{% if member.is_superuser %}<span class="status-pill status-active">مدير رئيسي</span>{% elif member.can_manage_dashboard %}<span>عضو فريق</span>{% else %}<span>مستخدم</span>{% endif %}</td>
+      <td>{% if member.is_active %}<span class="status-pill status-active">نشط</span>{% else %}<span class="status-pill">موقوف</span>{% endif %}</td>
+      <td><a class="table-action" href="{% url 'dashboard:team_member_edit' member.pk %}">عرض وتعديل</a></td>
+    </tr>{% empty %}<tr><td colspan="6">لا يوجد مستخدمون.</td></tr>{% endfor %}</tbody>
+  </table></div></section>
+  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
+</div>
+{% endblock %}

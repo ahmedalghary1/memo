@@ -2,11 +2,12 @@
 {% block title %}{{ title }} — لوحة MEMO{% endblock %}
 {% block content %}
 <div class="dash-page">
-  <div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div>{% if add_url %}<a class="dash-btn" href="{{ add_url }}">إضافة جديد +</a>{% else %}<a class="dash-btn dash-btn--muted" href="{% url 'admin:index' %}">الإدارة المتقدمة ↗</a>{% endif %}</div>
+  <div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div>{% if editable %}<a class="dash-btn" href="{% url 'dashboard:section_create' section %}">إضافة جديد +</a>{% endif %}</div>
+  <form class="dash-filters" method="get"><label><span class="sr-only">البحث</span><input name="q" value="{{ query }}" placeholder="ابحث داخل {{ title }}"></label><button type="submit">بحث</button>{% if query %}<a href="{% url 'dashboard:data_section' section %}">مسح</a>{% endif %}</form>
   <section class="dash-panel"><div class="table-wrap"><table>
-    <thead><tr>{% for field in fields %}<th>{{ field }}</th>{% endfor %}{% if section != 'customers' and section != 'settings' %}<th>إجراء</th>{% endif %}</tr></thead>
-    <tbody>{% for row in rows %}<tr>{% for field in fields %}<td>{{ row|field_value:field }}</td>{% endfor %}{% if section != 'customers' and section != 'settings' %}{% admin_change_url row as edit_url %}<td>{% if edit_url %}<a class="table-action" href="{{ edit_url }}">تعديل</a>{% endif %}</td>{% endif %}</tr>{% empty %}<tr><td colspan="9">لا توجد بيانات في هذا القسم بعد.</td></tr>{% endfor %}</tbody>
+    <thead><tr>{% for field in fields %}<th>{{ field|field_label }}</th>{% endfor %}{% if editable %}<th>إجراء</th>{% endif %}</tr></thead>
+    <tbody>{% for row in rows %}<tr>{% for field in fields %}<td>{{ row|field_value:field }}</td>{% endfor %}{% if editable %}<td><a class="table-action" href="{% url 'dashboard:section_edit' section row.pk %}">عرض وتعديل</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="9">لا توجد بيانات في هذا القسم بعد.</td></tr>{% endfor %}</tbody>
   </table></div></section>
-  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
+  {% if page_obj.has_other_pages %}<nav class="dash-pagination">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
 </div>
 {% endblock %}

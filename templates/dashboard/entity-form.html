@@ -1,0 +1,13 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}{{ title }} — لوحة MEMO{% endblock %}
+{% block content %}
+<div class="dash-page">
+  <div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div>{% if cancel_arg %}<a href="{% url cancel_url cancel_arg %}">العودة للقائمة</a>{% else %}<a href="{% url cancel_url %}">العودة للقائمة</a>{% endif %}</div>
+  {% if contact_message %}<section class="dash-panel message-preview"><header><h2>{{ contact_message.subject }}</h2><span>{{ contact_message.created_at|date:'d.m.Y — H:i' }}</span></header><p><strong>{{ contact_message.name }}</strong> · <a href="mailto:{{ contact_message.email }}">{{ contact_message.email }}</a>{% if contact_message.phone %} · <a href="tel:{{ contact_message.phone }}">{{ contact_message.phone }}</a>{% endif %}</p><blockquote>{{ contact_message.message|linebreaksbr }}</blockquote></section>{% endif %}
+  <form class="dash-panel entity-form" method="post" {% if multipart %}enctype="multipart/form-data"{% endif %} novalidate>
+    {% csrf_token %}{{ form.non_field_errors }}
+    <div class="entity-form-grid">{% for field in form %}<label class="{% if field.field.widget.input_type == 'checkbox' %}check-field{% endif %}"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}</div>
+    <div class="form-actions"><button class="dash-btn" type="submit">حفظ التغييرات</button>{% if cancel_arg %}<a href="{% url cancel_url cancel_arg %}">إلغاء</a>{% else %}<a href="{% url cancel_url %}">إلغاء</a>{% endif %}</div>
+  </form>
+</div>
+{% endblock %}

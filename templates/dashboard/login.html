@@ -1,0 +1,30 @@
+{% load static %}<!doctype html>
+<html lang="ar-u-nu-latn" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101518">
+  <title>دخول فريق العمل — MEMO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20261001-1">
+</head>
+<body class="dashboard-login">
+  <main class="dashboard-login-card">
+    <a class="dashboard-login-brand" href="{% url 'core:home' %}">MEMO <small>CONTROL CENTER</small></a>
+    <h1>دخول فريق العمل</h1>
+    <p>استخدم حساب الإدارة المصرح له للوصول إلى لوحة التحكم.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <label><span>اسم المستخدم</span>{{ form.username }}{% for error in form.username.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>
+      <label><span>كلمة المرور</span>{{ form.password }}{% for error in form.password.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>
+      <button type="submit">دخول لوحة التحكم</button>
+    </form>
+    <a class="dashboard-login-back" href="{% url 'core:home' %}">العودة إلى المتجر</a>
+  </main>
+</body>
+</html>
