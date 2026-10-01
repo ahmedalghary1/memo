@@ -57,6 +57,7 @@ class ParsedWebhook:
     from_me: bool
     text: str
     button_id: str
+    quoted_message_id: str
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,19 @@ def _button_id(message: dict) -> str:
     return ""
 
 
+def _quoted_message_id(message: dict) -> str:
+    direct_context = message.get("messageContextInfo")
+    if isinstance(direct_context, dict) and direct_context.get("stanzaId"):
+        return str(direct_context["stanzaId"])
+    for value in message.values():
+        if not isinstance(value, dict):
+            continue
+        context = value.get("contextInfo")
+        if isinstance(context, dict) and context.get("stanzaId"):
+            return str(context["stanzaId"])
+    return ""
+
+
 def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
     data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
     key = data.get("key") if isinstance(data.get("key"), dict) else {}
@@ -122,6 +136,7 @@ def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
         from_me=bool(key.get("fromMe", data.get("fromMe", False))),
         text=_message_text(message),
         button_id=_button_id(message),
+        quoted_message_id=_quoted_message_id(message),
     )
 
 
@@ -146,31 +161,40 @@ def _action_and_reference(event: ParsedWebhook) -> tuple[str, str, str]:
 
 
 def _find_fallback_order(sender_phone: str) -> Order | None:
-    matches = []
-    for order in Order.objects.select_for_update().filter(status="pending_confirmation"):
+    # A bare 1/2/3 applies to the newest confirmation message for this phone.
+    # This makes the common flow work even when a customer has older pending
+    # orders, while explicit order numbers and quoted replies remain precise.
+    candidates = Order.objects.select_for_update().filter(
+        status="pending_confirmation",
+    ).order_by("-whatsapp_confirmation_sent_at", "-created_at")
+    for order in candidates:
         try:
             if normalize_phone_number(order.customer_phone) == normalize_phone_number(sender_phone):
-                matches.append(order)
+                return order
         except ValueError:
             continue
-        if len(matches) > 1:
-            return None
-    return matches[0] if len(matches) == 1 else None
+    return None
 
 
 def _find_edit_order(sender_phone: str) -> Order | None:
-    matches = []
     for order in Order.objects.select_for_update().filter(
         status="pending_confirmation", confirmation_method="whatsapp_edit_requested",
-    ):
+    ).order_by("-updated_at", "-created_at"):
         try:
             if normalize_phone_number(order.customer_phone) == normalize_phone_number(sender_phone):
-                matches.append(order)
+                return order
         except ValueError:
             continue
-        if len(matches) > 1:
-            return None
-    return matches[0] if len(matches) == 1 else None
+    return None
+
+
+def _find_quoted_order(event: ParsedWebhook) -> Order | None:
+    if not event.quoted_message_id:
+        return None
+    return Order.objects.select_for_update().filter(
+        whatsapp_message_id=event.quoted_message_id,
+        status="pending_confirmation",
+    ).first()
 
 
 @transaction.atomic
@@ -213,6 +237,10 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
             return ProcessResult("invalid_reference")
     elif order_number:
         order = Order.objects.select_for_update().filter(order_number__iexact=order_number).first()
+    elif event.quoted_message_id:
+        order = _find_quoted_order(event)
+        if not order:
+            return ProcessResult("quoted_order_missing")
     else:
         order = _find_fallback_order(event.sender_phone)
         if not order:

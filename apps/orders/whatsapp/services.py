@@ -22,6 +22,16 @@ def hmac_compare(left: str, right: str) -> bool:
     return hmac.compare_digest(left.encode("utf-8"), right.encode("utf-8"))
 
 
+def evolution_message_id(response: dict) -> str:
+    """Read the outbound WhatsApp message id from common Evolution responses."""
+    if not isinstance(response, dict):
+        return ""
+    key = response.get("key") if isinstance(response.get("key"), dict) else {}
+    data = response.get("data") if isinstance(response.get("data"), dict) else {}
+    data_key = data.get("key") if isinstance(data.get("key"), dict) else {}
+    return str(key.get("id") or data_key.get("id") or response.get("id") or "")
+
+
 class EvolutionAPIError(Exception):
     """Raised when Evolution API rejects a request or is unavailable."""
 
@@ -182,21 +192,27 @@ class EvolutionAPIClient:
         message = self._format_order_confirmation(order)
         instructions = (
             f"{message}\n\n"
-            "لتأكيد الطلب أرسل:\n"
-            f"1 {order.order_number}\n\n"
-            "لإلغاء الطلب أرسل:\n"
-            f"2 {order.order_number}\n\n"
-            "لتعديل بيانات الطلب أرسل:\n"
-            f"3 {order.order_number}"
+            "اختر الإجراء وأرسل رقمه فقط:\n\n"
+            "1 — تأكيد الطلب\n"
+            "2 — إلغاء الطلب\n"
+            "3 — تعديل بيانات الطلب\n\n"
+            f"سيتم تطبيق ردك على الطلب رقم {order.order_number}.\n"
+            "إذا كان لديك أكثر من طلب وتريد تحديد طلب بعينه، أرسل الرقم ثم رقم الطلب، مثال:\n"
+            f"1 {order.order_number}"
         )
         try:
-            self.send_text(order.customer_phone, instructions)
+            response = self.send_text(order.customer_phone, instructions)
         except (EvolutionAPIError, ValueError):
             logger.exception("WhatsApp confirmation failed", extra={"order_number": order.order_number})
             return False
         sent_at = timezone.now()
-        Order.objects.filter(pk=order.pk).update(whatsapp_confirmation_sent_at=sent_at)
+        message_id = evolution_message_id(response)
+        Order.objects.filter(pk=order.pk).update(
+            whatsapp_confirmation_sent_at=sent_at,
+            whatsapp_message_id=message_id,
+        )
         order.whatsapp_confirmation_sent_at = sent_at
+        order.whatsapp_message_id = message_id
         logger.info("WhatsApp confirmation sent", extra={"order_number": order.order_number})
         return True
 

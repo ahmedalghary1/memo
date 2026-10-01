@@ -36,15 +36,17 @@ class EvolutionAPIClientTests(TestCase):
     @override_settings(EVOLUTION_USE_BUTTONS=True)
     def test_order_confirmation_always_uses_reliable_numeric_text(self):
         client = EvolutionAPIClient()
-        with patch.object(client, "send_text", return_value={}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
+        with patch.object(client, "send_text", return_value={"key": {"id": "outbound-123"}}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
             self.assertTrue(client.send_order_confirmation(self.order))
         self.order.refresh_from_db()
         self.assertIsNotNone(self.order.whatsapp_confirmation_sent_at)
+        self.assertEqual(self.order.whatsapp_message_id, "outbound-123")
         mocked_buttons.assert_not_called()
         message = mocked_text.call_args.args[1]
+        self.assertIn("1 — تأكيد الطلب", message)
+        self.assertIn("2 — إلغاء الطلب", message)
+        self.assertIn("3 — تعديل بيانات الطلب", message)
         self.assertIn(f"1 {self.order.order_number}", message)
-        self.assertIn(f"2 {self.order.order_number}", message)
-        self.assertIn(f"3 {self.order.order_number}", message)
 
     def test_order_confirmation_failure_does_not_mark_message_sent(self):
         client = EvolutionAPIClient()
@@ -318,14 +320,18 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(self.order.status, "confirmed")
         mocked_message.assert_called_once()
 
-    def test_numeric_fallback_refuses_ambiguous_pending_orders(self):
-        self.create_order(customer_email="second@example.com")
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_bare_number_selects_newest_pending_order_for_same_phone(self, mocked_message):
+        newest = self.create_order(customer_email="second@example.com")
         payload = self.payload(event_id="fallback-2")
         payload["data"]["message"] = {"conversation": "1"}
         response = self.post(payload)
         self.order.refresh_from_db()
-        self.assertEqual(response.json()["status"], "ambiguous_or_missing")
+        newest.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
         self.assertEqual(self.order.status, "pending_confirmation")
+        self.assertEqual(newest.status, "confirmed")
+        mocked_message.assert_called_once_with(newest)
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
     def test_numeric_reply_with_order_number_selects_correct_order(self, mocked_message):
@@ -339,6 +345,28 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(self.order.status, "confirmed")
         self.assertEqual(other.status, "pending_confirmation")
         mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_reply_to_confirmation_message_selects_that_order(self, mocked_message):
+        self.order.whatsapp_message_id = "older-outbound-id"
+        self.order.save(update_fields=["whatsapp_message_id"])
+        newest = self.create_order(customer_email="newest@example.com")
+        newest.whatsapp_message_id = "newer-outbound-id"
+        newest.save(update_fields=["whatsapp_message_id"])
+        payload = self.payload(event_id="quoted-reply")
+        payload["data"]["message"] = {
+            "extendedTextMessage": {
+                "text": "1",
+                "contextInfo": {"stanzaId": "older-outbound-id"},
+            }
+        }
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        newest.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
+        self.assertEqual(self.order.status, "confirmed")
+        self.assertEqual(newest.status, "pending_confirmation")
+        mocked_message.assert_called_once_with(self.order)
 
     def test_messages_sent_by_the_instance_are_ignored(self):
         response = self.post(self.payload(from_me=True))
