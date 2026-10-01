@@ -20,7 +20,7 @@ python manage.py runserver
 
 تم تجهيز المشروع بحاوية تطبيق وحاوية Nginx مهيأة لخدمة الملفات الثابتة والوسائط، مع إمكانية استضافة مواقع أخرى على نفس السيرفر:
 
-يتضمن `docker-compose.yml` كذلك Evolution API v2.3.7 وPostgreSQL وRedis وEvolution Manager. خطوات التشغيل والربط بالـIP الحالي موجودة في [VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md).
+يتضمن `docker-compose.yml` كذلك Evolution API v2.3.7 بواجهة Manager المدمجة، وPostgreSQL وRedis. خطوات التشغيل والربط بالـIP الحالي موجودة في [VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md).
 
 1. يحتوي مجلد العمل الحالي على `.env` مولّدًا ومربوطًا بالـIP. عند النشر عبر Git انقله إلى الخادم بقناة آمنة لأنه مستبعد من المستودع. ولإنشاء إعداد جديد بدلًا منه:
    ```bash

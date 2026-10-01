@@ -108,6 +108,7 @@ services:
       SERVER_TYPE: http
       SERVER_PORT: 8080
       SERVER_URL: http://evolution:8080
+      SERVER_DISABLE_MANAGER: "false"
       CORS_ORIGIN: "*"
       CORS_METHODS: POST,GET,PUT,DELETE
       CORS_CREDENTIALS: "true"
@@ -151,18 +152,6 @@ services:
       timeout: 5s
       retries: 20
       start_period: 45s
-
-  evolution-manager:
-    image: evoapicloud/evolution-manager:latest
-    container_name: memo_evolution_manager
-    restart: unless-stopped
-    ports:
-      - "${EVOLUTION_MANAGER_BIND_IP:-127.0.0.1}:${EVOLUTION_MANAGER_PORT:-3000}:80"
-    depends_on:
-      evolution:
-        condition: service_healthy
-    networks:
-      - memo_net
 
 networks:
   memo_net:
