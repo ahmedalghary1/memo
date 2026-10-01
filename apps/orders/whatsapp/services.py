@@ -33,18 +33,28 @@ def evolution_message_id(response: dict) -> str:
 
 
 def evolution_chat_jid(response: dict) -> str:
-    """Read the actual PN/LID chat address selected by Evolution/Baileys."""
+    """Read the stable LID chat address when Evolution returns PN/LID aliases."""
     if not isinstance(response, dict):
         return ""
     key = response.get("key") if isinstance(response.get("key"), dict) else {}
     data = response.get("data") if isinstance(response.get("data"), dict) else {}
     data_key = data.get("key") if isinstance(data.get("key"), dict) else {}
+    candidates = (
+        key.get("remoteJid"), key.get("remoteJidAlt"), key.get("senderLid"),
+        key.get("participantLid"), data_key.get("remoteJid"),
+        data_key.get("remoteJidAlt"), data_key.get("senderLid"),
+        data_key.get("participantLid"),
+    )
+    lids = [str(value) for value in candidates if str(value or "").endswith("@lid")]
+    if lids:
+        return lids[0]
     return str(key.get("remoteJid") or data_key.get("remoteJid") or "")
 
 
 def order_whatsapp_recipient(order: Order) -> str:
-    if order.whatsapp_chat_jid.endswith("@lid"):
-        return order.whatsapp_chat_jid
+    # Keep the LID only for matching inbound webhooks. Evolution/Baileys 2.3.x
+    # can reject @lid as a sendText recipient even when it emitted that LID in
+    # messages.upsert, while the customer's normalized phone remains stable.
     return order.customer_phone
 
 

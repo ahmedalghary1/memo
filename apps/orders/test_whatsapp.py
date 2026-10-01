@@ -49,6 +49,20 @@ class EvolutionAPIClientTests(TestCase):
         self.assertIn("أدخل رقم 3 للإلغاء", message)
         self.assertIn(f"1 {self.order.order_number}", message)
 
+    def test_order_confirmation_prefers_alternative_lid_for_matching(self):
+        client = EvolutionAPIClient()
+        response = {
+            "key": {
+                "id": "outbound-alt",
+                "remoteJid": "201012345678@s.whatsapp.net",
+                "remoteJidAlt": "987654321012345@lid",
+            },
+        }
+        with patch.object(client, "send_text", return_value=response):
+            self.assertTrue(client.send_order_confirmation(self.order))
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.whatsapp_chat_jid, "987654321012345@lid")
+
     def test_order_confirmation_failure_does_not_mark_message_sent(self):
         client = EvolutionAPIClient()
         with patch.object(client, "send_text", side_effect=EvolutionAPIError("unavailable")):
@@ -81,12 +95,12 @@ class EvolutionAPIClientTests(TestCase):
             "message/sendText", {"number": "123456789@lid", "text": "test"},
         )
 
-    def test_acknowledgement_uses_saved_lid_chat(self):
+    def test_acknowledgement_uses_customer_phone_even_with_saved_lid(self):
         self.order.whatsapp_chat_jid = "123456789@lid"
         client = EvolutionAPIClient()
         with patch.object(client, "send_text", return_value={}) as mocked_text:
             client.send_order_confirmed_message(self.order)
-        self.assertEqual(mocked_text.call_args.args[0], "123456789@lid")
+        self.assertEqual(mocked_text.call_args.args[0], self.order.customer_phone)
     def test_configure_webhook_uses_secret_header_and_messages_event(self):
         client = EvolutionAPIClient()
         with patch.object(client, "_post", return_value={}) as mocked_post:
@@ -278,6 +292,21 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(self.order.status, "confirmed")
         self.assertEqual(self.order.whatsapp_chat_jid, "123456789012345@lid")
         mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_lid_sender_uses_nested_alternative_phone(self, mocked_message):
+        payload = self.payload(event_id="lid-nested-phone")
+        payload["data"]["key"]["remoteJid"] = "987654321012345@lid"
+        payload["data"]["identity"] = {
+            "senderPn": "201012345678@s.whatsapp.net",
+        }
+        payload["data"]["message"] = {"conversation": "1"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
+        self.assertEqual(self.order.status, "confirmed")
+        self.assertEqual(self.order.whatsapp_chat_jid, "987654321012345@lid")
+        mocked_message.assert_called_once_with(self.order)
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_cancelled_message")
     def test_wrapped_button_response_is_processed(self, mocked_message):

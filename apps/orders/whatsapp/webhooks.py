@@ -38,15 +38,39 @@ def _phone_from_jid(value) -> str:
     return jid.split("@", 1)[0].split(":", 1)[0]
 
 
+def _named_values(value, names: tuple[str, ...]):
+    """Yield Evolution/Baileys identity fields from nested payload variants."""
+    if isinstance(value, dict):
+        for name in names:
+            if name in value:
+                yield value[name]
+        for nested in value.values():
+            yield from _named_values(nested, names)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from _named_values(nested, names)
+
+
 def _sender_phone(payload: dict, data: dict, key: dict) -> str:
     # Baileys 7 may put a privacy LID in remoteJid and the real number in
     # senderPn/remoteJidAlt. Always prefer the phone-number JID variants.
-    candidates = (
+    direct_candidates = (
         key.get("senderPn"), key.get("remoteJidAlt"), key.get("participantAlt"),
-        data.get("senderPn"), data.get("remoteJidAlt"), data.get("sender"),
+        key.get("participantPn"), data.get("senderPn"), data.get("remoteJidAlt"),
+        data.get("participantPn"), data.get("sender"),
         payload.get("sender"), key.get("participant"), key.get("remoteJid"),
     )
-    return next((phone for value in candidates if (phone := _phone_from_jid(value))), "")
+    phone = next((phone for value in direct_candidates if (phone := _phone_from_jid(value))), "")
+    if phone:
+        return phone
+    # Some Evolution builds move senderPn/remoteJidAlt one level deeper. Only
+    # inspect identity-named fields so quoted-message content cannot select an
+    # unrelated number.
+    nested_candidates = _named_values(
+        payload,
+        ("senderPn", "remoteJidAlt", "participantPn", "participantAlt", "sender"),
+    )
+    return next((phone for value in nested_candidates if (phone := _phone_from_jid(value))), "")
 
 
 @dataclass(frozen=True)

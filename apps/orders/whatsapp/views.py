@@ -36,7 +36,14 @@ def webhook(request):
     except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
         return JsonResponse({"detail": "Invalid JSON payload"}, status=400)
     logger.info("Webhook received", extra={"event": payload.get("event")})
-    result = process_webhook_event(parse_evolution_webhook(payload))
+    event = parse_evolution_webhook(payload)
+    result = process_webhook_event(event)
+    logger.info(
+        "Webhook processed: %s (sender_phone=%s, chat_type=%s)",
+        result.outcome,
+        "available" if event.sender_phone else "missing",
+        event.chat_jid.rsplit("@", 1)[-1] if "@" in event.chat_jid else "missing",
+    )
     if result.order and result.outcome in {"confirmed", "cancelled", "edit_requested", "edit_received", "already_processed"}:
         client = EvolutionAPIClient()
         try:
