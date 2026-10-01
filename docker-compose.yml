@@ -99,7 +99,7 @@ services:
       retries: 10
 
   evolution:
-    image: evoapicloud/evolution-api:v2.3.7
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.6}
     container_name: memo_evolution_api
     restart: unless-stopped
     ports:

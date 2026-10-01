@@ -9,6 +9,9 @@ SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "1" if _public_https else "0") == "1"
+# Evolution and Django share a private Docker network. Keep this single callback
+# reachable over internal HTTP even when all public traffic is forced to HTTPS.
+SECURE_REDIRECT_EXEMPT = [r"^api/whatsapp/webhook/$"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 _csrf_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "")

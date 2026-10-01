@@ -30,6 +30,11 @@ class Command(BaseCommand):
                 settings.EVOLUTION_WEBHOOK_URL,
                 settings.EVOLUTION_WEBHOOK_SECRET,
             )
+            if not client.webhook_matches(
+                settings.EVOLUTION_WEBHOOK_URL,
+                settings.EVOLUTION_WEBHOOK_SECRET,
+            ):
+                raise EvolutionAPIError("Evolution webhook verification failed after configuration.")
         except EvolutionAPIError as exc:
             raise CommandError(str(exc)) from exc
         if created:

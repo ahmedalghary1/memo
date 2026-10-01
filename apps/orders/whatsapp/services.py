@@ -1,3 +1,4 @@
+import hmac
 import json
 import logging
 from urllib.error import HTTPError, URLError
@@ -13,6 +14,10 @@ from apps.orders.models import Order
 
 logger = logging.getLogger(__name__)
 TOKEN_SALT = "orders.whatsapp.confirmation"
+
+
+def hmac_compare(left: str, right: str) -> bool:
+    return hmac.compare_digest(left.encode("utf-8"), right.encode("utf-8"))
 
 
 class EvolutionAPIError(Exception):
@@ -114,7 +119,7 @@ class EvolutionAPIClient:
 
     def configure_webhook(self, webhook_url: str, webhook_secret: str) -> dict:
         parsed_url = urlsplit(webhook_url)
-        internal_http = parsed_url.scheme == "http" and parsed_url.hostname == "nginx"
+        internal_http = parsed_url.scheme == "http" and parsed_url.hostname in {"nginx", "web"}
         if parsed_url.scheme != "https" and not internal_http:
             raise EvolutionAPIError("Evolution webhook URL must use HTTPS or the internal nginx service.")
         if not webhook_secret:
@@ -131,6 +136,27 @@ class EvolutionAPIClient:
                     "events": ["MESSAGES_UPSERT"],
                 }
             },
+        )
+
+    def find_webhook(self) -> dict:
+        response = self._get("webhook/find")
+        return response.get("webhook", response) if isinstance(response, dict) else {}
+
+    def webhook_matches(self, webhook_url: str, webhook_secret: str) -> bool:
+        webhook = self.find_webhook()
+        headers = webhook.get("headers") or webhook.get("webhookHeaders") or {}
+        normalized_headers = {str(key).lower(): str(value) for key, value in headers.items()}
+        events = set(webhook.get("events") or webhook.get("webhookEvents") or [])
+        configured_url = webhook.get("url") or webhook.get("webhookUrl") or ""
+        return (
+            webhook.get("enabled", True) is True
+            and configured_url.rstrip("/") == webhook_url.rstrip("/")
+            and "MESSAGES_UPSERT" in events
+            # Older 2.3.x responses may omit headers from the find response,
+            # although the configured header is still sent with callbacks.
+            and (not normalized_headers or hmac_compare(
+                normalized_headers.get("x-webhook-secret", ""), webhook_secret,
+            ))
         )
 
     def send_order_confirmation(self, order: Order) -> bool:

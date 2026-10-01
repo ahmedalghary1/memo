@@ -65,10 +65,27 @@ class EvolutionAPIClientTests(TestCase):
         self.assertEqual(payload["webhook"]["headers"], {"X-Webhook-Secret": "secret"})
         self.assertEqual(payload["webhook"]["events"], ["MESSAGES_UPSERT"])
 
+    def test_webhook_configuration_is_verified_without_exposing_secret(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "_get", return_value={
+            "enabled": True,
+            "url": "http://web:8000/api/whatsapp/webhook/",
+            "headers": {"X-Webhook-Secret": "secret"},
+            "events": ["MESSAGES_UPSERT"],
+        }):
+            self.assertTrue(client.webhook_matches(
+                "http://web:8000/api/whatsapp/webhook/", "secret",
+            ))
+
     def test_internal_nginx_webhook_is_allowed(self):
         client = EvolutionAPIClient()
         with patch.object(client, "_post", return_value={}):
             client.configure_webhook("http://nginx/api/whatsapp/webhook/", "secret")
+
+    def test_internal_web_service_webhook_is_allowed(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "_post", return_value={}):
+            client.configure_webhook("http://web:8000/api/whatsapp/webhook/", "secret")
 
     def test_ensure_instance_creates_missing_instance(self):
         client = EvolutionAPIClient(instance="memo-store")
@@ -181,6 +198,42 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(response.json()["status"], "phone_mismatch")
         self.assertEqual(self.order.status, "pending_confirmation")
         mocked_message.assert_not_called()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_lid_sender_uses_sender_phone_number(self, mocked_message):
+        payload = self.payload(event_id="lid-confirm")
+        payload["data"]["key"].update({
+            "remoteJid": "123456789012345@lid",
+            "senderPn": "201012345678@s.whatsapp.net",
+        })
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
+        self.assertEqual(self.order.status, "confirmed")
+        mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_cancelled_message")
+    def test_wrapped_button_response_is_processed(self, mocked_message):
+        payload = self.payload(action="cancel", event_id="wrapped-cancel")
+        button_message = payload["data"]["message"]
+        payload["data"]["message"] = {"ephemeralMessage": {"message": button_message}}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "cancelled")
+        self.assertEqual(self.order.status, "cancelled")
+        mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_edit_prompt")
+    def test_button_display_text_fallback_is_processed(self, mocked_message):
+        payload = self.payload(event_id="label-edit")
+        payload["data"]["message"] = {
+            "buttonsResponseMessage": {"selectedDisplayText": "✏️ تعديل الطلب"},
+        }
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "edit_requested")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_requested")
+        mocked_message.assert_called_once()
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_already_processed_message")
     def test_cancel_after_confirm_does_not_change_status(self, mocked_message):

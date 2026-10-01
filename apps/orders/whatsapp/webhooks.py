@@ -14,6 +14,40 @@ from .services import normalize_phone_number, resolve_order_reference
 logger = logging.getLogger(__name__)
 
 
+def _unwrap_message(message: dict) -> dict:
+    """Return the actual WhatsApp message from common Baileys wrappers."""
+    current = message
+    for _ in range(4):
+        nested = None
+        for wrapper in ("ephemeralMessage", "viewOnceMessage", "viewOnceMessageV2", "documentWithCaptionMessage"):
+            value = current.get(wrapper)
+            if isinstance(value, dict) and isinstance(value.get("message"), dict):
+                nested = value["message"]
+                break
+        if nested is None:
+            break
+        current = nested
+    return current
+
+
+def _phone_from_jid(value) -> str:
+    jid = str(value or "").strip()
+    if not jid or jid.endswith("@lid") or jid.endswith("@g.us"):
+        return ""
+    return jid.split("@", 1)[0].split(":", 1)[0]
+
+
+def _sender_phone(payload: dict, data: dict, key: dict) -> str:
+    # Baileys 7 may put a privacy LID in remoteJid and the real number in
+    # senderPn/remoteJidAlt. Always prefer the phone-number JID variants.
+    candidates = (
+        key.get("senderPn"), key.get("remoteJidAlt"), key.get("participantAlt"),
+        data.get("senderPn"), data.get("remoteJidAlt"), data.get("sender"),
+        payload.get("sender"), key.get("participant"), key.get("remoteJid"),
+    )
+    return next((phone for value in candidates if (phone := _phone_from_jid(value))), "")
+
+
 @dataclass(frozen=True)
 class ParsedWebhook:
     event_name: str
@@ -61,9 +95,8 @@ def _button_id(message: dict) -> str:
 def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
     data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
     key = data.get("key") if isinstance(data.get("key"), dict) else {}
-    message = data.get("message") if isinstance(data.get("message"), dict) else {}
-    remote_jid = str(key.get("remoteJid") or data.get("sender") or payload.get("sender") or "")
-    sender = remote_jid.split("@", 1)[0].split(":", 1)[0]
+    raw_message = data.get("message") if isinstance(data.get("message"), dict) else {}
+    message = _unwrap_message(raw_message)
     event_name = str(payload.get("event") or "").replace(".", "_").replace("-", "_").upper()
     event_id = str(key.get("id") or data.get("id") or "")
     if not event_id:
@@ -72,7 +105,7 @@ def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
     return ParsedWebhook(
         event_name=event_name,
         event_id=event_id,
-        sender_phone=sender,
+        sender_phone=_sender_phone(payload, data, key),
         from_me=bool(key.get("fromMe", data.get("fromMe", False))),
         text=_message_text(message),
         button_id=_button_id(message),
@@ -90,6 +123,13 @@ def _action_and_reference(event: ParsedWebhook) -> tuple[str, str]:
         return "cancel", ""
     if latin_digits(event.text.strip()) == "3":
         return "edit", ""
+    label = event.text.replace("✅", "").replace("✏️", "").replace("❌", "").strip()
+    if label == "تأكيد الطلب":
+        return "confirm", ""
+    if label == "تعديل الطلب":
+        return "edit", ""
+    if label == "إلغاء الطلب":
+        return "cancel", ""
     return "", ""
 
 
