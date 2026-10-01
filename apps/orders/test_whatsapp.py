@@ -36,16 +36,17 @@ class EvolutionAPIClientTests(TestCase):
     @override_settings(EVOLUTION_USE_BUTTONS=True)
     def test_order_confirmation_always_uses_reliable_numeric_text(self):
         client = EvolutionAPIClient()
-        with patch.object(client, "send_text", return_value={"key": {"id": "outbound-123"}}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
+        with patch.object(client, "send_text", return_value={"key": {"id": "outbound-123", "remoteJid": "123456789@lid"}}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
             self.assertTrue(client.send_order_confirmation(self.order))
         self.order.refresh_from_db()
         self.assertIsNotNone(self.order.whatsapp_confirmation_sent_at)
         self.assertEqual(self.order.whatsapp_message_id, "outbound-123")
+        self.assertEqual(self.order.whatsapp_chat_jid, "123456789@lid")
         mocked_buttons.assert_not_called()
         message = mocked_text.call_args.args[1]
-        self.assertIn("1 — تأكيد الطلب", message)
-        self.assertIn("2 — إلغاء الطلب", message)
-        self.assertIn("3 — تعديل بيانات الطلب", message)
+        self.assertIn("أدخل رقم 1 للتأكيد", message)
+        self.assertIn("أدخل رقم 2 للتعديل", message)
+        self.assertIn("أدخل رقم 3 للإلغاء", message)
         self.assertIn(f"1 {self.order.order_number}", message)
 
     def test_order_confirmation_failure_does_not_mark_message_sent(self):
@@ -72,6 +73,20 @@ class EvolutionAPIClientTests(TestCase):
         self.assertIn("https://store.example/orders/edit/", message)
         self.assertIn("رابط", message)
 
+    def test_text_message_accepts_lid_recipient(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "_post", return_value={}) as mocked_post:
+            client.send_text("123456789@lid", "test")
+        mocked_post.assert_called_once_with(
+            "message/sendText", {"number": "123456789@lid", "text": "test"},
+        )
+
+    def test_acknowledgement_uses_saved_lid_chat(self):
+        self.order.whatsapp_chat_jid = "123456789@lid"
+        client = EvolutionAPIClient()
+        with patch.object(client, "send_text", return_value={}) as mocked_text:
+            client.send_order_confirmed_message(self.order)
+        self.assertEqual(mocked_text.call_args.args[0], "123456789@lid")
     def test_configure_webhook_uses_secret_header_and_messages_event(self):
         client = EvolutionAPIClient()
         with patch.object(client, "_post", return_value={}) as mocked_post:
@@ -296,6 +311,38 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(self.order.status, "confirmed")
         mocked_message.assert_called_once()
 
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_edit_prompt")
+    def test_number_two_requests_edit(self, mocked_message):
+        payload = self.payload(event_id="numeric-edit")
+        payload["data"]["message"] = {"conversation": "2"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "edit_requested")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_requested")
+        mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_cancelled_message")
+    def test_number_three_cancels_order(self, mocked_message):
+        payload = self.payload(event_id="numeric-cancel")
+        payload["data"]["message"] = {"conversation": "3"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "cancelled")
+        self.assertEqual(self.order.status, "cancelled")
+        mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_lid_only_existing_chat_is_matched_and_confirmed(self, mocked_message):
+        self.order.whatsapp_chat_jid = "123456789@lid"
+        self.order.save(update_fields=["whatsapp_chat_jid"])
+        payload = self.payload(event_id="lid-only-existing")
+        payload["data"]["key"]["remoteJid"] = "123456789@lid"
+        payload["data"]["message"] = {"conversation": "1"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
+        self.assertEqual(self.order.status, "confirmed")
+        mocked_message.assert_called_once()
     def test_invalid_webhook_secret_is_rejected(self):
         response = self.post(self.payload(), secret="wrong")
         self.assertEqual(response.status_code, 401)

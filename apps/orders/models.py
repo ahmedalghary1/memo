@@ -40,6 +40,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True); updated_at = models.DateTimeField(auto_now=True)
     whatsapp_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     whatsapp_message_id = models.CharField(max_length=255, blank=True, db_index=True)
+    whatsapp_chat_jid = models.CharField(max_length=255, blank=True, db_index=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     confirmation_method = models.CharField(max_length=24, blank=True)
     class Meta: ordering = ["-created_at"]; permissions = [("manage_orders", "Can manage store orders")]

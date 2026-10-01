@@ -32,6 +32,22 @@ def evolution_message_id(response: dict) -> str:
     return str(key.get("id") or data_key.get("id") or response.get("id") or "")
 
 
+def evolution_chat_jid(response: dict) -> str:
+    """Read the actual PN/LID chat address selected by Evolution/Baileys."""
+    if not isinstance(response, dict):
+        return ""
+    key = response.get("key") if isinstance(response.get("key"), dict) else {}
+    data = response.get("data") if isinstance(response.get("data"), dict) else {}
+    data_key = data.get("key") if isinstance(data.get("key"), dict) else {}
+    return str(key.get("remoteJid") or data_key.get("remoteJid") or "")
+
+
+def order_whatsapp_recipient(order: Order) -> str:
+    if order.whatsapp_chat_jid.endswith("@lid"):
+        return order.whatsapp_chat_jid
+    return order.customer_phone
+
+
 class EvolutionAPIError(Exception):
     """Raised when Evolution API rejects a request or is unavailable."""
 
@@ -132,7 +148,8 @@ class EvolutionAPIClient:
         return True
 
     def send_text(self, phone_number: str, text: str) -> dict:
-        return self._post("message/sendText", {"number": normalize_phone_number(phone_number), "text": text})
+        recipient = phone_number if str(phone_number).endswith("@lid") else normalize_phone_number(phone_number)
+        return self._post("message/sendText", {"number": recipient, "text": text})
 
     def send_buttons(self, phone_number: str, text: str, buttons: list[dict], title="", footer="") -> dict:
         return self._post(
@@ -192,10 +209,9 @@ class EvolutionAPIClient:
         message = self._format_order_confirmation(order)
         instructions = (
             f"{message}\n\n"
-            "اختر الإجراء وأرسل رقمه فقط:\n\n"
-            "1 — تأكيد الطلب\n"
-            "2 — إلغاء الطلب\n"
-            "3 — تعديل بيانات الطلب\n\n"
+            "أدخل رقم 1 للتأكيد\n"
+            "أدخل رقم 2 للتعديل\n"
+            "أدخل رقم 3 للإلغاء\n\n"
             f"سيتم تطبيق ردك على الطلب رقم {order.order_number}.\n"
             "إذا كان لديك أكثر من طلب وتريد تحديد طلب بعينه، أرسل الرقم ثم رقم الطلب، مثال:\n"
             f"1 {order.order_number}"
@@ -207,32 +223,35 @@ class EvolutionAPIClient:
             return False
         sent_at = timezone.now()
         message_id = evolution_message_id(response)
+        chat_jid = evolution_chat_jid(response)
         Order.objects.filter(pk=order.pk).update(
             whatsapp_confirmation_sent_at=sent_at,
             whatsapp_message_id=message_id,
+            whatsapp_chat_jid=chat_jid,
         )
         order.whatsapp_confirmation_sent_at = sent_at
         order.whatsapp_message_id = message_id
+        order.whatsapp_chat_jid = chat_jid
         logger.info("WhatsApp confirmation sent", extra={"order_number": order.order_number})
         return True
 
     def send_order_confirmed_message(self, order: Order) -> dict:
         return self.send_text(
-            order.customer_phone,
+            order_whatsapp_recipient(order),
             f"✅ تم تأكيد طلبك بنجاح.\n\nرقم الطلب: #{order.order_number}\n\n"
             f"جاري تجهيز طلبك وسيتم التواصل معك عند الشحن.\n\nشكرًا لطلبك من {settings.STORE_NAME} ❤️",
         )
 
     def send_order_cancelled_message(self, order: Order) -> dict:
         return self.send_text(
-            order.customer_phone,
+            order_whatsapp_recipient(order),
             f"❌ تم إلغاء طلبك.\n\nرقم الطلب: #{order.order_number}\n\n"
             "إذا كنت ترغب في إنشاء طلب جديد يمكنك زيارة المتجر في أي وقت.",
         )
 
     def send_order_edit_prompt(self, order: Order) -> dict:
         return self.send_text(
-            order.customer_phone,
+            order_whatsapp_recipient(order),
             f"✏️ تم اختيار تعديل الطلب #{order.order_number}.\n\n"
             "يمكنك تعديل بيانات التواصل والتوصيل من الرابط الآمن التالي:\n"
             f"{make_order_edit_url(order)}\n\n"
@@ -241,13 +260,13 @@ class EvolutionAPIClient:
 
     def send_order_edit_received_message(self, order: Order) -> dict:
         return self.send_text(
-            order.customer_phone,
+            order_whatsapp_recipient(order),
             f"✅ تم استلام تعديلاتك على الطلب #{order.order_number}.\n\n"
             "سيقوم فريقنا بمراجعتها والتواصل معك، وسيظل الطلب بانتظار التأكيد حتى ذلك الوقت.",
         )
 
     def send_already_processed_message(self, order: Order) -> dict:
-        return self.send_text(order.customer_phone, "تم التعامل مع هذا الطلب بالفعل.")
+        return self.send_text(order_whatsapp_recipient(order), "تم التعامل مع هذا الطلب بالفعل.")
 
     def _format_order_confirmation(self, order: Order) -> str:
         lines = [

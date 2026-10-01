@@ -58,6 +58,7 @@ class ParsedWebhook:
     text: str
     button_id: str
     quoted_message_id: str
+    chat_jid: str
 
 
 @dataclass(frozen=True)
@@ -137,6 +138,7 @@ def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
         text=_message_text(message),
         button_id=_button_id(message),
         quoted_message_id=_quoted_message_id(message),
+        chat_jid=str(key.get("remoteJid") or data.get("remoteJid") or ""),
     )
 
 
@@ -148,7 +150,7 @@ def _action_and_reference(event: ParsedWebhook) -> tuple[str, str, str]:
     normalized_text = latin_digits(event.text).strip().upper()
     numeric_reply = re.fullmatch(r"([123])(?:\s+(MEMO-[A-Z0-9]+))?", normalized_text)
     if numeric_reply:
-        action = {"1": "confirm", "2": "cancel", "3": "edit"}[numeric_reply.group(1)]
+        action = {"1": "confirm", "2": "edit", "3": "cancel"}[numeric_reply.group(1)]
         return action, "", numeric_reply.group(2) or ""
     label = event.text.replace("✅", "").replace("✏️", "").replace("❌", "").strip()
     if label == "تأكيد الطلب":
@@ -197,6 +199,15 @@ def _find_quoted_order(event: ParsedWebhook) -> Order | None:
     ).first()
 
 
+def _find_chat_order(event: ParsedWebhook) -> Order | None:
+    if not event.chat_jid or event.chat_jid.endswith("@g.us"):
+        return None
+    return Order.objects.select_for_update().filter(
+        whatsapp_chat_jid=event.chat_jid,
+        status="pending_confirmation",
+    ).order_by("-whatsapp_confirmation_sent_at", "-created_at").first()
+
+
 @transaction.atomic
 def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
     webhook_event, created = WhatsAppWebhookEvent.objects.select_related("order").get_or_create(
@@ -241,6 +252,8 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         order = _find_quoted_order(event)
         if not order:
             return ProcessResult("quoted_order_missing")
+    elif event.chat_jid.endswith("@lid"):
+        order = _find_chat_order(event) or _find_fallback_order(event.sender_phone)
     else:
         order = _find_fallback_order(event.sender_phone)
         if not order:
@@ -248,11 +261,12 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
     if not order:
         logger.warning("Invalid order reference", extra={"event_id": event.event_id})
         return ProcessResult("invalid_reference")
+    chat_matches = bool(order.whatsapp_chat_jid and order.whatsapp_chat_jid == event.chat_jid)
     try:
         phone_matches = normalize_phone_number(order.customer_phone) == normalize_phone_number(event.sender_phone)
     except ValueError:
         phone_matches = False
-    if not phone_matches:
+    if not (phone_matches or chat_matches):
         logger.warning("Phone mismatch", extra={"order_number": order.order_number})
         return ProcessResult("phone_mismatch")
     if order.status != "pending_confirmation":
