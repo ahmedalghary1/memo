@@ -159,6 +159,34 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(duplicate.json()["status"], "duplicate")
         mocked_message.assert_called_once()
         self.assertEqual(WhatsAppWebhookEvent.objects.count(), 1)
+        event = WhatsAppWebhookEvent.objects.get()
+        self.assertEqual(event.order, self.order)
+        self.assertEqual(event.outcome, "confirmed")
+        self.assertIsNotNone(event.acknowledged_at)
+        self.assertEqual(event.acknowledgement_attempts, 1)
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_failed_acknowledgement_is_retried_without_reprocessing_order(self, mocked_message):
+        mocked_message.side_effect = [EvolutionAPIError("temporary"), {}]
+        payload = self.payload(event_id="ack-retry")
+
+        first = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(first.status_code, 503)
+        self.assertEqual(first.json()["acknowledgement"], "retry")
+        self.assertEqual(self.order.status, "confirmed")
+        event = WhatsAppWebhookEvent.objects.get(event_id="ack-retry")
+        self.assertIsNone(event.acknowledged_at)
+        self.assertEqual(event.acknowledgement_attempts, 1)
+
+        second = self.post(payload)
+        event.refresh_from_db()
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.json()["status"], "confirmed")
+        self.assertIsNotNone(event.acknowledged_at)
+        self.assertEqual(event.acknowledgement_attempts, 2)
+        self.assertEqual(self.order.timeline.filter(status="confirmed").count(), 1)
+        self.assertEqual(mocked_message.call_count, 2)
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_cancelled_message")
     def test_cancel_changes_pending_order(self, mocked_message):

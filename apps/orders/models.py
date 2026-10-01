@@ -67,6 +67,16 @@ class OrderEvent(models.Model):
 class WhatsAppWebhookEvent(models.Model):
     event_id = models.CharField(max_length=255, unique=True)
     event_name = models.CharField(max_length=80, blank=True)
+    order = models.ForeignKey(
+        Order,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="whatsapp_webhook_events",
+    )
+    outcome = models.CharField(max_length=40, blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    acknowledgement_attempts = models.PositiveIntegerField(default=0)
     received_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

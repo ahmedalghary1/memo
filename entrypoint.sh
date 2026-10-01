@@ -32,9 +32,22 @@ echo "==> Collecting static assets..."
 python manage.py collectstatic --noinput
 
 # Optionally keep the per-instance Evolution webhook configuration in sync.
+# Run this in the background so a temporarily disconnected/unlicensed Evolution
+# instance never prevents the storefront from starting. Retrying also covers the
+# normal race where Evolution is healthy before the WhatsApp instance is ready.
 if [ "${EVOLUTION_AUTO_CONFIGURE_WEBHOOK:-0}" = "1" ]; then
-    echo "==> Configuring Evolution API webhook..."
-    python manage.py configure_evolution_webhook
+    (
+        attempt=1
+        while [ "$attempt" -le 20 ]; do
+            echo "==> Configuring Evolution API webhook (attempt $attempt/20)..."
+            if python manage.py configure_evolution_webhook; then
+                exit 0
+            fi
+            attempt=$((attempt + 1))
+            sleep 15
+        done
+        echo "WARNING: Evolution webhook could not be configured; the storefront will remain available."
+    ) &
 fi
 
 # Configure Gunicorn workers

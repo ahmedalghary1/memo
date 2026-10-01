@@ -99,7 +99,9 @@ services:
       retries: 10
 
   evolution:
-    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.6}
+    # 2.4.0-rc2 contains the Baileys native-flow button rendering fix.
+    # Evolution 2.3.x can return HTTP 201 while leaving button messages PENDING.
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:2.4.0-rc2}
     container_name: memo_evolution_api
     restart: unless-stopped
     ports:
@@ -129,6 +131,9 @@ services:
       CACHE_LOCAL_ENABLED: "false"
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
       AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
+      # Optional 2.4 headless activation after this email has been registered
+      # once with Evolution Foundation's licensing service.
+      EVOLUTION_OPERATOR_EMAIL: ${EVOLUTION_OPERATOR_EMAIL:-}
       CONFIG_SESSION_PHONE_CLIENT: MEMO Store
       CONFIG_SESSION_PHONE_NAME: Chrome
       QRCODE_LIMIT: 30
@@ -137,6 +142,7 @@ services:
       LANGUAGE: en
       LOG_LEVEL: ERROR,WARN,INFO,LOG
       TELEMETRY_ENABLED: "false"
+      NODE_OPTIONS: --dns-result-order=ipv4first
     volumes:
       - evolution_instances:/evolution/instances
     depends_on:

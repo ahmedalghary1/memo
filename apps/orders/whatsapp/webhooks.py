@@ -62,6 +62,18 @@ class ParsedWebhook:
 class ProcessResult:
     outcome: str
     order: Order | None = None
+    webhook_event: WhatsAppWebhookEvent | None = None
+
+
+def _processed_result(
+    webhook_event: WhatsAppWebhookEvent,
+    outcome: str,
+    order: Order,
+) -> ProcessResult:
+    webhook_event.order = order
+    webhook_event.outcome = outcome
+    webhook_event.save(update_fields=["order", "outcome"])
+    return ProcessResult(outcome, order, webhook_event)
 
 
 def _message_text(message: dict) -> str:
@@ -163,12 +175,17 @@ def _find_edit_order(sender_phone: str) -> Order | None:
 
 @transaction.atomic
 def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
-    _, created = WhatsAppWebhookEvent.objects.get_or_create(
+    webhook_event, created = WhatsAppWebhookEvent.objects.select_related("order").get_or_create(
         event_id=event.event_id,
         defaults={"event_name": event.event_name},
     )
     if not created:
         logger.info("Duplicate webhook", extra={"event_id": event.event_id})
+        # Evolution retries callbacks that return a non-2xx response. If the
+        # order transition succeeded but its WhatsApp acknowledgement did not,
+        # replay only the acknowledgement instead of losing it permanently.
+        if webhook_event.outcome and webhook_event.order_id and not webhook_event.acknowledged_at:
+            return ProcessResult(webhook_event.outcome, webhook_event.order, webhook_event)
         return ProcessResult("duplicate")
     if event.event_name != "MESSAGES_UPSERT" or event.from_me:
         return ProcessResult("ignored")
@@ -184,7 +201,7 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
                     order=edit_order, status=edit_order.status,
                     note=f"طلب تعديل من العميل: {details}",
                 )
-                return ProcessResult("edit_received", edit_order)
+                return _processed_result(webhook_event, "edit_received", edit_order)
         return ProcessResult("ignored")
     order = None
     if reference:
@@ -209,7 +226,7 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         logger.warning("Phone mismatch", extra={"order_number": order.order_number})
         return ProcessResult("phone_mismatch")
     if order.status != "pending_confirmation":
-        return ProcessResult("already_processed", order)
+        return _processed_result(webhook_event, "already_processed", order)
     if action == "edit":
         order.confirmation_method = "whatsapp_edit_requested"
         order.save(update_fields=["confirmation_method", "updated_at"])
@@ -218,7 +235,7 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
             note="طلب العميل تعديل الطلب عبر WhatsApp",
         )
         logger.info("Order edit requested", extra={"order_number": order.order_number})
-        return ProcessResult("edit_requested", order)
+        return _processed_result(webhook_event, "edit_requested", order)
     order.status = "confirmed" if action == "confirm" else "cancelled"
     order.confirmation_method = "whatsapp"
     update_fields = ["status", "confirmation_method", "updated_at"]
@@ -232,4 +249,4 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         note="تم تأكيد الطلب عبر WhatsApp" if action == "confirm" else "تم إلغاء الطلب عبر WhatsApp",
     )
     logger.info(f"Order {order.status}", extra={"order_number": order.order_number})
-    return ProcessResult(order.status, order)
+    return _processed_result(webhook_event, order.status, order)
