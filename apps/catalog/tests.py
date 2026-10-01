@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from .models import Category, Product
 
@@ -52,3 +52,20 @@ class CategoryHierarchyTests(TestCase):
         self.assertEqual(product.get_absolute_url(), "/shop/product/%D8%AA%D9%8A%D8%B4%D9%8A%D8%B1%D8%AA-%D8%B9%D8%B1%D8%A8%D9%8A/")
         self.assertEqual(self.client.get(category.get_absolute_url()).status_code, 200)
         self.assertEqual(self.client.get(product.get_absolute_url()).status_code, 200)
+
+    def test_unicode_slug_converter_rejects_spaces_and_accepts_arabic(self):
+        valid_url = reverse("catalog:category", args=["ملابس-رجالي_2026"])
+        self.assertEqual(valid_url, "/shop/category/%D9%85%D9%84%D8%A7%D8%A8%D8%B3-%D8%B1%D8%AC%D8%A7%D9%84%D9%8A_2026/")
+        with self.assertRaises(NoReverseMatch):
+            reverse("catalog:category", args=["ملابس رجالي"])
+
+    def test_all_slug_models_accept_arabic_values(self):
+        from .models import Collection, Color, Size
+
+        objects = [
+            Collection(name="الصيف", slug="مجموعة-الصيف"),
+            Color(name="أزرق", slug="أزرق", hex_code="#0000FF"),
+            Size(name="كبير", slug="كبير"),
+        ]
+        for obj in objects:
+            obj.full_clean()

@@ -146,7 +146,7 @@ class ProductImage(models.Model):
 
 class Color(models.Model):
     name = models.CharField(max_length=80)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, allow_unicode=True)
     hex_code = models.CharField(max_length=7)
     swatch_image = models.ImageField(upload_to="swatches/", blank=True)
     sort_order = models.PositiveIntegerField(default=0)
@@ -155,7 +155,7 @@ class Color(models.Model):
 
 class Size(models.Model):
     name = models.CharField(max_length=30)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, allow_unicode=True)
     sort_order = models.PositiveIntegerField(default=0)
     class Meta: ordering = ["sort_order"]
     def __str__(self): return self.name
