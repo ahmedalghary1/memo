@@ -41,3 +41,14 @@ class CategoryHierarchyTests(TestCase):
         self.assertContains(response, 'class="category-tree__branch"', count=2)
         self.assertContains(response, "عرض كل رجالي")
         self.assertContains(response, "عرض كل بناطيل")
+
+    def test_unicode_category_and_product_slugs_resolve(self):
+        category = Category.objects.create(name="تيشيرتات", slug="تيشيرتات")
+        product = Product.objects.create(
+            name="تيشيرت عربي", slug="تيشيرت-عربي", base_sku="AR-TEE-1",
+            price=Decimal("500"), category=category, status="active",
+        )
+        self.assertEqual(category.get_absolute_url(), "/shop/category/%D8%AA%D9%8A%D8%B4%D9%8A%D8%B1%D8%AA%D8%A7%D8%AA/")
+        self.assertEqual(product.get_absolute_url(), "/shop/product/%D8%AA%D9%8A%D8%B4%D9%8A%D8%B1%D8%AA-%D8%B9%D8%B1%D8%A8%D9%8A/")
+        self.assertEqual(self.client.get(category.get_absolute_url()).status_code, 200)
+        self.assertEqual(self.client.get(product.get_absolute_url()).status_code, 200)
