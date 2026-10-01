@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import re
 from dataclasses import dataclass
 
 from django.core import signing
@@ -124,25 +125,24 @@ def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
     )
 
 
-def _action_and_reference(event: ParsedWebhook) -> tuple[str, str]:
+def _action_and_reference(event: ParsedWebhook) -> tuple[str, str, str]:
     for action in ("confirm", "edit", "cancel"):
         prefix = f"{action}_order_"
         if event.button_id.startswith(prefix):
-            return action, event.button_id[len(prefix):]
-    if latin_digits(event.text.strip()) == "1":
-        return "confirm", ""
-    if latin_digits(event.text.strip()) == "2":
-        return "cancel", ""
-    if latin_digits(event.text.strip()) == "3":
-        return "edit", ""
+            return action, event.button_id[len(prefix):], ""
+    normalized_text = latin_digits(event.text).strip().upper()
+    numeric_reply = re.fullmatch(r"([123])(?:\s+(MEMO-[A-Z0-9]+))?", normalized_text)
+    if numeric_reply:
+        action = {"1": "confirm", "2": "cancel", "3": "edit"}[numeric_reply.group(1)]
+        return action, "", numeric_reply.group(2) or ""
     label = event.text.replace("✅", "").replace("✏️", "").replace("❌", "").strip()
     if label == "تأكيد الطلب":
-        return "confirm", ""
+        return "confirm", "", ""
     if label == "تعديل الطلب":
-        return "edit", ""
+        return "edit", "", ""
     if label == "إلغاء الطلب":
-        return "cancel", ""
-    return "", ""
+        return "cancel", "", ""
+    return "", "", ""
 
 
 def _find_fallback_order(sender_phone: str) -> Order | None:
@@ -189,7 +189,7 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         return ProcessResult("duplicate")
     if event.event_name != "MESSAGES_UPSERT" or event.from_me:
         return ProcessResult("ignored")
-    action, reference = _action_and_reference(event)
+    action, reference, order_number = _action_and_reference(event)
     if not action:
         if event.text:
             edit_order = _find_edit_order(event.sender_phone)
@@ -211,6 +211,8 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         except (signing.BadSignature, signing.SignatureExpired):
             logger.warning("Invalid order reference", extra={"event_id": event.event_id})
             return ProcessResult("invalid_reference")
+    elif order_number:
+        order = Order.objects.select_for_update().filter(order_number__iexact=order_number).first()
     else:
         order = _find_fallback_order(event.sender_phone)
         if not order:

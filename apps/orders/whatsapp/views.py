@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 def webhook(request):
     expected = settings.EVOLUTION_WEBHOOK_SECRET
     supplied = request.headers.get("X-Webhook-Secret", "")
-    if not expected or not hmac.compare_digest(supplied, expected):
+    query_token = request.GET.get("token", "")
+    if not expected or not (
+        hmac.compare_digest(supplied, expected)
+        or hmac.compare_digest(query_token, expected)
+    ):
         logger.warning("Invalid webhook secret")
         return JsonResponse({"detail": "Unauthorized"}, status=401)
     try:

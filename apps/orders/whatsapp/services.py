@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 
 from django.conf import settings
 from django.core import signing
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.numbers import latin_digits
@@ -14,6 +15,7 @@ from apps.orders.models import Order
 
 logger = logging.getLogger(__name__)
 TOKEN_SALT = "orders.whatsapp.confirmation"
+EDIT_TOKEN_SALT = "orders.whatsapp.edit"
 
 
 def hmac_compare(left: str, right: str) -> bool:
@@ -45,6 +47,23 @@ def resolve_order_reference(reference: str) -> str:
         salt=TOKEN_SALT,
         max_age=settings.EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS,
     )
+
+
+def make_order_edit_token(order: Order) -> str:
+    return signing.dumps(order.order_number, salt=EDIT_TOKEN_SALT, compress=True)
+
+
+def resolve_order_edit_token(token: str) -> str:
+    return signing.loads(
+        token,
+        salt=EDIT_TOKEN_SALT,
+        max_age=settings.EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS,
+    )
+
+
+def make_order_edit_url(order: Order) -> str:
+    path = reverse("orders:whatsapp_edit", kwargs={"token": make_order_edit_token(order)})
+    return f"{settings.PUBLIC_ORIGIN}{path}"
 
 
 class EvolutionAPIClient:
@@ -160,30 +179,21 @@ class EvolutionAPIClient:
         )
 
     def send_order_confirmation(self, order: Order) -> bool:
-        reference = make_order_reference(order)
-        buttons = [
-            {"type": "reply", "displayText": "✅ تأكيد الطلب", "id": f"confirm_order_{reference}"},
-            {"type": "reply", "displayText": "✏️ تعديل الطلب", "id": f"edit_order_{reference}"},
-            {"type": "reply", "displayText": "❌ إلغاء الطلب", "id": f"cancel_order_{reference}"},
-        ]
         message = self._format_order_confirmation(order)
-        fallback = f"{message}\n\nللتأكيد أرسل: 1\nللإلغاء أرسل: 2\nلطلب التعديل أرسل: 3"
-        if settings.EVOLUTION_USE_BUTTONS:
-            try:
-                self.send_buttons(order.customer_phone, message, buttons, title="🛍️ تأكيد طلبك", footer=settings.STORE_NAME)
-            except (EvolutionAPIError, ValueError):
-                logger.warning("WhatsApp buttons failed; sending text fallback", extra={"order_number": order.order_number})
-                try:
-                    self.send_text(order.customer_phone, fallback)
-                except (EvolutionAPIError, ValueError):
-                    logger.exception("WhatsApp confirmation failed", extra={"order_number": order.order_number})
-                    return False
-        else:
-            try:
-                self.send_text(order.customer_phone, fallback)
-            except (EvolutionAPIError, ValueError):
-                logger.exception("WhatsApp confirmation failed", extra={"order_number": order.order_number})
-                return False
+        instructions = (
+            f"{message}\n\n"
+            "لتأكيد الطلب أرسل:\n"
+            f"1 {order.order_number}\n\n"
+            "لإلغاء الطلب أرسل:\n"
+            f"2 {order.order_number}\n\n"
+            "لتعديل بيانات الطلب أرسل:\n"
+            f"3 {order.order_number}"
+        )
+        try:
+            self.send_text(order.customer_phone, instructions)
+        except (EvolutionAPIError, ValueError):
+            logger.exception("WhatsApp confirmation failed", extra={"order_number": order.order_number})
+            return False
         sent_at = timezone.now()
         Order.objects.filter(pk=order.pk).update(whatsapp_confirmation_sent_at=sent_at)
         order.whatsapp_confirmation_sent_at = sent_at
@@ -208,7 +218,9 @@ class EvolutionAPIClient:
         return self.send_text(
             order.customer_phone,
             f"✏️ تم اختيار تعديل الطلب #{order.order_number}.\n\n"
-            "اكتب التعديلات المطلوبة الآن في رسالة واحدة، وسيقوم فريقنا بمراجعتها قبل تأكيد الطلب.",
+            "يمكنك تعديل بيانات التواصل والتوصيل من الرابط الآمن التالي:\n"
+            f"{make_order_edit_url(order)}\n\n"
+            "صلاحية الرابط محدودة، ولا تشاركه مع أي شخص.",
         )
 
     def send_order_edit_received_message(self, order: Order) -> dict:

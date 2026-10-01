@@ -5,7 +5,13 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderItem, WhatsAppWebhookEvent
-from apps.orders.whatsapp.services import EvolutionAPIClient, EvolutionAPIError, make_order_reference, normalize_phone_number
+from apps.orders.whatsapp.services import (
+    EvolutionAPIClient,
+    EvolutionAPIError,
+    make_order_edit_token,
+    make_order_reference,
+    normalize_phone_number,
+)
 
 
 class PhoneNormalizationTests(SimpleTestCase):
@@ -28,25 +34,24 @@ class EvolutionAPIClientTests(TestCase):
         )
 
     @override_settings(EVOLUTION_USE_BUTTONS=True)
-    def test_order_confirmation_uses_buttons_and_marks_it_sent(self):
+    def test_order_confirmation_always_uses_reliable_numeric_text(self):
         client = EvolutionAPIClient()
-        with patch.object(client, "send_buttons", return_value={} ) as mocked_buttons:
+        with patch.object(client, "send_text", return_value={}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
             self.assertTrue(client.send_order_confirmation(self.order))
         self.order.refresh_from_db()
         self.assertIsNotNone(self.order.whatsapp_confirmation_sent_at)
-        buttons = mocked_buttons.call_args.args[2]
-        self.assertEqual(len(buttons), 3)
-        self.assertEqual([button["displayText"] for button in buttons], [
-            "✅ تأكيد الطلب", "✏️ تعديل الطلب", "❌ إلغاء الطلب",
-        ])
-        self.assertTrue(buttons[1]["id"].startswith("edit_order_"))
+        mocked_buttons.assert_not_called()
+        message = mocked_text.call_args.args[1]
+        self.assertIn(f"1 {self.order.order_number}", message)
+        self.assertIn(f"2 {self.order.order_number}", message)
+        self.assertIn(f"3 {self.order.order_number}", message)
 
-    @override_settings(EVOLUTION_USE_BUTTONS=True)
-    def test_order_confirmation_falls_back_to_text(self):
+    def test_order_confirmation_failure_does_not_mark_message_sent(self):
         client = EvolutionAPIClient()
-        with patch.object(client, "send_buttons", side_effect=EvolutionAPIError("unsupported")), patch.object(client, "send_text", return_value={}) as mocked_text:
-            self.assertTrue(client.send_order_confirmation(self.order))
-        self.assertIn("للتأكيد أرسل: 1", mocked_text.call_args.args[1])
+        with patch.object(client, "send_text", side_effect=EvolutionAPIError("unavailable")):
+            self.assertFalse(client.send_order_confirmation(self.order))
+        self.order.refresh_from_db()
+        self.assertIsNone(self.order.whatsapp_confirmation_sent_at)
 
     @override_settings(EVOLUTION_USE_BUTTONS=False)
     def test_order_confirmation_uses_reliable_text_mode_by_default(self):
@@ -54,7 +59,16 @@ class EvolutionAPIClientTests(TestCase):
         with patch.object(client, "send_text", return_value={}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
             self.assertTrue(client.send_order_confirmation(self.order))
         mocked_buttons.assert_not_called()
-        self.assertIn("للتأكيد أرسل: 1", mocked_text.call_args.args[1])
+        self.assertIn(f"1 {self.order.order_number}", mocked_text.call_args.args[1])
+
+    @override_settings(PUBLIC_ORIGIN="https://store.example")
+    def test_edit_reply_contains_signed_website_link(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "send_text", return_value={}) as mocked_text:
+            client.send_order_edit_prompt(self.order)
+        message = mocked_text.call_args.args[1]
+        self.assertIn("https://store.example/orders/edit/", message)
+        self.assertIn("رابط", message)
 
     def test_configure_webhook_uses_secret_header_and_messages_event(self):
         client = EvolutionAPIClient()
@@ -143,6 +157,13 @@ class WhatsAppWebhookTests(TestCase):
             data=json.dumps(payload),
             content_type="application/json",
             headers={"X-Webhook-Secret": secret},
+        )
+
+    def post_with_query_token(self, payload, token="test-webhook-secret"):
+        return self.client.post(
+            f"{self.url}?token={token}",
+            data=json.dumps(payload),
+            content_type="application/json",
         )
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
@@ -279,6 +300,14 @@ class WhatsAppWebhookTests(TestCase):
         self.assertFalse(WhatsAppWebhookEvent.objects.exists())
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_global_webhook_query_token_is_accepted(self, mocked_message):
+        response = self.post_with_query_token(self.payload(event_id="global-hook"))
+        self.order.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.order.status, "confirmed")
+        mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
     def test_numeric_fallback_only_uses_one_pending_order_for_phone(self, mocked_message):
         payload = self.payload()
         payload["data"]["key"]["id"] = "fallback-1"
@@ -298,8 +327,97 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(response.json()["status"], "ambiguous_or_missing")
         self.assertEqual(self.order.status, "pending_confirmation")
 
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
+    def test_numeric_reply_with_order_number_selects_correct_order(self, mocked_message):
+        other = self.create_order(customer_email="second@example.com")
+        payload = self.payload(event_id="numbered-reply")
+        payload["data"]["message"] = {"conversation": f"1 {self.order.order_number.lower()}"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(response.json()["status"], "confirmed")
+        self.assertEqual(self.order.status, "confirmed")
+        self.assertEqual(other.status, "pending_confirmation")
+        mocked_message.assert_called_once()
+
     def test_messages_sent_by_the_instance_are_ignored(self):
         response = self.post(self.payload(from_me=True))
         self.order.refresh_from_db()
         self.assertEqual(response.json()["status"], "ignored")
         self.assertEqual(self.order.status, "pending_confirmation")
+
+
+class WhatsAppOrderEditTests(TestCase):
+    def setUp(self):
+        self.order = Order.objects.create(
+            status="pending_confirmation",
+            subtotal=500,
+            shipping_total=70,
+            grand_total=570,
+            customer_name="Customer",
+            customer_phone="01012345678",
+            customer_email="customer@example.com",
+            governorate="القاهرة",
+            area="مدينة نصر",
+            address_line="شارع أول",
+            payment_method="cash",
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            product_name="T-Shirt",
+            variant_sku="TEE-B-M",
+            size_name="M",
+            color_name="Black",
+            unit_price=500,
+            quantity=1,
+            line_total=500,
+        )
+        self.token = make_order_edit_token(self.order)
+        self.url = reverse("orders:whatsapp_edit", kwargs={"token": self.token})
+
+    def test_signed_link_displays_order_edit_form(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.order.order_number)
+        self.assertContains(response, "تعديل بيانات الطلب")
+
+    def test_customer_can_update_delivery_details(self):
+        response = self.client.post(self.url, {
+            "customer_name": "عميل جديد",
+            "customer_phone": "01012345678",
+            "customer_email": "new@example.com",
+            "governorate": "القاهرة",
+            "area": "المعادي",
+            "address_line": "شارع النصر",
+            "address_details": "الدور الثاني",
+            "notes": "الاتصال قبل الوصول",
+        }, follow=True)
+        self.order.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.order.area, "المعادي")
+        self.assertEqual(self.order.address_line, "شارع النصر")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_received")
+        self.assertTrue(self.order.timeline.filter(note__contains="رابط WhatsApp").exists())
+        self.assertContains(response, "تم حفظ التعديلات")
+
+    def test_invalid_edit_token_is_rejected(self):
+        response = self.client.get(reverse("orders:whatsapp_edit", kwargs={"token": "invalid"}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_confirmed_order_cannot_be_edited(self):
+        self.order.status = "confirmed"
+        self.order.save(update_fields=["status"])
+        response = self.client.post(self.url, {
+            "customer_name": "Changed Name",
+            "customer_phone": "01012345678",
+            "customer_email": "new@example.com",
+            "governorate": "القاهرة",
+            "area": "المعادي",
+            "address_line": "شارع النصر",
+            "address_details": "",
+            "notes": "",
+        })
+        self.order.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.order.customer_name, "Customer")
+        self.assertContains(response, "لا يمكن تعديل هذا الطلب الآن")

@@ -1,8 +1,16 @@
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
-from .models import Order
+from django.core import signing
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
+
 from apps.core.numbers import latin_digits
+
+from .forms import WhatsAppOrderEditForm
+from .models import Order, OrderEvent
+from .whatsapp.services import resolve_order_edit_token
 
 
 class OrderTrackingForm(forms.Form):
@@ -44,3 +52,34 @@ def track(request):
         order = next((item for item in candidates if "".join(c for c in latin_digits(item.customer_phone) if c.isdigit() or c == "+") == phone), None)
         not_found = order is None
     return render(request, "store/order-tracking.html", {"form": form, "order": order, "not_found": not_found})
+
+
+@transaction.atomic
+def whatsapp_edit(request, token):
+    try:
+        order_number = resolve_order_edit_token(token)
+    except (signing.BadSignature, signing.SignatureExpired):
+        raise Http404("رابط تعديل الطلب غير صالح أو انتهت صلاحيته.")
+
+    queryset = Order.objects.select_for_update() if request.method == "POST" else Order.objects.all()
+    order = get_object_or_404(queryset.prefetch_related("items"), order_number=order_number)
+    editable = order.status == "pending_confirmation"
+    form = WhatsAppOrderEditForm(request.POST or None, instance=order)
+
+    if request.method == "POST" and editable and form.is_valid():
+        order = form.save(commit=False)
+        order.confirmation_method = "whatsapp_edit_received"
+        order.save()
+        OrderEvent.objects.create(
+            order=order,
+            status=order.status,
+            note="قام العميل بتعديل بيانات التواصل أو التوصيل من رابط WhatsApp",
+        )
+        messages.success(request, "تم حفظ التعديلات. ارجع إلى واتساب وأرسل رقم 1 مع رقم الطلب لتأكيده.")
+        return redirect("orders:whatsapp_edit", token=token)
+
+    return render(
+        request,
+        "orders/whatsapp-edit.html",
+        {"order": order, "form": form, "editable": editable},
+    )
