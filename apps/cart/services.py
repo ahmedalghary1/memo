@@ -24,6 +24,8 @@ class Cart:
         requested = quantity if replace else current + quantity
         if not variant.is_active:
             raise ValueError("الكمية المطلوبة غير متاحة.")
+        if requested > variant.stock_quantity:
+            raise ValueError(f"المتاح حاليًا {variant.stock_quantity} قطعة فقط.")
         if requested <= 0: self.data.pop(key, None)
         else: self.data[key] = requested
         self.save()

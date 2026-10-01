@@ -10,14 +10,23 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - DB_PATH=/app/data/db.sqlite3
-      - GUNICORN_WORKERS=3
-      - GUNICORN_THREADS=2
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
+      - GUNICORN_THREADS=${GUNICORN_THREADS:-2}
     volumes:
       - memo_data:/app/data
       - memo_media:/app/media
       - memo_static:/app/staticfiles
     networks:
       - memo_net
+    depends_on:
+      evolution:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -34,20 +43,126 @@ services:
     ports:
       # Exposes port 8001 on the host by default.
       # You can change MEMO_PORT in .env (e.g. MEMO_PORT=80 or MEMO_PORT=8080)
-      - "${MEMO_PORT:-8001}:80"
+      - "${MEMO_BIND_IP:-127.0.0.1}:${MEMO_PORT:-8001}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - memo_static:/app/staticfiles:ro
       - memo_media:/app/media:ro
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     networks:
       - memo_net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
           cpus: "0.5"
           memory: 256M
+
+  evolution-postgres:
+    image: postgres:15-alpine
+    container_name: memo_evolution_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD}
+    command: ["postgres", "-c", "max_connections=200"]
+    volumes:
+      - evolution_postgres_data:/var/lib/postgresql/data
+    networks:
+      - memo_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: memo_evolution_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - evolution_redis_data:/data
+    networks:
+      - memo_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: memo_evolution_api
+    restart: unless-stopped
+    ports:
+      - "${EVOLUTION_BIND_IP:-127.0.0.1}:${EVOLUTION_PORT:-8080}:8080"
+    environment:
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+      SERVER_URL: http://evolution:8080
+      CORS_ORIGIN: "*"
+      CORS_METHODS: POST,GET,PUT,DELETE
+      CORS_CREDENTIALS: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD}@evolution-postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: memo_evolution
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_HISTORIC: "false"
+      DATABASE_SAVE_IS_ON_WHATSAPP: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://evolution-redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: memo_evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
+      CONFIG_SESSION_PHONE_CLIENT: MEMO Store
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      QRCODE_LIMIT: 30
+      DEL_INSTANCE: "false"
+      DEL_TEMP_INSTANCES: "false"
+      LANGUAGE: en
+      LOG_LEVEL: ERROR,WARN,INFO,LOG
+      TELEMETRY_ENABLED: "false"
+    volumes:
+      - evolution_instances:/evolution/instances
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    networks:
+      - memo_net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  evolution-manager:
+    image: evoapicloud/evolution-manager:latest
+    container_name: memo_evolution_manager
+    restart: unless-stopped
+    ports:
+      - "${EVOLUTION_MANAGER_BIND_IP:-127.0.0.1}:${EVOLUTION_MANAGER_PORT:-3000}:80"
+    depends_on:
+      evolution:
+        condition: service_healthy
+    networks:
+      - memo_net
 
 networks:
   memo_net:
@@ -61,3 +176,9 @@ volumes:
     name: memo_media_data
   memo_static:
     name: memo_static_data
+  evolution_postgres_data:
+    name: memo_evolution_postgres_data
+  evolution_redis_data:
+    name: memo_evolution_redis_data
+  evolution_instances:
+    name: memo_evolution_instances

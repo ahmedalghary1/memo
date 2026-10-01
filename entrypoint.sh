@@ -31,6 +31,12 @@ python manage.py migrate --noinput
 echo "==> Collecting static assets..."
 python manage.py collectstatic --noinput
 
+# Optionally keep the per-instance Evolution webhook configuration in sync.
+if [ "${EVOLUTION_AUTO_CONFIGURE_WEBHOOK:-0}" = "1" ]; then
+    echo "==> Configuring Evolution API webhook..."
+    python manage.py configure_evolution_webhook
+fi
+
 # Configure Gunicorn workers
 WORKERS=${GUNICORN_WORKERS:-3}
 THREADS=${GUNICORN_THREADS:-2}

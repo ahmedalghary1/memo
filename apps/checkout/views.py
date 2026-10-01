@@ -26,11 +26,19 @@ def checkout(request):
     if request.method == "POST" and form.is_valid():
         items = list(cart)
         locked = {v.pk: v for v in ProductVariant.objects.select_for_update().filter(pk__in=[x["variant"].pk for x in items])}
+        if any(
+            item["variant"].pk not in locked
+            or not locked[item["variant"].pk].is_active
+            or locked[item["variant"].pk].stock_quantity < item["quantity"]
+            for item in items
+        ):
+            messages.error(request, "تغيّر المخزون قبل إتمام الطلب. راجع الكميات المتاحة وحاول مرة أخرى.")
+            return redirect("cart:detail")
         shipping = store_settings.express_shipping if form.cleaned_data["shipping_method"] == "express" else store_settings.standard_shipping
         coupon = cart.coupon
         order = Order.objects.create(user=request.user if request.user.is_authenticated else None, status="pending_confirmation", subtotal=cart.subtotal, discount_total=cart.discount, shipping_total=shipping, grand_total=cart.total+shipping, coupon=coupon, customer_name=form.cleaned_data["name"], customer_phone=form.cleaned_data["phone"], customer_email=form.cleaned_data["email"], governorate=form.cleaned_data["governorate"], area=form.cleaned_data["area"], address_line=form.cleaned_data["address"], address_details=form.cleaned_data["details"], notes=form.cleaned_data["notes"], payment_method=form.cleaned_data["payment_method"])
         for item in items:
-            variant = locked[item["variant"].pk]; variant.stock_quantity = max(0, variant.stock_quantity - item["quantity"]); variant.save(update_fields=["stock_quantity"])
+            variant = locked[item["variant"].pk]; variant.stock_quantity -= item["quantity"]; variant.save(update_fields=["stock_quantity"])
             image = item["product"].primary_image
             OrderItem.objects.create(order=order, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name, color_name=variant.color.name, unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
             InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="طلب جديد")

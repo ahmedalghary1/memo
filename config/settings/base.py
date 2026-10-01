@@ -1,12 +1,20 @@
 from pathlib import Path
 import os
+from urllib.parse import urlsplit
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-memo-secret-change-me")
 DEBUG = False
-ALLOWED_HOSTS = [x.strip() for x in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x.strip()]
+PUBLIC_ORIGIN = os.getenv("PUBLIC_ORIGIN", "http://127.0.0.1:8000").rstrip("/")
+PUBLIC_HOST = urlsplit(PUBLIC_ORIGIN).hostname or "127.0.0.1"
+_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
+ALLOWED_HOSTS = (
+    [x.strip() for x in _allowed_hosts.split(",") if x.strip()]
+    if _allowed_hosts
+    else [PUBLIC_HOST, "localhost", "127.0.0.1", "web", "nginx"]
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
@@ -75,6 +83,9 @@ EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
 EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "")
 EVOLUTION_WEBHOOK_SECRET = os.getenv("EVOLUTION_WEBHOOK_SECRET", "")
+EVOLUTION_WEBHOOK_URL = os.getenv("EVOLUTION_WEBHOOK_URL", "http://nginx/api/whatsapp/webhook/")
+EVOLUTION_CREATE_INSTANCE = os.getenv("EVOLUTION_CREATE_INSTANCE", "1") == "1"
+EVOLUTION_USE_BUTTONS = os.getenv("EVOLUTION_USE_BUTTONS", "0") == "1"
 EVOLUTION_HTTP_TIMEOUT = int(os.getenv("EVOLUTION_HTTP_TIMEOUT", "15"))
 EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS = int(os.getenv("EVOLUTION_CONFIRMATION_MAX_AGE_SECONDS", "604800"))
 STORE_NAME = os.getenv("STORE_NAME", "MEMO")

@@ -1,7 +1,7 @@
 import json
 import logging
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 
 from django.conf import settings
@@ -53,15 +53,17 @@ class EvolutionAPIClient:
     def configured(self) -> bool:
         return bool(self.base_url and self.api_key and self.instance)
 
-    def _post(self, endpoint: str, payload: dict) -> dict:
+    def _request(self, method: str, endpoint: str, payload: dict | None = None, include_instance: bool = True):
         if not self.configured:
             raise EvolutionAPIError("Evolution API is not configured.")
-        url = f"{self.base_url}/{endpoint}/{quote(self.instance, safe='')}"
+        url = f"{self.base_url}/{endpoint}"
+        if include_instance:
+            url = f"{url}/{quote(self.instance, safe='')}"
         request = Request(
             url,
-            data=json.dumps(payload).encode("utf-8"),
+            data=json.dumps(payload).encode("utf-8") if payload is not None else None,
             headers={"Content-Type": "application/json", "apikey": self.api_key},
-            method="POST",
+            method=method,
         )
         try:
             with urlopen(request, timeout=self.timeout) as response:
@@ -73,6 +75,27 @@ class EvolutionAPIClient:
         except (URLError, TimeoutError, json.JSONDecodeError) as exc:
             logger.error("Evolution API error", extra={"endpoint": endpoint, "error_type": type(exc).__name__})
             raise EvolutionAPIError("Evolution API request failed.") from exc
+
+    def _post(self, endpoint: str, payload: dict, include_instance: bool = True) -> dict:
+        return self._request("POST", endpoint, payload, include_instance)
+
+    def _get(self, endpoint: str, include_instance: bool = True):
+        return self._request("GET", endpoint, include_instance=include_instance)
+
+    def ensure_instance(self) -> bool:
+        response = self._get("instance/fetchInstances", include_instance=False)
+        records = response if isinstance(response, list) else response.get("instances", response.get("data", []))
+        for record in records if isinstance(records, list) else []:
+            nested = record.get("instance", {}) if isinstance(record, dict) else {}
+            name = record.get("name") or record.get("instanceName") or nested.get("instanceName")
+            if name == self.instance:
+                return False
+        self._post(
+            "instance/create",
+            {"instanceName": self.instance, "qrcode": True, "integration": "WHATSAPP-BAILEYS"},
+            include_instance=False,
+        )
+        return True
 
     def send_text(self, phone_number: str, text: str) -> dict:
         return self._post("message/sendText", {"number": normalize_phone_number(phone_number), "text": text})
@@ -89,6 +112,27 @@ class EvolutionAPIClient:
             },
         )
 
+    def configure_webhook(self, webhook_url: str, webhook_secret: str) -> dict:
+        parsed_url = urlsplit(webhook_url)
+        internal_http = parsed_url.scheme == "http" and parsed_url.hostname == "nginx"
+        if parsed_url.scheme != "https" and not internal_http:
+            raise EvolutionAPIError("Evolution webhook URL must use HTTPS or the internal nginx service.")
+        if not webhook_secret:
+            raise EvolutionAPIError("Evolution webhook secret is missing.")
+        return self._post(
+            "webhook/set",
+            {
+                "webhook": {
+                    "enabled": True,
+                    "url": webhook_url,
+                    "headers": {"X-Webhook-Secret": webhook_secret},
+                    "byEvents": False,
+                    "base64": False,
+                    "events": ["MESSAGES_UPSERT"],
+                }
+            },
+        )
+
     def send_order_confirmation(self, order: Order) -> bool:
         reference = make_order_reference(order)
         buttons = [
@@ -96,11 +140,18 @@ class EvolutionAPIClient:
             {"type": "reply", "displayText": "❌ إلغاء الطلب", "id": f"cancel_order_{reference}"},
         ]
         message = self._format_order_confirmation(order)
-        try:
-            self.send_buttons(order.customer_phone, message, buttons, title="🛍️ تأكيد طلبك", footer=settings.STORE_NAME)
-        except (EvolutionAPIError, ValueError):
-            logger.warning("WhatsApp buttons failed; sending text fallback", extra={"order_number": order.order_number})
-            fallback = f"{message}\n\nللتأكيد أرسل: 1\nللإلغاء أرسل: 2"
+        fallback = f"{message}\n\nللتأكيد أرسل: 1\nللإلغاء أرسل: 2"
+        if settings.EVOLUTION_USE_BUTTONS:
+            try:
+                self.send_buttons(order.customer_phone, message, buttons, title="🛍️ تأكيد طلبك", footer=settings.STORE_NAME)
+            except (EvolutionAPIError, ValueError):
+                logger.warning("WhatsApp buttons failed; sending text fallback", extra={"order_number": order.order_number})
+                try:
+                    self.send_text(order.customer_phone, fallback)
+                except (EvolutionAPIError, ValueError):
+                    logger.exception("WhatsApp confirmation failed", extra={"order_number": order.order_number})
+                    return False
+        else:
             try:
                 self.send_text(order.customer_phone, fallback)
             except (EvolutionAPIError, ValueError):

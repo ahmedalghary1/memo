@@ -118,11 +118,20 @@ class CheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
 
-    def test_checkout_accepts_quantity_above_recorded_stock(self):
+    def test_checkout_rejects_quantity_above_recorded_stock(self):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 25})
         response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
-        order = Order.objects.get(customer_email="guest@example.com")
         self.variant.refresh_from_db()
-        self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
-        self.assertEqual(order.items.get().quantity, 25)
-        self.assertEqual(self.variant.stock_quantity, 0)
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())
+        self.assertEqual(self.variant.stock_quantity, 4)
+
+    def test_checkout_rechecks_stock_after_item_was_added(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 2})
+        self.variant.stock_quantity = 1
+        self.variant.save(update_fields=["stock_quantity"])
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 1)

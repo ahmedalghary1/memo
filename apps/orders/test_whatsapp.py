@@ -27,6 +27,7 @@ class EvolutionAPIClientTests(TestCase):
             color_name="Black", unit_price=500, quantity=1, line_total=500,
         )
 
+    @override_settings(EVOLUTION_USE_BUTTONS=True)
     def test_order_confirmation_uses_buttons_and_marks_it_sent(self):
         client = EvolutionAPIClient()
         with patch.object(client, "send_buttons", return_value={} ) as mocked_buttons:
@@ -35,11 +36,50 @@ class EvolutionAPIClientTests(TestCase):
         self.assertIsNotNone(self.order.whatsapp_confirmation_sent_at)
         self.assertEqual(len(mocked_buttons.call_args.args[2]), 2)
 
+    @override_settings(EVOLUTION_USE_BUTTONS=True)
     def test_order_confirmation_falls_back_to_text(self):
         client = EvolutionAPIClient()
         with patch.object(client, "send_buttons", side_effect=EvolutionAPIError("unsupported")), patch.object(client, "send_text", return_value={}) as mocked_text:
             self.assertTrue(client.send_order_confirmation(self.order))
         self.assertIn("للتأكيد أرسل: 1", mocked_text.call_args.args[1])
+
+    @override_settings(EVOLUTION_USE_BUTTONS=False)
+    def test_order_confirmation_uses_reliable_text_mode_by_default(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "send_text", return_value={}) as mocked_text, patch.object(client, "send_buttons") as mocked_buttons:
+            self.assertTrue(client.send_order_confirmation(self.order))
+        mocked_buttons.assert_not_called()
+        self.assertIn("للتأكيد أرسل: 1", mocked_text.call_args.args[1])
+
+    def test_configure_webhook_uses_secret_header_and_messages_event(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "_post", return_value={}) as mocked_post:
+            client.configure_webhook("https://store.example/api/whatsapp/webhook/", "secret")
+        endpoint, payload = mocked_post.call_args.args
+        self.assertEqual(endpoint, "webhook/set")
+        self.assertEqual(payload["webhook"]["headers"], {"X-Webhook-Secret": "secret"})
+        self.assertEqual(payload["webhook"]["events"], ["MESSAGES_UPSERT"])
+
+    def test_internal_nginx_webhook_is_allowed(self):
+        client = EvolutionAPIClient()
+        with patch.object(client, "_post", return_value={}):
+            client.configure_webhook("http://nginx/api/whatsapp/webhook/", "secret")
+
+    def test_ensure_instance_creates_missing_instance(self):
+        client = EvolutionAPIClient(instance="memo-store")
+        with patch.object(client, "_get", return_value=[]), patch.object(client, "_post", return_value={}) as mocked_post:
+            self.assertTrue(client.ensure_instance())
+        mocked_post.assert_called_once_with(
+            "instance/create",
+            {"instanceName": "memo-store", "qrcode": True, "integration": "WHATSAPP-BAILEYS"},
+            include_instance=False,
+        )
+
+    def test_ensure_instance_keeps_existing_instance(self):
+        client = EvolutionAPIClient(instance="memo-store")
+        with patch.object(client, "_get", return_value=[{"name": "memo-store"}]), patch.object(client, "_post") as mocked_post:
+            self.assertFalse(client.ensure_instance())
+        mocked_post.assert_not_called()
 
 
 @override_settings(EVOLUTION_WEBHOOK_SECRET="test-webhook-secret")
