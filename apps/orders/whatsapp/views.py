@@ -29,13 +29,17 @@ def webhook(request):
         return JsonResponse({"detail": "Invalid JSON payload"}, status=400)
     logger.info("Webhook received", extra={"event": payload.get("event")})
     result = process_webhook_event(parse_evolution_webhook(payload))
-    if result.order and result.outcome in {"confirmed", "cancelled", "already_processed"}:
+    if result.order and result.outcome in {"confirmed", "cancelled", "edit_requested", "edit_received", "already_processed"}:
         client = EvolutionAPIClient()
         try:
             if result.outcome == "confirmed":
                 client.send_order_confirmed_message(result.order)
             elif result.outcome == "cancelled":
                 client.send_order_cancelled_message(result.order)
+            elif result.outcome == "edit_requested":
+                client.send_order_edit_prompt(result.order)
+            elif result.outcome == "edit_received":
+                client.send_order_edit_received_message(result.order)
             else:
                 client.send_already_processed_message(result.order)
         except (EvolutionAPIError, ValueError):

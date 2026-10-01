@@ -80,7 +80,7 @@ def parse_evolution_webhook(payload: dict) -> ParsedWebhook:
 
 
 def _action_and_reference(event: ParsedWebhook) -> tuple[str, str]:
-    for action in ("confirm", "cancel"):
+    for action in ("confirm", "edit", "cancel"):
         prefix = f"{action}_order_"
         if event.button_id.startswith(prefix):
             return action, event.button_id[len(prefix):]
@@ -88,12 +88,29 @@ def _action_and_reference(event: ParsedWebhook) -> tuple[str, str]:
         return "confirm", ""
     if latin_digits(event.text.strip()) == "2":
         return "cancel", ""
+    if latin_digits(event.text.strip()) == "3":
+        return "edit", ""
     return "", ""
 
 
 def _find_fallback_order(sender_phone: str) -> Order | None:
     matches = []
     for order in Order.objects.select_for_update().filter(status="pending_confirmation"):
+        try:
+            if normalize_phone_number(order.customer_phone) == normalize_phone_number(sender_phone):
+                matches.append(order)
+        except ValueError:
+            continue
+        if len(matches) > 1:
+            return None
+    return matches[0] if len(matches) == 1 else None
+
+
+def _find_edit_order(sender_phone: str) -> Order | None:
+    matches = []
+    for order in Order.objects.select_for_update().filter(
+        status="pending_confirmation", confirmation_method="whatsapp_edit_requested",
+    ):
         try:
             if normalize_phone_number(order.customer_phone) == normalize_phone_number(sender_phone):
                 matches.append(order)
@@ -117,6 +134,17 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         return ProcessResult("ignored")
     action, reference = _action_and_reference(event)
     if not action:
+        if event.text:
+            edit_order = _find_edit_order(event.sender_phone)
+            if edit_order:
+                details = " ".join(event.text.split())[:190]
+                edit_order.confirmation_method = "whatsapp_edit_received"
+                edit_order.save(update_fields=["confirmation_method", "updated_at"])
+                OrderEvent.objects.create(
+                    order=edit_order, status=edit_order.status,
+                    note=f"طلب تعديل من العميل: {details}",
+                )
+                return ProcessResult("edit_received", edit_order)
         return ProcessResult("ignored")
     order = None
     if reference:
@@ -142,6 +170,15 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         return ProcessResult("phone_mismatch")
     if order.status != "pending_confirmation":
         return ProcessResult("already_processed", order)
+    if action == "edit":
+        order.confirmation_method = "whatsapp_edit_requested"
+        order.save(update_fields=["confirmation_method", "updated_at"])
+        OrderEvent.objects.create(
+            order=order, status=order.status,
+            note="طلب العميل تعديل الطلب عبر WhatsApp",
+        )
+        logger.info("Order edit requested", extra={"order_number": order.order_number})
+        return ProcessResult("edit_requested", order)
     order.status = "confirmed" if action == "confirm" else "cancelled"
     order.confirmation_method = "whatsapp"
     update_fields = ["status", "confirmation_method", "updated_at"]

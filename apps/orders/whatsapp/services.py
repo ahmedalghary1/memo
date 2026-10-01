@@ -137,10 +137,11 @@ class EvolutionAPIClient:
         reference = make_order_reference(order)
         buttons = [
             {"type": "reply", "displayText": "✅ تأكيد الطلب", "id": f"confirm_order_{reference}"},
+            {"type": "reply", "displayText": "✏️ تعديل الطلب", "id": f"edit_order_{reference}"},
             {"type": "reply", "displayText": "❌ إلغاء الطلب", "id": f"cancel_order_{reference}"},
         ]
         message = self._format_order_confirmation(order)
-        fallback = f"{message}\n\nللتأكيد أرسل: 1\nللإلغاء أرسل: 2"
+        fallback = f"{message}\n\nللتأكيد أرسل: 1\nللإلغاء أرسل: 2\nلطلب التعديل أرسل: 3"
         if settings.EVOLUTION_USE_BUTTONS:
             try:
                 self.send_buttons(order.customer_phone, message, buttons, title="🛍️ تأكيد طلبك", footer=settings.STORE_NAME)
@@ -175,6 +176,20 @@ class EvolutionAPIClient:
             order.customer_phone,
             f"❌ تم إلغاء طلبك.\n\nرقم الطلب: #{order.order_number}\n\n"
             "إذا كنت ترغب في إنشاء طلب جديد يمكنك زيارة المتجر في أي وقت.",
+        )
+
+    def send_order_edit_prompt(self, order: Order) -> dict:
+        return self.send_text(
+            order.customer_phone,
+            f"✏️ تم اختيار تعديل الطلب #{order.order_number}.\n\n"
+            "اكتب التعديلات المطلوبة الآن في رسالة واحدة، وسيقوم فريقنا بمراجعتها قبل تأكيد الطلب.",
+        )
+
+    def send_order_edit_received_message(self, order: Order) -> dict:
+        return self.send_text(
+            order.customer_phone,
+            f"✅ تم استلام تعديلاتك على الطلب #{order.order_number}.\n\n"
+            "سيقوم فريقنا بمراجعتها والتواصل معك، وسيظل الطلب بانتظار التأكيد حتى ذلك الوقت.",
         )
 
     def send_already_processed_message(self, order: Order) -> dict:

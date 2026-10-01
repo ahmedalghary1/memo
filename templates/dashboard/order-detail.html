@@ -2,7 +2,7 @@
 {% block title %}{{ order.order_number }} — لوحة MEMO{% endblock %}
 {% block content %}
 <div class="dash-page">
-  <div class="dash-title"><div><p>ORDER / {{ order.created_at|date:'d.m.Y' }}</p><h1>{{ order.order_number }}</h1></div><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></div>
+  <div class="dash-title"><div><p>ORDER / {{ order.created_at|date:'d.m.Y' }}</p><h1>{{ order.order_number }}</h1>{% if order.confirmation_method == 'whatsapp_edit_requested' %}<small>العميل ضغط «تعديل الطلب» وننتظر إرسال التفاصيل.</small>{% elif order.confirmation_method == 'whatsapp_edit_received' %}<small>وصل طلب تعديل من العميل؛ راجع سجل الطلب بالأسفل.</small>{% endif %}</div><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></div>
   <div class="dash-grid dash-grid--order">
     <div>
       <section class="dash-panel"><header><h2>القطع</h2></header><div class="table-wrap"><table><thead><tr><th>المنتج</th><th>Variant</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>{% for item in order.items.all %}<tr><td>{{ item.product_name }}</td><td>{% if item.color_name or item.size_name %}{{ item.color_name }}{% if item.color_name and item.size_name %} / {% endif %}{{ item.size_name }}{% else %}بدون خيارات{% endif %}<small>{{ item.variant_sku }}</small></td><td>{{ item.quantity }}</td><td>{{ item.line_total|floatformat:0 }} ج.م</td></tr>{% endfor %}</tbody></table></div></section>

@@ -34,7 +34,12 @@ class EvolutionAPIClientTests(TestCase):
             self.assertTrue(client.send_order_confirmation(self.order))
         self.order.refresh_from_db()
         self.assertIsNotNone(self.order.whatsapp_confirmation_sent_at)
-        self.assertEqual(len(mocked_buttons.call_args.args[2]), 2)
+        buttons = mocked_buttons.call_args.args[2]
+        self.assertEqual(len(buttons), 3)
+        self.assertEqual([button["displayText"] for button in buttons], [
+            "✅ تأكيد الطلب", "✏️ تعديل الطلب", "❌ إلغاء الطلب",
+        ])
+        self.assertTrue(buttons[1]["id"].startswith("edit_order_"))
 
     @override_settings(EVOLUTION_USE_BUTTONS=True)
     def test_order_confirmation_falls_back_to_text(self):
@@ -145,6 +150,29 @@ class WhatsAppWebhookTests(TestCase):
         self.assertEqual(response.json()["status"], "cancelled")
         self.assertEqual(self.order.status, "cancelled")
         mocked_message.assert_called_once()
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_edit_prompt")
+    def test_edit_button_keeps_order_pending_and_requests_details(self, mocked_message):
+        response = self.post(self.payload(action="edit", event_id="edit-1"))
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "edit_requested")
+        self.assertEqual(self.order.status, "pending_confirmation")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_requested")
+        self.assertTrue(self.order.timeline.filter(note__contains="طلب العميل تعديل").exists())
+        mocked_message.assert_called_once_with(self.order)
+
+    @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_edit_received_message")
+    def test_message_after_edit_button_is_saved_in_order_timeline(self, mocked_message):
+        self.order.confirmation_method = "whatsapp_edit_requested"
+        self.order.save(update_fields=["confirmation_method"])
+        payload = self.payload(event_id="edit-details")
+        payload["data"]["message"] = {"conversation": "تغيير العنوان إلى شارع النصر"}
+        response = self.post(payload)
+        self.order.refresh_from_db()
+        self.assertEqual(response.json()["status"], "edit_received")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_received")
+        self.assertTrue(self.order.timeline.filter(note__contains="شارع النصر").exists())
+        mocked_message.assert_called_once_with(self.order)
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_confirmed_message")
     def test_wrong_phone_cannot_confirm_order(self, mocked_message):
