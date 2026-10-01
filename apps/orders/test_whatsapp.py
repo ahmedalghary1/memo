@@ -276,6 +276,7 @@ class WhatsAppWebhookTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(response.json()["status"], "confirmed")
         self.assertEqual(self.order.status, "confirmed")
+        self.assertEqual(self.order.whatsapp_chat_jid, "123456789012345@lid")
         mocked_message.assert_called_once()
 
     @patch("apps.orders.whatsapp.views.EvolutionAPIClient.send_order_cancelled_message")

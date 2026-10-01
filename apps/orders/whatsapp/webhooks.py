@@ -269,6 +269,9 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
     if not (phone_matches or chat_matches):
         logger.warning("Phone mismatch", extra={"order_number": order.order_number})
         return ProcessResult("phone_mismatch")
+    if event.chat_jid.endswith("@lid") and not order.whatsapp_chat_jid:
+        order.whatsapp_chat_jid = event.chat_jid
+        order.save(update_fields=["whatsapp_chat_jid", "updated_at"])
     if order.status != "pending_confirmation":
         return _processed_result(webhook_event, "already_processed", order)
     if action == "edit":
