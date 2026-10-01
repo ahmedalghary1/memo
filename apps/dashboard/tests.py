@@ -116,6 +116,23 @@ class DashboardPermissionTests(TestCase):
         self.assertEqual(movement.quantity, 5)
         self.assertEqual(movement.created_by, self.user)
 
+    def test_inventory_can_be_created_without_options_or_manual_sku(self):
+        self.login_authorized()
+        category = Category.objects.create(name="إكسسوارات", slug="إكسسوارات")
+        product = Product.objects.create(
+            name="حقيبة", slug="حقيبة", base_sku="BAG-1", price=500,
+            category=category, status="active",
+        )
+        response = self.client.post(reverse("dashboard:section_create", args=["inventory"]), {
+            "product": product.pk, "color": "", "size": "", "stock_quantity": 12,
+            "price_override": "", "is_active": "on", "low_stock_threshold": 3,
+        })
+        variant = ProductVariant.objects.get(product=product)
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["inventory", variant.pk]))
+        self.assertEqual(variant.sku, "BAG-1")
+        self.assertIsNone(variant.color)
+        self.assertIsNone(variant.size)
+
     def test_staff_can_edit_order_customer_details(self):
         self.login_authorized()
         order = Order.objects.create(

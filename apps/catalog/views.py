@@ -49,5 +49,12 @@ def product_list(request, slug=None):
 def product_detail(request, slug):
     product = get_object_or_404(Product.objects.available().prefetch_related("images", "variants__color", "variants__size"), slug=slug)
     variants = list(product.variants.filter(is_active=True).select_related("color", "size"))
+    color_options = list({variant.color_id: variant.color for variant in variants if variant.color_id}.values())
+    size_options = list({variant.size_id: variant.size for variant in variants if variant.size_id}.values())
     related = Product.objects.available().filter(category=product.category).exclude(pk=product.pk).prefetch_related("images", "variants__color", "variants__size")[:4]
-    return render(request, "store/product-detail.html", {"product": product, "variants": variants, "related": related})
+    return render(request, "store/product-detail.html", {
+        "product": product, "variants": variants, "related": related,
+        "color_options": color_options, "size_options": size_options,
+        "has_colorless": any(not variant.color_id for variant in variants),
+        "has_sizeless": any(not variant.size_id for variant in variants),
+    })

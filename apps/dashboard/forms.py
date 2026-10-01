@@ -110,7 +110,15 @@ class CouponForm(DashboardModelForm):
 class ProductVariantForm(DashboardModelForm):
     class Meta:
         model = ProductVariant
-        fields = ("product", "color", "size", "sku", "stock_quantity", "price_override", "is_active", "low_stock_threshold")
+        fields = ("product", "color", "size", "stock_quantity", "price_override", "is_active", "low_stock_threshold")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["color"].label = "اللون (اختياري)"
+        self.fields["size"].label = "المقاس (اختياري)"
+        self.fields["color"].empty_label = "بدون لون"
+        self.fields["size"].empty_label = "بدون مقاس"
+        self.fields["stock_quantity"].help_text = "سيتم إنشاء كود المخزون تلقائيًا عند الحفظ."
 
 
 class ProductImageForm(DashboardModelForm):

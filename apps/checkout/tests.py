@@ -48,6 +48,19 @@ class CheckoutTests(TestCase):
         self.assertEqual(order.grand_total, Decimal("1470"))
         self.assertEqual(order.status, "pending_confirmation")
 
+    def test_checkout_supports_variant_without_color_or_size(self):
+        plain_variant = ProductVariant.objects.create(
+            product=self.variant.product, stock_quantity=3,
+        )
+        self.client.post(reverse("cart:add"), {"variant_id": plain_variant.pk, "quantity": 1})
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data(email="plain@example.com"))
+        order = Order.objects.get(customer_email="plain@example.com")
+        item = order.items.get()
+        self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
+        self.assertEqual(item.color_name, "")
+        self.assertEqual(item.size_name, "")
+        self.assertTrue(item.variant_sku)
+
     @patch("apps.checkout.views.send_order_confirmation_safely", return_value=True)
     def test_confirmation_is_scheduled_after_order_commit(self, mocked_send):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})

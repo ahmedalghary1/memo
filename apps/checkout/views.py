@@ -40,7 +40,7 @@ def checkout(request):
         for item in items:
             variant = locked[item["variant"].pk]; variant.stock_quantity -= item["quantity"]; variant.save(update_fields=["stock_quantity"])
             image = item["product"].primary_image
-            OrderItem.objects.create(order=order, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name, color_name=variant.color.name, unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
+            OrderItem.objects.create(order=order, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", color_name=variant.color.name if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
             InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="طلب جديد")
         OrderEvent.objects.create(order=order, status="pending_confirmation", note="تم استلام الطلب وبانتظار التأكيد")
         if coupon:

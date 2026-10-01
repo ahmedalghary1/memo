@@ -1,5 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
+import secrets
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
@@ -162,15 +163,33 @@ class Size(models.Model):
 
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
-    color = models.ForeignKey(Color, on_delete=models.PROTECT, related_name="variants")
-    size = models.ForeignKey(Size, on_delete=models.PROTECT, related_name="variants")
-    sku = models.CharField(max_length=80, unique=True)
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.PROTECT, related_name="variants")
+    size = models.ForeignKey(Size, null=True, blank=True, on_delete=models.PROTECT, related_name="variants")
+    sku = models.CharField(max_length=80, unique=True, blank=True)
     stock_quantity = models.PositiveIntegerField(default=0)
     price_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     low_stock_threshold = models.PositiveIntegerField(default=3)
     class Meta: constraints = [models.UniqueConstraint(fields=["product", "color", "size"], name="unique_product_color_size")]
-    def __str__(self): return f"{self.product} / {self.color} / {self.size}"
+    def __str__(self): return f"{self.product} / {self.option_label}"
+    @property
+    def option_label(self):
+        return " / ".join(str(option) for option in (self.color, self.size) if option) or "بدون خيارات"
+    def generate_sku(self):
+        parts = [self.product.base_sku]
+        if self.color_id: parts.append(self.color.slug)
+        if self.size_id: parts.append(self.size.slug)
+        candidate = "-".join(str(part).strip().upper() for part in parts if str(part).strip()) or "ITEM"
+        candidate = candidate[:80]
+        queryset = type(self).objects.exclude(pk=self.pk)
+        while queryset.filter(sku=candidate).exists():
+            suffix = secrets.token_hex(2).upper()
+            candidate = f"{candidate[:75]}-{suffix}"
+        return candidate
+    def save(self, *args, **kwargs):
+        if not self.sku:
+            self.sku = self.generate_sku()
+        super().save(*args, **kwargs)
     @property
     def effective_price(self): return self.price_override if self.price_override is not None else self.product.price
     @property

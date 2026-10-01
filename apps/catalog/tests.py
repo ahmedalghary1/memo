@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
-from .models import Category, Product
+from .models import Category, Product, ProductVariant
 
 
 class CategoryHierarchyTests(TestCase):
@@ -69,3 +69,14 @@ class CategoryHierarchyTests(TestCase):
         ]
         for obj in objects:
             obj.full_clean()
+
+    def test_variant_options_are_optional_and_sku_is_generated(self):
+        variant = ProductVariant.objects.create(product=self.product, stock_quantity=8)
+        self.assertEqual(variant.sku, "DENIM-1")
+        self.assertEqual(variant.option_label, "بدون خيارات")
+
+    def test_product_without_options_can_be_selected_on_detail_page(self):
+        variant = ProductVariant.objects.create(product=self.product, stock_quantity=8)
+        response = self.client.get(self.product.get_absolute_url())
+        self.assertContains(response, f'"id":{variant.pk}')
+        self.assertNotContains(response, "اختر اللون والمقاس لمعرفة التوفر")
