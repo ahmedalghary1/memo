@@ -315,7 +315,15 @@ class EvolutionAPIClient:
 def send_order_confirmation_safely(order_id: int) -> bool:
     try:
         order = Order.objects.prefetch_related("items").get(pk=order_id)
-        return EvolutionAPIClient().send_order_confirmation(order)
+        # Keep Evolution available for legacy inbound confirmation flows, but route
+        # new order confirmations through the explicitly selected outbound provider.
+        if settings.WHATSAPP_PROVIDER == "meta":
+            from .meta import MetaWhatsAppProvider
+            return MetaWhatsAppProvider().send_order_confirmation(order)
+        if settings.WHATSAPP_PROVIDER == "legacy":
+            return EvolutionAPIClient().send_order_confirmation(order)
+        logger.error("WhatsApp confirmation failed: unknown provider", extra={"order_id": order_id, "provider": settings.WHATSAPP_PROVIDER})
+        return False
     except Order.DoesNotExist:
         logger.error("WhatsApp confirmation failed: order missing", extra={"order_id": order_id})
     except Exception:
