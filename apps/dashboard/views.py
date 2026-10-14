@@ -306,6 +306,7 @@ def section_form(request, section, pk=None):
         "form": form, "title": f"تعديل {config['title']}" if instance else f"إضافة إلى {config['title']}",
         "label": config["label"], "cancel_url": "dashboard:data_section", "cancel_arg": section,
         "multipart": section in {"categories", "collections", "colors", "media"}, "object": instance,
+        "preview_url": instance.get_absolute_url() if section == "collections" and instance else None,
         "contact_message": instance if section == "messages" else None,
     })
 

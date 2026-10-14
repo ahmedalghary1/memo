@@ -31,3 +31,19 @@ const activeLink=navLinks.sort((a,b)=>new URL(b.href).pathname.length-new URL(a.
 });
 activeLink?.setAttribute('aria-current','page');
 navLinks.forEach(link=>link.addEventListener('click',()=>{if(innerWidth<=900)closeMenu()}));
+
+document.querySelectorAll('[data-collection-picker]').forEach(picker=>{
+  const search=picker.querySelector('.collection-picker__search');
+  const options=[...picker.querySelectorAll('.collection-picker__options label')];
+  const empty=picker.querySelector('.collection-picker__empty');
+  search?.addEventListener('input',()=>{
+    const query=search.value.trim().toLocaleLowerCase('ar');
+    let visible=0;
+    options.forEach(label=>{
+      const match=label.textContent.toLocaleLowerCase('ar').includes(query);
+      label.parentElement.hidden=!match;
+      if(match)visible++;
+    });
+    if(empty)empty.hidden=visible>0;
+  });
+});

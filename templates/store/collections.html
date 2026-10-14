@@ -1,0 +1,11 @@
+{% extends 'base/base.html' %}
+{% block title %}المجموعات — MEMO{% endblock %}
+{% block description %}اكتشف مجموعات MEMO والقطع المختارة لكل إصدار.{% endblock %}
+{% block content %}
+<section class="collections-index shell">
+  <header><p class="eyebrow">MEMO / COLLECTIONS</p><h1>المجموعات</h1><p>إصدارات وقطع مختارة لتكتشف ما يناسبك.</p></header>
+  <div class="collections-index__grid">
+    {% for collection in collections %}<a class="collections-index__card" href="{{ collection.get_absolute_url }}"><div class="collections-index__image">{% if collection.cover_image or collection.hero_image %}<img src="{% if collection.cover_image %}{{ collection.optimized_cover_url }}{% else %}{{ collection.optimized_hero_url }}{% endif %}" alt="" loading="lazy">{% endif %}</div><div><h2>{{ collection.name }}</h2><span>اكتشف المجموعة ←</span></div>{% if collection.description %}<p>{{ collection.description|truncatechars:110 }}</p>{% endif %}</a>{% empty %}<p class="collections-index__empty">لا توجد مجموعات متاحة حاليًا.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}

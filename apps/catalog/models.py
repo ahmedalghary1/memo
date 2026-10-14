@@ -68,6 +68,7 @@ class Collection(TimeStamped):
     name = models.CharField(max_length=120)
     slug = models.SlugField(unique=True, allow_unicode=True)
     description = models.TextField(blank=True)
+    categories = models.ManyToManyField(Category, blank=True, related_name="collections")
     cover_image = models.ImageField(upload_to="collections/", blank=True)
     hero_image = models.ImageField(upload_to="collections/", blank=True)
     starts_at = models.DateTimeField(null=True, blank=True)
@@ -78,6 +79,15 @@ class Collection(TimeStamped):
     seo_description = models.CharField(max_length=300, blank=True)
     class Meta: ordering = ["sort_order", "-created_at"]
     def __str__(self): return self.name
+    def get_absolute_url(self): return reverse("catalog:collection", args=[self.slug])
+    def product_queryset(self):
+        selected = self.categories.filter(is_active=True)
+        return Product.objects.available().filter(
+            models.Q(collections=self)
+            | models.Q(category__in=selected)
+            | models.Q(category__parent__in=selected)
+            | models.Q(category__parent__parent__in=selected)
+        ).distinct()
     @property
     def optimized_cover_url(self): return optimized_image_url(self.cover_image)
     @property

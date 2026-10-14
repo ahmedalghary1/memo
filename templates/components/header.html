@@ -29,6 +29,7 @@
         <nav aria-label="أقسام المتجر">
           <a class="menu-category__link" href="{% url 'core:home' %}"><span>الرئيسية</span></a>
           <a class="menu-category__link" href="{% url 'catalog:list' %}"><span>كل المنتجات</span></a>
+          <a class="menu-category__link" href="{% url 'catalog:collections' %}"><span>المجموعات</span></a>
           {% include 'components/menu-category.html' with categories=nav_categories only %}
           <a class="menu-category__link" href="{% url 'core:info' 'about' %}"><span>من نحن</span></a>
         </nav>

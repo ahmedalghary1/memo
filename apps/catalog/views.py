@@ -1,6 +1,7 @@
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from .models import Category, Color, Collection, Product, ProductVariant, Size
 
 def product_list(request, slug=None):
@@ -45,6 +46,31 @@ def product_list(request, slug=None):
     category_roots = children.get(None, [])
     category_children = children.get(category.pk, []) if category else children.get(None, [])
     return render(request, "store/collection.html", {"page_obj": page, "category": category, "category_children": category_children, "category_roots": category_roots, "sizes": Size.objects.all(), "colors": Color.objects.all(), "all_categories": all_categories, "selected_sizes": size, "selected_colors": color, "selected_size_objects": Size.objects.filter(slug__in=size), "selected_color_objects": Color.objects.filter(slug__in=color), "active_filter_count": len(size)+len(color)+bool(request.GET.get("available"))+bool(request.GET.get("price_min"))+bool(request.GET.get("price_max"))})
+
+def collections_list(request):
+    now = timezone.now()
+    collections = (
+        Collection.objects.filter(is_active=True)
+        .filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+    )
+    return render(request, "store/collections.html", {"collections": collections})
+
+def collection_detail(request, slug):
+    now = timezone.now()
+    collection = get_object_or_404(
+        Collection.objects.filter(is_active=True)
+        .filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now)),
+        slug=slug,
+    )
+    order = {"price_asc": "price", "price_desc": "-price", "new": "-created_at"}.get(request.GET.get("sort"), "-created_at")
+    products = collection.product_queryset().prefetch_related("images", "variants__color", "variants__size").order_by(order)
+    page = Paginator(products, 12).get_page(request.GET.get("page"))
+    return render(request, "store/collection-detail.html", {
+        "collection": collection, "page_obj": page,
+        "collection_categories": collection.categories.filter(is_active=True),
+    })
 
 def product_detail(request, slug):
     product = get_object_or_404(Product.objects.available().prefetch_related("images", "variants__color", "variants__size"), slug=slug)

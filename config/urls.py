@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import include, path, register_converter
 from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
-from apps.core.sitemaps import StaticSitemap, ProductSitemap, CategorySitemap
+from apps.core.sitemaps import StaticSitemap, ProductSitemap, CategorySitemap, CollectionSitemap
 from apps.core.converters import UnicodeSlugConverter
 
 register_converter(UnicodeSlugConverter, "uslug")
@@ -21,7 +21,7 @@ urlpatterns = [
     path("account/", include("apps.accounts.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
     path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),
-    path("sitemap.xml", sitemap, {"sitemaps": {"static": StaticSitemap, "products": ProductSitemap, "categories": CategorySitemap}}, name="sitemap"),
+    path("sitemap.xml", sitemap, {"sitemaps": {"static": StaticSitemap, "products": ProductSitemap, "categories": CategorySitemap, "collections": CollectionSitemap}}, name="sitemap"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler403 = "apps.core.views.error_403"

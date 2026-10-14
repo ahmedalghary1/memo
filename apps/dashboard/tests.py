@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderEvent
-from apps.catalog.models import Category, Color, InventoryMovement, Product, ProductVariant, Size
+from apps.catalog.models import Category, Collection, Color, InventoryMovement, Product, ProductVariant, Size
 from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
 
 
@@ -121,6 +121,35 @@ class DashboardPermissionTests(TestCase):
         })
         product = Product.objects.get(slug="تيشيرت-عربي")
         self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+
+    def test_collection_can_mix_full_category_tree_and_specific_products(self):
+        self.login_authorized()
+        men = Category.objects.create(name="رجالي", slug="collection-men")
+        trousers = Category.objects.create(name="بناطيل", slug="collection-trousers", parent=men)
+        jeans = Category.objects.create(name="جينز", slug="collection-jeans", parent=trousers)
+        extras = Category.objects.create(name="إضافات", slug="collection-extras")
+        nested = Product.objects.create(name="بنطال", slug="collection-denim", base_sku="COL-DENIM", price=500, category=jeans, status="active")
+        specific = Product.objects.create(name="حقيبة", slug="collection-bag", base_sku="COL-BAG", price=300, category=extras, status="active")
+        response = self.client.post(reverse("dashboard:section_create", args=["collections"]), {
+            "name": "تشكيلة جديدة", "slug": "mixed-drop", "description": "قطع مختارة",
+            "categories": [men.pk], "products": [nested.pk, specific.pk],
+            "starts_at": "", "ends_at": "", "is_active": "on", "sort_order": 0,
+            "seo_title": "", "seo_description": "",
+        })
+        collection = Collection.objects.get(slug="mixed-drop")
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["collections", collection.pk]))
+        self.assertEqual(list(collection.categories.values_list("pk", flat=True)), [men.pk])
+        self.assertEqual(set(collection.products.values_list("pk", flat=True)), {nested.pk, specific.pk})
+        self.assertEqual(set(collection.product_queryset().values_list("pk", flat=True)), {nested.pk, specific.pk})
+        page = self.client.get(collection.get_absolute_url())
+        self.assertEqual(page.context["page_obj"].paginator.count, 2)
+        self.assertContains(page, "بنطال")
+        self.assertContains(page, "حقيبة")
+        self.assertContains(self.client.get(reverse("catalog:collections")), collection.get_absolute_url())
+        self.assertContains(self.client.get(reverse("core:home")), collection.get_absolute_url())
+        collection.is_active = False
+        collection.save()
+        self.assertEqual(self.client.get(collection.get_absolute_url()).status_code, 404)
 
     def test_inventory_edit_creates_audit_movement(self):
         self.login_authorized()

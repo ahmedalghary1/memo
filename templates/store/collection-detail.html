@@ -1,0 +1,19 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ collection.seo_title|default:collection.name }} — MEMO{% endblock %}
+{% block description %}{{ collection.seo_description|default:collection.description|default:collection.name }}{% endblock %}
+{% block content %}
+<header class="collection-page-hero">
+  {% if collection.hero_image or collection.cover_image %}<img src="{% if collection.hero_image %}{{ collection.optimized_hero_url }}{% else %}{{ collection.optimized_cover_url }}{% endif %}" alt="" width="1600" height="900">{% endif %}
+  <div class="collection-page-hero__content shell">
+    <p class="eyebrow">MEMO / COLLECTION</p>
+    <h1>{{ collection.name }}</h1>
+    {% if collection.description %}<p>{{ collection.description }}</p>{% endif %}
+  </div>
+</header>
+<section class="collection-page-content shell">
+  {% if collection_categories %}<nav class="collection-page-categories" aria-label="فئات المجموعة">{% for category in collection_categories %}<a href="{{ category.get_absolute_url }}">{{ category.name }} ←</a>{% endfor %}</nav>{% endif %}
+  <div class="collection-page-toolbar"><span>{{ page_obj.paginator.count }} قطعة</span><form class="sort-form" method="get"><label for="collection-sort">ترتيب حسب</label><select id="collection-sort" name="sort"><option value="new" {% if request.GET.sort == 'new' %}selected{% endif %}>الأحدث</option><option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>الأقل سعرًا</option><option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>الأعلى سعرًا</option></select></form></div>
+  {% include 'components/product-grid.html' with products=page_obj %}
+  {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="الصفحات">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" aria-label="الصفحة السابقة">‹</a>{% endif %}<span>{{ page_obj.number }}</span><small>من {{ page_obj.paginator.num_pages }}</small>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" aria-label="الصفحة التالية">›</a>{% endif %}</nav>{% endif %}
+</section>
+{% endblock %}

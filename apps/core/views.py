@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.shortcuts import render
 from django.http import JsonResponse
 from apps.catalog.models import Category, Collection, Product, ProductImage
@@ -6,16 +6,24 @@ from apps.marketing.models import NewsletterSubscriber
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.core.paginator import Paginator
+from django.utils import timezone
 from .forms import ContactMessageForm
 from .models import InfoPageContent
 
 def home(request):
     products = Product.objects.available().prefetch_related("images", "variants__color", "variants__size")
+    now = timezone.now()
+    featured_collection = (
+        Collection.objects.filter(is_active=True)
+        .filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+        .first()
+    )
     context = {
         "featured_products": products.filter(new_arrival=True)[:4],
         "best_sellers": products.filter(bestseller=True)[:6],
         "categories": Category.objects.filter(is_active=True, parent__isnull=True)[:6],
-        "featured_collection": Collection.objects.filter(is_active=True).first(),
+        "featured_collection": featured_collection,
     }
     return render(request, "store/home.html", context)
 

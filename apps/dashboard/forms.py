@@ -73,16 +73,41 @@ class CategoryForm(DashboardModelForm):
         widgets = {"description": forms.Textarea(attrs={"rows": 4}), "seo_description": forms.Textarea(attrs={"rows": 3})}
 
 
+class CollectionProductChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, product):
+        return f"{product.name} · {product.base_sku} ({product.category.name})"
+
+
 class CollectionForm(DashboardModelForm):
+    products = CollectionProductChoiceField(
+        label="منتجات محددة", queryset=Product.objects.select_related("category").order_by("name"),
+        required=False, widget=forms.CheckboxSelectMultiple,
+        help_text="أضف منتجات منفردة من أي فئة. المنتج الذي اختير ضمن فئة كاملة لن يظهر مرتين.",
+    )
+
     class Meta:
         model = Collection
-        fields = ("name", "slug", "description", "cover_image", "hero_image", "starts_at", "ends_at", "is_active", "sort_order", "seo_title", "seo_description")
+        fields = ("name", "slug", "description", "categories", "products", "cover_image", "hero_image", "starts_at", "ends_at", "is_active", "sort_order", "seo_title", "seo_description")
         widgets = {
+            "categories": forms.CheckboxSelectMultiple,
             "description": forms.Textarea(attrs={"rows": 4}),
             "seo_description": forms.Textarea(attrs={"rows": 3}),
             "starts_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
             "ends_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["categories"].queryset = Category.objects.filter(is_active=True).select_related("parent", "parent__parent")
+        self.fields["categories"].help_text = "تُضاف منتجات الفئة المحددة وكل فئاتها الفرعية تلقائيًا."
+        if self.instance.pk:
+            self.fields["products"].initial = self.instance.products.values_list("pk", flat=True)
+
+    def save(self, commit=True):
+        collection = super().save(commit=commit)
+        if commit:
+            collection.products.set(self.cleaned_data["products"])
+        return collection
 
 
 class ColorForm(DashboardModelForm):
