@@ -79,7 +79,10 @@ qsa('.active-filters a[data-filter-key]').forEach(link=>{
 
 qsa('.desktop-nav a,.mobile-menu nav a').forEach(link=>{
   const target=new URL(link.href,location.href);
-  if(target.pathname===location.pathname&&!target.search)link.setAttribute('aria-current','page');
+  if(target.pathname===location.pathname&&!target.search){
+    link.setAttribute('aria-current','page');
+    if(link.closest('.mobile-menu'))qsa('details.menu-category',link.closest('.mobile-menu')).forEach(branch=>{if(branch.contains(link))branch.open=true});
+  }
 });
 
 const video=qs('[data-pause-offscreen]'); const videoToggle=qs('[data-video-toggle]');

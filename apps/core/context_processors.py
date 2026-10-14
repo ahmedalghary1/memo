@@ -8,5 +8,11 @@ def store_context(request):
     if request.user.is_authenticated:
         wishlist_product_ids = set(request.user.wishlist_items.values_list("product_id", flat=True))
     store_settings = StoreSettings.load()
-    nav_categories = Category.objects.filter(is_active=True, parent__isnull=True).prefetch_related("children__children")[:6]
+    categories = list(Category.objects.filter(is_active=True).order_by("sort_order", "name"))
+    children = {}
+    for category in categories:
+        children.setdefault(category.parent_id, []).append(category)
+    for category in categories:
+        category.nav_children = children.get(category.pk, [])
+    nav_categories = children.get(None, [])
     return {"nav_categories": nav_categories, "cart_count": cart.count, "header_cart": cart, "wishlist_product_ids": wishlist_product_ids, "store_settings": store_settings, "standard_shipping": store_settings.standard_shipping}

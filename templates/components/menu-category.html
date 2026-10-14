@@ -1,0 +1,13 @@
+{% for item in categories %}
+  {% if item.nav_children %}
+    <details class="menu-category" data-menu-category>
+      <summary><span>{{ item.name }}</span><span class="menu-category__arrow" aria-hidden="true"></span></summary>
+      <div class="menu-category__children">
+        <a class="menu-category__all" href="{{ item.get_absolute_url }}">عرض كل {{ item.name }}</a>
+        {% include 'components/menu-category.html' with categories=item.nav_children only %}
+      </div>
+    </details>
+  {% else %}
+    <a class="menu-category__link" href="{{ item.get_absolute_url }}"><span>{{ item.name }}</span></a>
+  {% endif %}
+{% endfor %}

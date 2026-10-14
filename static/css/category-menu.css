@@ -1,0 +1,21 @@
+/* Nested store navigation in the existing MEMO drawer. */
+.menu-trigger{display:inline-grid!important;flex:0 0 auto}
+.mobile-menu__body{overscroll-behavior:contain}
+.mobile-menu nav{max-height:none;overflow:visible;counter-reset:none}
+.mobile-menu nav a,
+.mobile-menu nav summary{box-sizing:border-box;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:10px 4px;border:0;border-bottom:1px solid rgba(255,255,255,.09);color:#f5f2ea;font-size:clamp(15px,4.2vw,19px);font-weight:400;line-height:1.4;opacity:1;transform:none;animation:none!important;cursor:pointer}
+.mobile-menu nav a::before,.mobile-menu nav a::after{content:none}
+.mobile-menu nav summary{list-style:none}
+.mobile-menu nav summary::-webkit-details-marker{display:none}
+.mobile-menu nav summary:hover,.mobile-menu nav summary:focus-visible,.mobile-menu nav a:hover,.mobile-menu nav a:focus-visible{padding-inline:10px;color:#e4bb62;background:rgba(209,162,61,.06)}
+.mobile-menu nav .menu-category__link::after{content:"←";display:block;color:#8f7134;font-size:14px}
+.menu-category__arrow{flex:0 0 9px;width:9px;height:9px;border-inline-end:1.5px solid #b69348;border-block-end:1.5px solid #b69348;transform:rotate(45deg);transition:transform .22s ease}
+.menu-category[open]>summary .menu-category__arrow{transform:rotate(225deg)}
+.menu-category__children{padding-inline-start:18px;border-inline-start:1px solid rgba(209,162,61,.27)}
+.mobile-menu nav .menu-category__children a,
+.mobile-menu nav .menu-category__children summary{font-size:14px;min-height:48px;color:#ddd8ce}
+.mobile-menu nav .menu-category__all{min-height:42px;font-size:11px;color:#d9b56a;text-decoration:underline;text-underline-offset:4px}
+.mobile-menu nav a[aria-current="page"]{color:#e4bb62;background:rgba(209,162,61,.08)}
+@media (max-width:767px){.header-primary>.menu-trigger{width:42px;height:42px}}
+@media (max-width:430px){.mobile-menu nav a,.mobile-menu nav summary{min-height:52px}}
+@media (prefers-reduced-motion:reduce){.menu-category__arrow{transition:none}}

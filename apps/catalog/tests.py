@@ -42,6 +42,14 @@ class CategoryHierarchyTests(TestCase):
         self.assertContains(response, "عرض كل رجالي")
         self.assertContains(response, "عرض كل بناطيل")
 
+    def test_header_menu_shows_nested_active_categories(self):
+        hidden = Category.objects.create(name="مخفي", slug="hidden", parent=self.men, is_active=False)
+        response = self.client.get(reverse("core:home"))
+        self.assertContains(response, 'class="menu-category"', count=2)
+        self.assertContains(response, f'href="{self.jeans.get_absolute_url()}"')
+        self.assertContains(response, "عرض كل رجالي")
+        self.assertNotContains(response, f'href="{hidden.get_absolute_url()}"')
+
     def test_unicode_category_and_product_slugs_resolve(self):
         category = Category.objects.create(name="تيشيرتات", slug="تيشيرتات")
         product = Product.objects.create(

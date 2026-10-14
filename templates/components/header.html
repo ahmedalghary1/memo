@@ -3,7 +3,7 @@
   <div class="header__inner shell">
     <div class="header-primary">
       <a class="brand" href="{% url 'core:home' %}" aria-label="MEMO الرئيسية"><img src="{% static 'images/memo-logo-transparent-v2.webp' %}" alt="MEMO" width="384" height="256"></a>
-      <button class="icon-btn mobile-only menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">فتح القائمة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
+      <button class="icon-btn menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">فتح القائمة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
       <nav class="desktop-nav" aria-label="التنقل الرئيسي">
         <a href="{% url 'core:home' %}">الرئيسية</a><a href="{% url 'catalog:list' %}">المتجر</a>
         {% for cat in nav_categories|slice:':3' %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'core:info' 'about' %}">من نحن</a>
@@ -26,7 +26,12 @@
       </header>
       <div class="mobile-menu__body">
         <p class="mobile-menu__eyebrow">استكشف MEMO</p>
-        <nav>{% for label,url in mobile_menu_links %}<a href="{{ url }}"><span>{{ label }}</span></a>{% empty %}<a href="{% url 'core:home' %}"><span>الرئيسية</span></a><a href="{% url 'catalog:list' %}"><span>المتجر</span></a>{% for cat in nav_categories %}<a href="{{ cat.get_absolute_url }}"><span>{{ cat.name }}</span></a>{% endfor %}<a href="{% url 'core:info' 'about' %}"><span>من نحن</span></a>{% endfor %}</nav>
+        <nav aria-label="أقسام المتجر">
+          <a class="menu-category__link" href="{% url 'core:home' %}"><span>الرئيسية</span></a>
+          <a class="menu-category__link" href="{% url 'catalog:list' %}"><span>كل المنتجات</span></a>
+          {% include 'components/menu-category.html' with categories=nav_categories only %}
+          <a class="menu-category__link" href="{% url 'core:info' 'about' %}"><span>من نحن</span></a>
+        </nav>
       </div>
       <footer class="mobile-menu__footer">
         <div class="mobile-menu__shortcuts">
