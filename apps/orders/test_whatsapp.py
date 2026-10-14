@@ -33,6 +33,58 @@ class MetaOrderConfirmationTests(TestCase):
         WHATSAPP_GRAPH_API_VERSION="v23.0",
         WHATSAPP_TEST_MODE=True,
         WHATSAPP_TEST_RECIPIENT="01552810113",
+        WHATSAPP_TEMPLATE_NAME="memo_order_actions_detailed_ar_v1",
+        WHATSAPP_TEMPLATE_LANGUAGE="ar",
+    )
+    @patch("apps.orders.whatsapp.meta.urlopen")
+    def test_detailed_template_lists_every_order_item(self, mocked_urlopen):
+        order = Order.objects.create(
+            status="pending_confirmation", subtotal=650, discount_total=50,
+            shipping_total=70, grand_total=670, customer_name="أحمد",
+            customer_phone="01012345678", governorate="القاهرة", area="مدينة نصر",
+            address_line="شارع 1", payment_method="cash",
+        )
+        OrderItem.objects.create(
+            order=order, product_name="تيشيرت قطن", variant_sku="TS-L-BK",
+            size_name="L", color_name="أسود", quantity=2,
+            unit_price=250, line_total=500,
+        )
+        OrderItem.objects.create(
+            order=order, product_name="كاب", variant_sku="CAP-RD",
+            size_name="", color_name="أحمر", quantity=1,
+            unit_price=150, line_total=150,
+        )
+        response = MagicMock()
+        response.status = 200
+        response.read.return_value = b'{"messages":[{"id":"wamid.detailed"}]}'
+        mocked_urlopen.return_value.__enter__.return_value = response
+
+        self.assertTrue(MetaWhatsAppProvider().send_order_confirmation(order))
+        payload = json.loads(mocked_urlopen.call_args.args[0].data)
+        self.assertEqual(payload["template"]["name"], "memo_order_actions_detailed_ar_v1")
+        params = [p["text"] for p in payload["template"]["components"][0]["parameters"]]
+        self.assertEqual(params[0:2], ["أحمد", order.order_number])
+        self.assertEqual(
+            params[2],
+            "1. تيشيرت قطن (L، أسود)\nالكمية: 2 × 250.00 جنيه = 500.00 جنيه\n"
+            "2. كاب (أحمر)\nالكمية: 1 × 150.00 جنيه = 150.00 جنيه",
+        )
+        self.assertEqual(params[3:], [
+            "650.00 جنيه", "50.00 جنيه", "70.00 جنيه", "670.00 جنيه",
+            "القاهرة - مدينة نصر - شارع 1",
+        ])
+        self.assertEqual(
+            [component["index"] for component in payload["template"]["components"][1:]],
+            ["0", "1", "2"],
+        )
+
+    @override_settings(
+        WHATSAPP_API_ENABLED=True,
+        WHATSAPP_PHONE_NUMBER_ID="1401557606367251",
+        WHATSAPP_ACCESS_TOKEN="test-token",
+        WHATSAPP_GRAPH_API_VERSION="v23.0",
+        WHATSAPP_TEST_MODE=True,
+        WHATSAPP_TEST_RECIPIENT="01552810113",
         WHATSAPP_TEMPLATE_NAME="memo_order_actions_ar_v1",
         WHATSAPP_TEMPLATE_LANGUAGE="ar",
     )
@@ -129,6 +181,16 @@ class MetaButtonWebhookTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, "pending_confirmation")
         mocked_send.assert_not_called()
+
+    @override_settings(WHATSAPP_TEST_MODE=True, WHATSAPP_TEST_RECIPIENT="01552810113")
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_test_recipient_can_use_button_for_redirected_order(self, mocked_send):
+        self.order.customer_phone = "01012345678"
+        self.order.save(update_fields=["customer_phone"])
+        self.assertEqual(self.click("confirm").status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "confirmed")
+        mocked_send.assert_called_once()
 
 
 class EvolutionAPIClientTests(TestCase):

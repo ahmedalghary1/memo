@@ -41,6 +41,20 @@ def _masked(phone):
     return "*" * max(0, len(phone) - 4) + phone[-4:]
 
 
+def _order_items_summary(order):
+    """Render every purchased line using the order's saved item snapshots."""
+    lines = []
+    for index, item in enumerate(order.items.all(), start=1):
+        name = " ".join(item.product_name.split())
+        options = [" ".join(value.split()) for value in (item.size_name, item.color_name) if value]
+        description = f"{name} ({'، '.join(options)})" if options else name
+        lines.append(
+            f"{index}. {description}\n"
+            f"الكمية: {item.quantity} × {item.unit_price:,.2f} جنيه = {item.line_total:,.2f} جنيه"
+        )
+    return "\n".join(lines)
+
+
 class MetaWhatsAppProvider:
     def __init__(self):
         self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
@@ -64,12 +78,26 @@ class MetaWhatsAppProvider:
             "name": settings.WHATSAPP_TEMPLATE_NAME,
             "language": {"code": settings.WHATSAPP_TEMPLATE_LANGUAGE},
         }}
-        # The MEMO template has three body placeholders; hello_world has none.
-        if settings.WHATSAPP_TEMPLATE_NAME in {"order_confirmation", "memo_order_received_ar_v2", "memo_order_actions_ar_v1"}:
+        # Each approved template must receive parameters in its defined order.
+        if settings.WHATSAPP_TEMPLATE_NAME in {"order_confirmation", "memo_order_received_ar_v2", "memo_order_actions_ar_v1", "memo_order_actions_detailed_ar_v1"}:
             total = f"{order.grand_total:,.2f} EGP"
             params = [order.customer_name, order.order_number, total]
+            if settings.WHATSAPP_TEMPLATE_NAME == "memo_order_actions_detailed_ar_v1":
+                address = " - ".join(part for part in (
+                    order.governorate, order.area, order.address_line, order.address_details,
+                ) if part)
+                params = [
+                    order.customer_name,
+                    order.order_number,
+                    _order_items_summary(order),
+                    f"{order.subtotal:,.2f} جنيه",
+                    f"{order.discount_total:,.2f} جنيه",
+                    f"{order.shipping_total:,.2f} جنيه",
+                    f"{order.grand_total:,.2f} جنيه",
+                    address,
+                ]
             payload["template"]["components"] = [{"type": "body", "parameters": [{"type": "text", "text": p} for p in params]}]
-            if settings.WHATSAPP_TEMPLATE_NAME == "memo_order_actions_ar_v1":
+            if settings.WHATSAPP_TEMPLATE_NAME in {"memo_order_actions_ar_v1", "memo_order_actions_detailed_ar_v1"}:
                 from .meta_webhooks import make_action_payload
 
                 for index, action in enumerate(("confirm", "edit", "cancel")):

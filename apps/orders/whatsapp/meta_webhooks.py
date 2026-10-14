@@ -67,7 +67,12 @@ def _process_action(sender, action, event):
             return "invalid_action", None
         if expected_action != match.group(1):
             return "invalid_action", None
-        if normalize_meta_phone(sender) != normalize_meta_phone(order.customer_phone):
+        expected_phone = (
+            settings.WHATSAPP_TEST_RECIPIENT
+            if settings.WHATSAPP_TEST_MODE and settings.WHATSAPP_TEST_RECIPIENT
+            else order.customer_phone
+        )
+        if normalize_meta_phone(sender) != normalize_meta_phone(expected_phone):
             return "sender_mismatch", order
     except (signing.BadSignature, KeyError, TypeError, ValueError, Order.DoesNotExist):
         return "invalid_action", None
@@ -102,7 +107,12 @@ def _acknowledge_action(event, sender):
     elif event.outcome == "edit_requested":
         from .services import make_order_edit_url
 
-        message = f"لتعديل بيانات طلبك رقم {order.order_number}، افتح الرابط الآمن التالي:\n{make_order_edit_url(order)}\nبعد حفظ التعديلات سنراجع طلبك ونتواصل معك."
+        message = (
+            f"لتعديل بيانات التواصل أو التوصيل للطلب رقم {order.order_number}، افتح الرابط الآمن:\n"
+            f"{make_order_edit_url(order)}\n"
+            "إذا أردت تغيير المنتجات أو الكميات، اكتب طلبك في خانة الملاحظات وسيراجعه فريق MEMO. "
+            "سيبقى طلبك بانتظار التأكيد حتى نراجع التعديلات."
+        )
     elif event.outcome == "already_processed":
         message = f"تم التعامل مع طلبك رقم {order.order_number} بالفعل. حالته الحالية: {order.get_status_display()}."
     else:
