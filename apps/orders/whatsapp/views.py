@@ -48,9 +48,10 @@ def webhook(request):
             outcomes = process_meta_payload(payload)
             logger.info("Meta WhatsApp webhook accepted. outcomes=%s", ",".join(outcomes) or "empty")
         except Exception:
-            # Acknowledge valid callbacks quickly; full payloads and credentials
-            # are intentionally never written to logs.
             logger.exception("Meta WhatsApp webhook processing failed")
+            # Meta retries the callback. Stored event IDs prevent repeating the
+            # order transition while allowing a failed reply to be retried.
+            return JsonResponse({"status": "retry"}, status=503)
         return JsonResponse({"status": "ok"}, status=200)
 
     expected = settings.EVOLUTION_WEBHOOK_SECRET

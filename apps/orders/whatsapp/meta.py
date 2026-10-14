@@ -64,14 +64,20 @@ class MetaWhatsAppProvider:
             "name": settings.WHATSAPP_TEMPLATE_NAME,
             "language": {"code": settings.WHATSAPP_TEMPLATE_LANGUAGE},
         }}
-        # Only attach values for the documented custom template; hello_world has no parameters.
-        if settings.WHATSAPP_TEMPLATE_NAME == "order_confirmation":
+        # The MEMO template has three body placeholders; hello_world has none.
+        if settings.WHATSAPP_TEMPLATE_NAME in {"order_confirmation", "memo_order_received_ar_v2", "memo_order_actions_ar_v1"}:
             total = f"{order.grand_total:,.2f} EGP"
-            if settings.WHATSAPP_TEST_MODE:
-                total += f" | Original customer phone: {order.customer_phone}"
             params = [order.customer_name, order.order_number, total]
             payload["template"]["components"] = [{"type": "body", "parameters": [{"type": "text", "text": p} for p in params]}]
-            if not settings.WHATSAPP_TEST_MODE:
+            if settings.WHATSAPP_TEMPLATE_NAME == "memo_order_actions_ar_v1":
+                from .meta_webhooks import make_action_payload
+
+                for index, action in enumerate(("confirm", "edit", "cancel")):
+                    payload["template"]["components"].append({
+                        "type": "button", "sub_type": "quick_reply", "index": str(index),
+                        "parameters": [{"type": "payload", "payload": make_action_payload(order, action)}],
+                    })
+            elif settings.WHATSAPP_TEMPLATE_NAME == "order_confirmation" and not settings.WHATSAPP_TEST_MODE:
                 from .meta_webhooks import make_action_payload
                 payload["template"]["components"].extend([
                     {"type": "button", "sub_type": "quick_reply", "index": "0", "parameters": [{"type": "payload", "payload": make_action_payload(order, "confirm")}]},
@@ -109,3 +115,28 @@ class MetaWhatsAppProvider:
         order.whatsapp_message_id = message_id
         logger.info("WhatsApp order confirmation sent successfully. order_id=%s http_status=%s recipient=%s message_id=%s", order.pk, status, _masked(recipient), message_id)
         return True
+
+    def send_text(self, recipient, message):
+        """Reply within the customer service window opened by a button press."""
+        if not settings.WHATSAPP_API_ENABLED or not self.phone_number_id or not self.token:
+            return False
+        recipient = normalize_meta_phone(recipient)
+        payload = {"messaging_product": "whatsapp", "to": recipient, "type": "text", "text": {"body": message}}
+        request = Request(
+            f"https://graph.facebook.com/{self.api_version}/{self.phone_number_id}/messages",
+            data=json.dumps(payload).encode(), method="POST",
+            headers={"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"},
+        )
+        try:
+            with urlopen(request, timeout=self.timeout) as response:
+                body = json.loads(response.read().decode("utf-8"))
+                return response.status < 300 and bool(body.get("messages"))
+        except HTTPError as exc:
+            try:
+                error = (json.loads(exc.read().decode("utf-8")).get("error") or {})
+            except (ValueError, OSError):
+                error = {}
+            logger.error("Meta WhatsApp reply failed. http_status=%s meta_error_code=%s recipient=%s", exc.code, error.get("code"), _masked(recipient))
+        except (URLError, TimeoutError, ValueError) as exc:
+            logger.error("Meta WhatsApp reply failed. error=%s recipient=%s", exc, _masked(recipient))
+        return False

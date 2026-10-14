@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.core import signing
 from django.db import transaction
 from django.http import Http404
@@ -75,11 +76,14 @@ def whatsapp_edit(request, token):
             status=order.status,
             note="قام العميل بتعديل بيانات التواصل أو التوصيل من رابط WhatsApp",
         )
-        messages.success(request, "تم حفظ التعديلات. ارجع إلى واتساب وأرسل رقم 1 مع رقم الطلب لتأكيده.")
+        if settings.WHATSAPP_PROVIDER == "meta":
+            messages.success(request, "تم حفظ التعديلات على طلبك. سيراجعها فريق MEMO ويتواصل معك لتأكيد الطلب.")
+        else:
+            messages.success(request, "تم حفظ التعديلات. ارجع إلى واتساب وأرسل رقم 1 مع رقم الطلب لتأكيده.")
         return redirect("orders:whatsapp_edit", token=token)
 
     return render(
         request,
         "orders/whatsapp-edit.html",
-        {"order": order, "form": form, "editable": editable},
+        {"order": order, "form": form, "editable": editable, "meta_whatsapp": settings.WHATSAPP_PROVIDER == "meta"},
     )

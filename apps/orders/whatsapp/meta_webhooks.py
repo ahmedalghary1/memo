@@ -56,13 +56,15 @@ def _message_content(message):
 
 
 def _process_action(sender, action, event):
-    match = re.fullmatch(r"memo_(confirm|cancel)_(.+)", action)
+    match = re.fullmatch(r"memo_(confirm|edit|cancel)_(.+)", action)
     if not match:
         return "received", None
     try:
         data = signing.loads(match.group(2), salt=ACTION_SALT, max_age=60 * 60 * 24 * 7)
         order = Order.objects.get(pk=data["order"])
-        expected_action = "confirm" if data["action"] == "confirm" else "cancel"
+        expected_action = data["action"]
+        if expected_action not in {"confirm", "edit", "cancel"}:
+            return "invalid_action", None
         if expected_action != match.group(1):
             return "invalid_action", None
         if normalize_meta_phone(sender) != normalize_meta_phone(order.customer_phone):
@@ -76,12 +78,43 @@ def _process_action(sender, action, event):
         order = Order.objects.select_for_update().get(pk=order.pk)
         if order.status != "pending_confirmation":
             return "already_processed", order
+        if expected_action == "edit":
+            order.confirmation_method = "whatsapp_edit_requested"
+            order.save(update_fields=["confirmation_method", "updated_at"])
+            OrderEvent.objects.create(order=order, status=order.status, note="طلب العميل تعديل بيانات الطلب عبر WhatsApp Cloud API")
+            return "edit_requested", order
         order.status = new_status
         order.confirmed_at = timezone.now() if new_status == "confirmed" else None
         order.confirmation_method = "whatsapp"
         order.save(update_fields=["status", "confirmed_at", "confirmation_method", "updated_at"])
         OrderEvent.objects.create(order=order, status=new_status, note="تم تأكيد الطلب عبر WhatsApp Cloud API" if new_status == "confirmed" else "تم إلغاء الطلب عبر WhatsApp Cloud API")
     return new_status, order
+
+
+def _acknowledge_action(event, sender):
+    if event.acknowledged_at or not event.order_id:
+        return True
+    order = event.order
+    if event.outcome == "confirmed":
+        message = f"تم تأكيد طلبك رقم {order.order_number} بنجاح. سيتواصل معك فريق MEMO في أقرب وقت. شكرًا لك!"
+    elif event.outcome == "cancelled":
+        message = f"تم إلغاء طلبك رقم {order.order_number}. إذا كان الإلغاء بالخطأ، يمكنك إنشاء طلب جديد من الموقع."
+    elif event.outcome == "edit_requested":
+        from .services import make_order_edit_url
+
+        message = f"لتعديل بيانات طلبك رقم {order.order_number}، افتح الرابط الآمن التالي:\n{make_order_edit_url(order)}\nبعد حفظ التعديلات سنراجع طلبك ونتواصل معك."
+    elif event.outcome == "already_processed":
+        message = f"تم التعامل مع طلبك رقم {order.order_number} بالفعل. حالته الحالية: {order.get_status_display()}."
+    else:
+        return True
+    from .meta import MetaWhatsAppProvider
+
+    sent = MetaWhatsAppProvider().send_text(sender, message)
+    event.acknowledgement_attempts += 1
+    if sent:
+        event.acknowledged_at = timezone.now()
+    event.save(update_fields=["acknowledgement_attempts", "acknowledged_at"])
+    return sent
 
 
 def process_meta_payload(payload):
@@ -105,12 +138,16 @@ def process_meta_payload(payload):
             except IntegrityError:
                 created = False
             if not created:
+                if not _acknowledge_action(event, sender):
+                    raise RuntimeError("Meta WhatsApp action reply failed")
                 outcomes.append("duplicate")
                 continue
             outcome, order = _process_action(sender, action, event) if action else ("received", None)
             event.order = order
             event.outcome = outcome
             event.save(update_fields=["order", "outcome"])
+            if not _acknowledge_action(event, sender):
+                raise RuntimeError("Meta WhatsApp action reply failed")
             contact = contacts.get(sender, {})
             profile = contact.get("profile") or {}
             logger.info("Meta WhatsApp message received. sender=%s type=%s name_present=%s outcome=%s", ("*" * max(0, len(sender) - 4) + sender[-4:]), kind, bool(profile.get("name")), outcome)

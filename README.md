@@ -2,6 +2,47 @@
 
 متجر Django عربي RTL بواجهة editorial، catalog وvariants حقيقية، session cart، coupons، guest checkout، order snapshots، حسابات، wishlist، ولوحة تشغيل مخصصة بصلاحيات server-side.
 
+## Official WhatsApp Cloud API order notifications
+
+New orders call Meta's Cloud API after the order transaction commits. In test mode,
+all notifications go to `WHATSAPP_TEST_RECIPIENT`; add and verify that recipient in
+Meta's WhatsApp API setup first. The `memo_order_actions_ar_v1` template
+uses customer name, order number, and total as its three body parameters, with
+quick reply buttons for confirming, editing, or cancelling the order.
+Set `WHATSAPP_TEMPLATE_LANGUAGE=ar`. Until Meta approves this template, use
+`hello_world` with `en_US` only to check API connectivity; it has no order details.
+The Meta test sender cannot message arbitrary customer numbers.
+
+Keep the access token only in the ignored `.env` on each server. A temporary
+Meta developer token expires; replace it with an appropriate long-lived token
+before relying on this integration. Run `docker compose up -d --build web nginx`
+after updating the server's `.env`. Evolution services are optional and start
+only with `docker compose --profile legacy-whatsapp up -d`.
+
+Button actions require `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, a registered
+public `/api/whatsapp/webhook/` callback, and message subscriptions. Without these,
+the order notification may arrive but button presses cannot update the order.
+
+For the current Meta test sender, use these server `.env` values alongside the
+access token, phone number ID, and WABA ID:
+
+```dotenv
+WHATSAPP_PROVIDER=meta
+WHATSAPP_TEST_MODE=true
+WHATSAPP_TEST_RECIPIENT=+201552810113
+WHATSAPP_TEMPLATE_NAME=memo_order_actions_ar_v1
+WHATSAPP_TEMPLATE_LANGUAGE=ar
+WHATSAPP_APP_SECRET=<App settings / Basic / App secret>
+WHATSAPP_VERIFY_TOKEN=<a random secret chosen by you>
+```
+
+In the Meta app's WhatsApp Webhooks configuration, set the callback URL to
+`https://memo-eg.io/api/whatsapp/webhook/`, enter the same verify token, and
+subscribe to the `messages` field. Meta requires the public endpoint to respond
+to its verification challenge. The WABA is already subscribed to one app; check
+that the subscription belongs to the same app before adding another. Test the
+three buttons using an order placed with the allowlisted test recipient number.
+
 ## التشغيل المحلي
 
 ```powershell

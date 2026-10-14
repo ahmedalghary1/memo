@@ -15,7 +15,11 @@
         {% csrf_token %}
         {{ form.non_field_errors }}
         <h2>بيانات التواصل والتوصيل</h2>
-        <p>راجع البيانات التالية، ثم احفظ التعديلات وارجع إلى واتساب لتأكيد الطلب.</p>
+        {% if meta_whatsapp %}
+          <p>راجع بيانات التواصل والتوصيل، ثم احفظ التعديلات. سيراجع فريق MEMO الطلب ويتواصل معك لتأكيده.</p>
+        {% else %}
+          <p>راجع البيانات التالية، ثم احفظ التعديلات وارجع إلى واتساب لتأكيد الطلب.</p>
+        {% endif %}
         <div class="form-grid">
           {% for field in form %}{% include 'components/form-field.html' %}{% endfor %}
         </div>
@@ -28,7 +32,7 @@
           <div><strong>{{ item.product_name }}</strong><span>{{ item.quantity }} × {{ item.unit_price|floatformat:0 }} ج.م</span></div>
         {% endfor %}
         <p><span>الإجمالي</span><strong>{{ order.grand_total|floatformat:0 }} ج.م</strong></p>
-        <small>بعد الحفظ أرسل في واتساب:<br><b dir="ltr">1 {{ order.order_number }}</b></small>
+        {% if not meta_whatsapp %}<small>بعد الحفظ أرسل في واتساب:<br><b dir="ltr">1 {{ order.order_number }}</b></small>{% endif %}
       </aside>
     </div>
   {% else %}

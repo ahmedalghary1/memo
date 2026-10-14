@@ -1,10 +1,14 @@
 import json
-from unittest.mock import patch
+import hashlib
+import hmac
+from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderItem, WhatsAppWebhookEvent
+from apps.orders.whatsapp.meta import MetaWhatsAppProvider
+from apps.orders.whatsapp.meta_webhooks import make_action_payload
 from apps.orders.whatsapp.services import (
     EvolutionAPIClient,
     EvolutionAPIError,
@@ -19,6 +23,112 @@ class PhoneNormalizationTests(SimpleTestCase):
         self.assertEqual(normalize_phone_number("01012345678"), "201012345678")
         self.assertEqual(normalize_phone_number("+201012345678"), "201012345678")
         self.assertEqual(normalize_phone_number("201012345678"), "201012345678")
+
+
+class MetaOrderConfirmationTests(TestCase):
+    @override_settings(
+        WHATSAPP_API_ENABLED=True,
+        WHATSAPP_PHONE_NUMBER_ID="1401557606367251",
+        WHATSAPP_ACCESS_TOKEN="test-token",
+        WHATSAPP_GRAPH_API_VERSION="v23.0",
+        WHATSAPP_TEST_MODE=True,
+        WHATSAPP_TEST_RECIPIENT="01552810113",
+        WHATSAPP_TEMPLATE_NAME="memo_order_actions_ar_v1",
+        WHATSAPP_TEMPLATE_LANGUAGE="ar",
+    )
+    @patch("apps.orders.whatsapp.meta.urlopen")
+    def test_sends_order_details_to_test_recipient(self, mocked_urlopen):
+        order = Order.objects.create(
+            status="pending_confirmation", subtotal=500, shipping_total=70, grand_total=570,
+            customer_name="Customer", customer_phone="01012345678", governorate="Cairo",
+            area="Nasr City", address_line="Street 1", payment_method="cash",
+        )
+        response = MagicMock()
+        response.status = 200
+        response.read.return_value = b'{"messages":[{"id":"wamid.test"}]}'
+        mocked_urlopen.return_value.__enter__.return_value = response
+
+        self.assertTrue(MetaWhatsAppProvider().send_order_confirmation(order))
+
+        request = mocked_urlopen.call_args.args[0]
+        payload = json.loads(request.data)
+        self.assertEqual(payload["to"], "201552810113")
+        self.assertEqual(payload["template"]["name"], "memo_order_actions_ar_v1")
+        self.assertEqual(payload["template"]["language"]["code"], "ar")
+        self.assertEqual(
+            [item["text"] for item in payload["template"]["components"][0]["parameters"]],
+            ["Customer", order.order_number, "570.00 EGP"],
+        )
+        self.assertEqual(
+            [component["index"] for component in payload["template"]["components"][1:]],
+            ["0", "1", "2"],
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.whatsapp_message_id, "wamid.test")
+        self.assertIsNotNone(order.whatsapp_confirmation_sent_at)
+
+
+@override_settings(WHATSAPP_APP_SECRET="test-app-secret", WHATSAPP_PHONE_NUMBER_ID="1401557606367251")
+class MetaButtonWebhookTests(TestCase):
+    def setUp(self):
+        self.order = Order.objects.create(
+            status="pending_confirmation", subtotal=500, shipping_total=70, grand_total=570,
+            customer_name="Customer", customer_phone="01552810113", governorate="Cairo",
+            area="Nasr City", address_line="Street 1", payment_method="cash",
+        )
+
+    def click(self, action, message_id="inbound-1", sender="201552810113"):
+        payload = {"entry": [{"changes": [{"value": {"messages": [{
+            "id": message_id, "from": sender, "type": "button",
+            "button": {"payload": make_action_payload(self.order, action), "text": action},
+        }]}}]}]}
+        body = json.dumps(payload).encode()
+        signature = "sha256=" + hmac.new(b"test-app-secret", body, hashlib.sha256).hexdigest()
+        return self.client.post(
+            reverse("whatsapp:webhook"), data=body, content_type="application/json",
+            HTTP_X_HUB_SIGNATURE_256=signature,
+        )
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_confirm_button_changes_status_and_replies_once(self, mocked_send):
+        self.assertEqual(self.click("confirm").status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "confirmed")
+        self.assertIn("تم تأكيد طلبك", mocked_send.call_args.args[1])
+        self.assertEqual(self.click("confirm").status_code, 200)
+        self.assertEqual(mocked_send.call_count, 1)
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_edit_button_sends_edit_link(self, mocked_send):
+        self.assertEqual(self.click("edit").status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "pending_confirmation")
+        self.assertEqual(self.order.confirmation_method, "whatsapp_edit_requested")
+        self.assertIn("/orders/edit/", mocked_send.call_args.args[1])
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_cancel_button_changes_status_and_replies(self, mocked_send):
+        self.assertEqual(self.click("cancel").status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "cancelled")
+        self.assertIn("تم إلغاء طلبك", mocked_send.call_args.args[1])
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=False)
+    def test_failed_reply_retries_without_repeating_transition(self, mocked_send):
+        self.assertEqual(self.click("confirm").status_code, 503)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "confirmed")
+        mocked_send.return_value = True
+        self.assertEqual(self.click("confirm").status_code, 200)
+        self.assertEqual(mocked_send.call_count, 2)
+        self.assertEqual(self.order.timeline.filter(status="confirmed").count(), 1)
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_other_phone_cannot_act_on_order(self, mocked_send):
+        self.assertEqual(self.click("confirm", sender="201000000000").status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "pending_confirmation")
+        mocked_send.assert_not_called()
 
 
 class EvolutionAPIClientTests(TestCase):
