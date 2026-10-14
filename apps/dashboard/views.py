@@ -17,16 +17,22 @@ import csv
 
 from apps.catalog.models import Category, Collection, Color, InventoryMovement, Product, ProductImage, ProductVariant, Size
 from apps.marketing.models import NewsletterSubscriber
-from apps.core.models import ContactMessage, StoreSettings
+from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
 from apps.orders.models import Coupon, Order, OrderEvent
 from .forms import (
     CategoryForm, CollectionForm, ColorForm, ContactMessageStatusForm, CouponForm,
     NewsletterSubscriberForm, OrderDetailsForm, OrderWorkflowForm, ProductForm as ProductDashboardForm,
     ProductImageForm, ProductVariantForm, SizeForm, StoreSettingsForm, TeamMemberForm,
+    InfoPageContentForm,
 )
 
 
 SECTION_CONFIG = {
+    "pages": {
+        "title": "محتوى الصفحات", "label": "SITE PAGES", "model": InfoPageContent,
+        "form": InfoPageContentForm, "fields": ["page", "title", "updated_at"],
+        "search": ["title", "intro", "body"], "creatable": False,
+    },
     "categories": {
         "title": "الفئات", "label": "CATEGORY STRUCTURE", "model": Category, "form": CategoryForm,
         "fields": ["display_name", "parent", "is_active", "sort_order"], "search": ["name", "slug", "parent__name"],
@@ -241,7 +247,7 @@ def order_details_update(request, order_number):
 @staff_required
 def settings_view(request):
     store_settings = StoreSettings.load()
-    form = StoreSettingsForm(request.POST or None, instance=store_settings)
+    form = StoreSettingsForm(request.POST or None, request.FILES or None, instance=store_settings)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "تم حفظ إعدادات المتجر.")
@@ -269,10 +275,11 @@ def data_section(request, section):
                 condition |= Q(**{f"{field}__icontains": query})
             rows = rows.filter(condition)
         title, label, fields, editable = config["title"], config["label"], config["fields"], True
+    creatable = editable and config.get("creatable", True)
     page_obj = Paginator(rows, 30).get_page(request.GET.get("page"))
     return render(request, "dashboard/data-section.html", {
         "title": title, "label": label, "rows": page_obj, "page_obj": page_obj,
-        "fields": fields, "section": section, "editable": editable, "query": query,
+        "fields": fields, "section": section, "editable": editable, "creatable": creatable, "query": query,
     })
 
 
@@ -281,6 +288,8 @@ def section_form(request, section, pk=None):
     config = SECTION_CONFIG.get(section)
     if not config:
         return redirect("dashboard:overview")
+    if pk is None and not config.get("creatable", True):
+        return redirect("dashboard:data_section", section=section)
     instance = get_object_or_404(config["model"], pk=pk) if pk else None
     previous_stock = instance.stock_quantity if section == "inventory" and instance else 0
     form = config["form"](request.POST or None, request.FILES or None, instance=instance)

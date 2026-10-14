@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from apps.orders.models import Order, OrderEvent
 from apps.catalog.models import Category, Color, InventoryMovement, Product, ProductVariant, Size
-from apps.core.models import ContactMessage, StoreSettings
+from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
 
 
 class DashboardPermissionTests(TestCase):
@@ -71,6 +71,28 @@ class DashboardPermissionTests(TestCase):
         settings = StoreSettings.load()
         self.assertEqual(settings.standard_shipping, Decimal("80"))
         self.assertEqual(settings.returns_days, 21)
+
+    def test_dashboard_controls_home_hero_and_information_pages(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+        listing = self.client.get(reverse("dashboard:data_section", args=["pages"]))
+        self.assertContains(listing, "محتوى الصفحات")
+        self.assertNotContains(listing, reverse("dashboard:section_create", args=["pages"]))
+        self.assertEqual(InfoPageContent.objects.count(), 7)
+        settings = StoreSettings.load()
+        settings.hero_title = "عنوان جديد"
+        settings.hero_description = "وصف جديد للمتجر"
+        settings.save()
+        self.assertContains(self.client.get(reverse("core:home")), "عنوان جديد")
+
+        edited = InfoPageContent.objects.get(page="about")
+        response = self.client.post(reverse("dashboard:section_edit", args=["pages", edited.pk]), {
+            "page": "about", "title": "قصتنا", "intro": "مقدمة خاصة", "body": "تفاصيل خاصة",
+        })
+        self.assertRedirects(response, reverse("dashboard:section_edit", args=["pages", edited.pk]))
+        page = self.client.get(reverse("core:info", args=["about"]))
+        self.assertContains(page, "قصتنا")
+        self.assertContains(page, "تفاصيل خاصة")
 
     def login_authorized(self):
         self.grant_dashboard()

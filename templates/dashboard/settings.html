@@ -3,6 +3,17 @@
 {% block content %}
 <div class="dash-page">
   <div class="dash-title"><div><p>STORE CONFIGURATION</p><h1>إعدادات المتجر</h1></div><span>آخر تحديث {{ store_settings.updated_at|date:'d.m.Y — H:i' }}</span></div>
-  <form class="dash-panel settings-form" method="post" novalidate>{% csrf_token %}{{ form.non_field_errors }}<div class="settings-grid">{% for field in form %}<label><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}</div><button class="dash-btn" type="submit">حفظ الإعدادات</button></form>
+  <form class="dash-panel settings-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}{{ form.non_field_errors }}
+    <div class="settings-grid">
+      {% for field in form %}
+        {% if field.name == 'hero_kicker' %}<h2 class="settings-section-title">واجهة المتجر</h2>{% endif %}
+        {% if field.name == 'announcement_text' %}<h2 class="settings-section-title">التواصل والإعلانات</h2>{% endif %}
+        {% if field.name == 'standard_shipping' %}<h2 class="settings-section-title">الشحن والاسترجاع</h2>{% endif %}
+        <label><span>{{ field.label }}</span>{{ field }}{% if field.name == 'hero_image' and store_settings.hero_image %}<img class="settings-image-preview" src="{{ store_settings.hero_image.url }}" alt="الصورة الحالية لواجهة المتجر">{% endif %}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>
+      {% endfor %}
+    </div>
+    <button class="dash-btn" type="submit">حفظ الإعدادات</button>
+  </form>
 </div>
 {% endblock %}

@@ -1,14 +1,14 @@
 {% extends 'base/base.html' %}{% load static %}{% block body_class %}home reference-home{% endblock %}
 {% block content %}
 <section class="ref-hero" data-motion-hero>
-  <img src="{% static 'images/memo-campaign.webp' %}" alt="إطلالة MEMO الجديدة" width="1672" height="941" fetchpriority="high">
+  <img src="{% if store_settings.hero_image %}{{ store_settings.hero_image.url }}{% else %}{% static 'images/memo-campaign.webp' %}{% endif %}" alt="{{ store_settings.hero_title }}" width="1672" height="941" fetchpriority="high">
   <div class="ref-hero__overlay"></div>
   <div class="hero-motion" aria-hidden="true">
     <canvas id="hero-webgl" class="hero-webgl"></canvas>
     <span class="hero-glow hero-glow--one"></span>
     <span class="hero-glow hero-glow--two"></span>
   </div>
-  <div class="ref-hero__copy shell"><span class="hero-kicker">MEMO / NEW SEASON</span><h1>قطع يومية.<br>بحضور واضح.</h1><p>قصّات معاصرة وخامات مختارة صُممت للراحة والتنسيق كل يوم.</p><div><a class="btn btn--gold" href="{% url 'catalog:list' %}?sort=new">اكتشف الإصدار الجديد</a><a class="hero-about-link" href="{% url 'core:info' 'about' %}">تعرّف على MEMO ←</a></div></div>
+  <div class="ref-hero__copy shell"><span class="hero-kicker">{{ store_settings.hero_kicker }}</span><h1>{{ store_settings.hero_title|linebreaksbr }}</h1><p>{{ store_settings.hero_description }}</p><div><a class="btn btn--gold" href="{% url 'catalog:list' %}?sort=new">اكتشف الإصدار الجديد</a><a class="hero-about-link" href="{% url 'core:info' 'about' %}">تعرّف على MEMO ←</a></div></div>
   <div class="hero-scroll" aria-hidden="true"><span></span> اسحب للاستكشاف</div>
 </section>
 

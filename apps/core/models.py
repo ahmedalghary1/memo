@@ -3,6 +3,10 @@ from django.db import models
 
 class StoreSettings(models.Model):
     brand_tagline = models.CharField("وصف العلامة", max_length=180, default="تصميم هادئ. حضور لا يُنسى.")
+    hero_kicker = models.CharField("عبارة واجهة المتجر الصغيرة", max_length=80, blank=True, default="MEMO / NEW SEASON")
+    hero_title = models.CharField("عنوان واجهة المتجر", max_length=180, blank=True, default="قطع يومية.\nبحضور واضح.")
+    hero_description = models.CharField("وصف واجهة المتجر", max_length=260, blank=True, default="قصّات معاصرة وخامات مختارة صُممت للراحة والتنسيق كل يوم.")
+    hero_image = models.ImageField("صورة واجهة المتجر", upload_to="store/", blank=True)
     announcement_text = models.CharField("شريط الإعلان", max_length=180, blank=True)
     support_email = models.EmailField("بريد الدعم", blank=True)
     support_phone = models.CharField("هاتف الدعم", max_length=30, blank=True)
@@ -29,6 +33,27 @@ class StoreSettings(models.Model):
 
     def __str__(self):
         return "إعدادات MEMO"
+
+
+class InfoPageContent(models.Model):
+    PAGE_CHOICES = [
+        ("about", "من نحن"), ("shipping", "الشحن"), ("returns", "الاستبدال والاسترجاع"),
+        ("privacy", "الخصوصية"), ("terms", "الشروط"), ("sizes", "دليل المقاسات"),
+        ("contact", "تواصل معنا"),
+    ]
+    page = models.CharField("الصفحة", max_length=20, choices=PAGE_CHOICES, unique=True)
+    title = models.CharField("العنوان", max_length=160)
+    intro = models.TextField("المقدمة")
+    body = models.TextField("محتوى مخصص", blank=True, help_text="إذا أضفت محتوى مخصصًا، سيحل محل التفاصيل الافتراضية في الصفحة، عدا نموذج التواصل.")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["page"]
+        verbose_name = "محتوى صفحة"
+        verbose_name_plural = "محتوى الصفحات"
+
+    def __str__(self):
+        return self.get_page_display()
 
 
 class ContactMessage(models.Model):

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101518">
+  <script>try{document.documentElement.dataset.dashboardTheme=localStorage.getItem('memo-dashboard-theme')==='light'?'light':'dark'}catch(e){document.documentElement.dataset.dashboardTheme='dark'}</script>
   <script>document.documentElement.classList.add('motion-capable')</script>
   <title>{% block title %}لوحة MEMO{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +15,7 @@
   <link rel="stylesheet" href="{% static 'css/dashboard-reference.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard-polish.css' %}?v=20261001-1">
   <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=20260901-1">
+  <link rel="stylesheet" href="{% static 'css/dashboard-theme.css' %}?v=20261014-1">
 </head>
 <body class="dashboard-shell">
   <aside class="dash-sidebar" id="dashboard-menu">
@@ -32,6 +34,7 @@
       <a href="{% url 'dashboard:data_section' 'media' %}">الوسائط</a>
       <a href="{% url 'dashboard:data_section' 'subscribers' %}">المشتركون</a>
       <a href="{% url 'dashboard:data_section' 'messages' %}">رسائل التواصل</a>
+      <a href="{% url 'dashboard:data_section' 'pages' %}">محتوى الصفحات</a>
       <a href="{% url 'dashboard:settings' %}">الإعدادات</a>
       {% if user.is_superuser %}<a href="{% url 'dashboard:team' %}">فريق العمل</a>{% endif %}
     </nav>
@@ -39,7 +42,14 @@
   </aside>
   <button class="dash-scrim" type="button" aria-label="إغلاق القائمة"></button>
   <main class="dash-main">
-    <header class="dash-top"><button class="dash-menu" type="button" aria-controls="dashboard-menu" aria-expanded="false">القائمة</button><span>{% now 'l، d F' %}</span><form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}<button class="dash-logout" type="submit">تسجيل الخروج</button></form></header>
+    <header class="dash-top">
+      <div class="dash-top__start"><button class="dash-menu" type="button" aria-controls="dashboard-menu" aria-expanded="false">القائمة</button><span class="dash-top__date">{% now 'l، d F' %}</span></div>
+      <div class="dash-top__actions">
+        <a class="dash-store-link" href="{% url 'core:home' %}" target="_blank" rel="noopener">عرض المتجر ↗</a>
+        <button class="dash-theme-toggle" type="button" data-dashboard-theme-toggle aria-label="التبديل إلى الوضع الفاتح"><span class="dash-theme-toggle__icon" aria-hidden="true"></span><span data-dashboard-theme-label>الوضع الفاتح</span></button>
+        <form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}<button class="dash-logout" type="submit">تسجيل الخروج</button></form>
+      </div>
+    </header>
     {% if messages %}<div class="dash-messages" aria-live="polite">{% for message in messages %}<div class="dash-message dash-message--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
@@ -47,6 +57,6 @@
   <script src="{% static 'vendor/ScrollTrigger.min.js' %}" defer></script>
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
   <script src="{% static 'js/motion.js' %}?v=20260930-2" defer></script>
-  <script src="{% static 'js/dashboard.js' %}?v=20260829-2" defer></script>
+  <script src="{% static 'js/dashboard.js' %}?v=20261014-1" defer></script>
 </body>
 </html>

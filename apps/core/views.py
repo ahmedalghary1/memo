@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.core.paginator import Paginator
 from .forms import ContactMessageForm
+from .models import InfoPageContent
 
 def home(request):
     products = Product.objects.available().prefetch_related("images", "variants__color", "variants__size")
@@ -70,6 +71,9 @@ def info_page(request, page):
         "contact": ("تواصل معنا", "أرسل استفسارك أو بيانات طلبك مباشرة إلى فريق خدمة العملاء."),
     }
     title, content = pages.get(page, pages["about"])
+    edited_page = InfoPageContent.objects.filter(page=page).first()
+    if edited_page:
+        title, content = edited_page.title, edited_page.intro
     contact_form = None
     if page == "contact":
         contact_form = ContactMessageForm(request.POST or None)
@@ -77,7 +81,7 @@ def info_page(request, page):
             contact_form.save()
             messages.success(request, "وصلت رسالتك إلى فريق MEMO وسنتابعها في أقرب وقت.")
             return redirect("core:info", page="contact")
-    return render(request, "store/info-page.html", {"title": title, "page_content": content, "page": page, "contact_form": contact_form})
+    return render(request, "store/info-page.html", {"title": title, "page_content": content, "custom_body": edited_page.body if edited_page else "", "page": page, "contact_form": contact_form})
 
 def error_403(request, exception=None): return render(request, "errors/403.html", status=403)
 def error_404(request, exception=None): return render(request, "errors/404.html", status=404)

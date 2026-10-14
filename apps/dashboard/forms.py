@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from apps.catalog.models import Category, Collection, Color, Product, ProductImage, ProductVariant, Size
 from apps.marketing.models import NewsletterSubscriber
 from apps.orders.models import Coupon, Order
-from apps.core.models import ContactMessage, StoreSettings
+from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
 
 
 class DashboardModelForm(forms.ModelForm):
@@ -14,6 +14,7 @@ class DashboardModelForm(forms.ModelForm):
 
     FIELD_LABELS = {
         "name": "الاسم", "slug": "الرابط المختصر", "parent": "القسم الرئيسي",
+        "page": "الصفحة", "title": "العنوان", "intro": "المقدمة", "body": "محتوى مخصص",
         "image": "الصورة", "description": "الوصف", "is_active": "نشط",
         "sort_order": "ترتيب العرض", "seo_title": "عنوان محركات البحث",
         "seo_description": "وصف محركات البحث", "cover_image": "صورة الغلاف",
@@ -179,9 +180,23 @@ class StoreSettingsForm(DashboardModelForm):
         model = StoreSettings
         exclude = ("updated_at",)
         widgets = {
+            "hero_title": forms.Textarea(attrs={"rows": 2, "placeholder": "يمكن تقسيم العنوان إلى سطرين"}),
+            "hero_description": forms.Textarea(attrs={"rows": 3}),
             "business_hours": forms.TextInput(attrs={"placeholder": "مثال: يوميًا من 10 صباحًا إلى 8 مساءً"}),
             "announcement_text": forms.TextInput(attrs={"placeholder": "اتركه فارغًا لإخفاء شريط الإعلان"}),
         }
+
+
+class InfoPageContentForm(DashboardModelForm):
+    class Meta:
+        model = InfoPageContent
+        fields = ("page", "title", "intro", "body")
+        widgets = {"intro": forms.Textarea(attrs={"rows": 3}), "body": forms.Textarea(attrs={"rows": 10})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["page"].disabled = True
 
 
 class TeamMemberForm(forms.ModelForm):

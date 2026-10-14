@@ -1,3 +1,20 @@
+const themeToggle=document.querySelector('[data-dashboard-theme-toggle]');
+const syncDashboardTheme=()=>{
+  const light=document.documentElement.dataset.dashboardTheme==='light';
+  themeToggle?.setAttribute('aria-label',light?'التبديل إلى الوضع الداكن':'التبديل إلى الوضع الفاتح');
+  themeToggle?.setAttribute('aria-pressed',String(light));
+  const label=themeToggle?.querySelector('[data-dashboard-theme-label]');
+  if(label)label.textContent=light?'الوضع الداكن':'الوضع الفاتح';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',light?'#f5f2ec':'#101518');
+};
+themeToggle?.addEventListener('click',()=>{
+  const next=document.documentElement.dataset.dashboardTheme==='light'?'dark':'light';
+  document.documentElement.dataset.dashboardTheme=next;
+  try{localStorage.setItem('memo-dashboard-theme',next)}catch(e){}
+  syncDashboardTheme();
+});
+syncDashboardTheme();
+
 const menuButton=document.querySelector('.dash-menu');
 const sidebar=document.querySelector('.dash-sidebar');
 const scrim=document.querySelector('.dash-scrim');
