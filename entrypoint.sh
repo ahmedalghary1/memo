@@ -5,16 +5,8 @@ echo "=========================================="
 echo "  Starting MEMO Production Container     "
 echo "=========================================="
 
-# Determine SQLite DB path
-TARGET_DB="${DB_PATH:-/app/data/db.sqlite3}"
-TARGET_DIR=$(dirname "$TARGET_DB")
-
-mkdir -p "$TARGET_DIR"
-
-# If persistent DB doesn't exist yet, seed from bundled db.sqlite3
-if [ ! -f "$TARGET_DB" ] && [ -f "/app/db.sqlite3" ]; then
-    echo "==> Initializing persistent database from bundled db.sqlite3..."
-    cp /app/db.sqlite3 "$TARGET_DB"
+if [ "${MEMO_PROCESS:-web}" = "notifications" ]; then
+    exec python manage.py process_order_notifications
 fi
 
 # Populate initial media files if media volume is empty

@@ -11,6 +11,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.orders.models import Order, OrderEvent, WhatsAppWebhookEvent
+from apps.orders.inventory import restore_cancelled_order_stock
 from .meta import normalize_meta_phone
 
 logger = logging.getLogger("apps.orders.whatsapp")
@@ -92,6 +93,8 @@ def _process_action(sender, action, event):
         order.confirmed_at = timezone.now() if new_status == "confirmed" else None
         order.confirmation_method = "whatsapp"
         order.save(update_fields=["status", "confirmed_at", "confirmation_method", "updated_at"])
+        if new_status == "cancelled":
+            restore_cancelled_order_stock(order)
         OrderEvent.objects.create(order=order, status=new_status, note="تم تأكيد الطلب عبر WhatsApp Cloud API" if new_status == "confirmed" else "تم إلغاء الطلب عبر WhatsApp Cloud API")
     return new_status, order
 

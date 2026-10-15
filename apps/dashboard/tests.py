@@ -4,9 +4,11 @@ from django.contrib.auth.models import Permission, User
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.orders.models import Order, OrderEvent
+from apps.orders.models import Coupon, Order, OrderEvent, OrderItem
 from apps.catalog.models import Category, Collection, Color, InventoryMovement, Product, ProductVariant, Size
 from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
+from django.utils import timezone
+from datetime import timedelta
 
 
 class DashboardPermissionTests(TestCase):
@@ -42,6 +44,33 @@ class DashboardPermissionTests(TestCase):
         self.assertRedirects(response, reverse("dashboard:order_detail", args=[order.order_number]))
         self.assertEqual(order.status, "confirmed")
         self.assertTrue(OrderEvent.objects.filter(order=order, status="confirmed", created_by=self.user).exists())
+
+    def test_cancel_restores_stock_and_coupon_only_once(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+        category = Category.objects.create(name="Test", slug="stock-test")
+        product = Product.objects.create(name="Tee", slug="stock-tee", base_sku="ST", price=100, category=category, status="active")
+        variant = ProductVariant.objects.create(product=product, sku="ST-1", stock_quantity=2)
+        coupon = Coupon.objects.create(code="RESTORE", discount_type="fixed", value=10, starts_at=timezone.now()-timedelta(days=1), ends_at=timezone.now()+timedelta(days=1), uses=1)
+        order = Order.objects.create(status="pending_confirmation", subtotal=100, grand_total=90, coupon=coupon, customer_name="Customer", customer_phone="0100000000", governorate="القاهرة", area="المعادي", address_line="Street")
+        OrderItem.objects.create(order=order, variant=variant, variant_sku=variant.sku, product_name=product.name, quantity=1, unit_price=100, line_total=100)
+        url = reverse("dashboard:order_update", args=[order.order_number])
+        payload = {"status": "cancelled", "payment_status": "pending", "note": ""}
+        self.client.post(url, payload)
+        self.client.post(url, payload)
+        variant.refresh_from_db()
+        coupon.refresh_from_db()
+        self.assertEqual(variant.stock_quantity, 3)
+        self.assertEqual(coupon.uses, 0)
+        self.assertEqual(InventoryMovement.objects.filter(variant=variant, movement_type="return").count(), 1)
+
+    def test_revenue_counts_only_paid_orders(self):
+        self.grant_dashboard()
+        self.client.force_login(self.user)
+        for state in ("pending", "paid"):
+            Order.objects.create(status="confirmed", payment_status=state, subtotal=100, grand_total=100, customer_name="Customer", customer_phone="0100000000", governorate="القاهرة", area="المعادي", address_line="Street")
+        response = self.client.get(reverse("dashboard:overview"))
+        self.assertEqual(response.context["revenue"], 100)
 
     def test_invalid_order_status_jump_is_rejected(self):
         self.grant_dashboard()

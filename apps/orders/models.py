@@ -1,6 +1,7 @@
 import secrets
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 class Address(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses")
@@ -51,6 +52,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    variant = models.ForeignKey("catalog.ProductVariant", null=True, blank=True, on_delete=models.PROTECT)
     product_name = models.CharField(max_length=180); variant_sku = models.CharField(max_length=80)
     size_name = models.CharField(max_length=40); color_name = models.CharField(max_length=80)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2); quantity = models.PositiveIntegerField()
@@ -86,3 +88,11 @@ class WhatsAppWebhookEvent(models.Model):
 
     def __str__(self):
         return self.event_id
+
+
+class OrderNotification(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="notification")
+    attempts = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=255, blank=True)

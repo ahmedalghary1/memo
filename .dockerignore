@@ -11,6 +11,7 @@ __pycache__
 .Python
 *.log
 *.sqlite3-journal
+*.sqlite3
 .env
 ChatGPT*
 WhatsApp*

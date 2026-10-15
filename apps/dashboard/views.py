@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, F, Q, Sum
+from django.db import transaction
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -97,7 +98,7 @@ def superuser_required(view):
 @staff_required
 def overview(request):
     orders = Order.objects.all()
-    delivered = orders.exclude(status__in=["cancelled", "returned"])
+    delivered = orders.filter(payment_status="paid", status__in=["confirmed", "preparing", "shipped", "delivered"])
     revenue = delivered.aggregate(v=Sum("grand_total"))["v"] or 0
     now = timezone.now()
     current_revenue = delivered.filter(created_at__gte=now - timedelta(days=30)).aggregate(v=Sum("grand_total"))["v"] or 0
@@ -215,12 +216,16 @@ def order_detail(request, order_number):
 
 @staff_required
 @require_POST
+@transaction.atomic
 def order_update(request, order_number):
-    order = get_object_or_404(Order, order_number=order_number)
+    order = get_object_or_404(Order.objects.select_for_update(), order_number=order_number)
     previous_status = order.status
     form = OrderWorkflowForm(request.POST, instance=order)
     if form.is_valid():
         order = form.save()
+        if previous_status != "cancelled" and order.status == "cancelled":
+            from apps.orders.inventory import restore_cancelled_order_stock
+            restore_cancelled_order_stock(order)
         note = form.cleaned_data["note"].strip()
         if previous_status != order.status or note:
             OrderEvent.objects.create(order=order, status=order.status, note=note or "تم تحديث حالة الطلب", created_by=request.user)

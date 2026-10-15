@@ -34,7 +34,7 @@ The project `.env` is configured for `PUBLIC_ORIGIN=https://memo-eg.io`, Django 
 After uploading the updated project and `.env` to the VPS:
 
 ```bash
-docker compose up -d --build web nginx
+docker compose up -d --build web notifications nginx
 docker compose ps
 docker compose logs --tail=100 web nginx
 ```

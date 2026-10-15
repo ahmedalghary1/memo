@@ -6,7 +6,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.catalog.models import Category, Color, Product, ProductVariant, Size
-from apps.orders.models import Order
+from apps.orders.models import Coupon, Order, OrderNotification
+from apps.orders.management.commands.process_order_notifications import process_one_notification
+from django.utils import timezone
+from datetime import timedelta
 from apps.core.models import StoreSettings
 
 
@@ -61,22 +64,50 @@ class CheckoutTests(TestCase):
         self.assertEqual(item.size_name, "")
         self.assertTrue(item.variant_sku)
 
-    @patch("apps.checkout.views.send_order_confirmation_safely", return_value=True)
-    def test_confirmation_is_scheduled_after_order_commit(self, mocked_send):
+    @patch("apps.orders.management.commands.process_order_notifications.send_order_confirmation_safely", return_value=True)
+    def test_confirmation_is_queued_and_sent_by_worker(self, mocked_send):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
-        with self.captureOnCommitCallbacks(execute=True):
-            self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        self.client.post(reverse("checkout:checkout"), self.checkout_data())
         order = Order.objects.get(customer_email="guest@example.com")
+        self.assertTrue(OrderNotification.objects.filter(order=order, sent_at__isnull=True).exists())
+        mocked_send.assert_not_called()
+        self.assertTrue(process_one_notification())
         mocked_send.assert_called_once_with(order.pk)
+        notification = OrderNotification.objects.get(order=order)
+        self.assertIsNotNone(notification.sent_at)
 
-    @patch("apps.checkout.views.send_order_confirmation_safely", return_value=False)
+    @patch("apps.orders.management.commands.process_order_notifications.send_order_confirmation_safely", return_value=False)
     def test_whatsapp_failure_does_not_roll_back_order(self, mocked_send):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
-        with self.captureOnCommitCallbacks(execute=True):
-            response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
         order = Order.objects.get(customer_email="guest@example.com")
         self.assertRedirects(response, reverse("checkout:success", args=[order.order_number]))
+        self.assertTrue(process_one_notification())
         mocked_send.assert_called_once_with(order.pk)
+        order.notification.refresh_from_db()
+        self.assertEqual(order.notification.attempts, 1)
+        self.assertIsNone(order.notification.sent_at)
+
+    def test_expired_coupon_is_rejected_at_checkout(self):
+        coupon = Coupon.objects.create(code="SAVE", discount_type="fixed", value=50, starts_at=timezone.now()-timedelta(days=2), ends_at=timezone.now()+timedelta(days=1))
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        self.client.post(reverse("cart:coupon"), {"code": "SAVE"})
+        coupon.ends_at = timezone.now()-timedelta(seconds=1)
+        coupon.save(update_fields=["ends_at"])
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())
+        self.assertNotIn("memo_coupon", self.client.session)
+
+    def test_exhausted_coupon_is_rejected_at_checkout(self):
+        coupon = Coupon.objects.create(code="LAST", discount_type="fixed", value=50, starts_at=timezone.now()-timedelta(days=1), ends_at=timezone.now()+timedelta(days=1), usage_limit=1)
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
+        self.client.post(reverse("cart:coupon"), {"code": "LAST"})
+        coupon.uses = 1
+        coupon.save(update_fields=["uses"])
+        response = self.client.post(reverse("checkout:checkout"), self.checkout_data())
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())
 
     def test_guest_checkout_requires_complete_contact_and_address(self):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})

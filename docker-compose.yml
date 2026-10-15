@@ -9,15 +9,16 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DB_PATH=/app/data/db.sqlite3
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
       - GUNICORN_THREADS=${GUNICORN_THREADS:-2}
     volumes:
-      - memo_data:/app/data
       - memo_media:/app/media
       - memo_static:/app/staticfiles
     networks:
       - memo_net
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8000/"]
       interval: 30s
@@ -60,6 +61,41 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-memo}
+      POSTGRES_USER: ${POSTGRES_USER:-memo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - memo_postgres_data:/var/lib/postgresql/data
+    networks:
+      - memo_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  notifications:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - MEMO_PROCESS=notifications
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - memo_net
 
   evolution-postgres:
     profiles: ["legacy-whatsapp"]
@@ -166,8 +202,8 @@ networks:
     driver: bridge
 
 volumes:
-  memo_data:
-    name: memo_db_data
+  memo_postgres_data:
+    name: memo_postgres_data
   memo_media:
     name: memo_media_data
   memo_static:

@@ -7,6 +7,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from apps.orders.models import Order, OrderItem, WhatsAppWebhookEvent
+from apps.catalog.models import Category, Product, ProductVariant, InventoryMovement
 from apps.orders.whatsapp.meta import MetaWhatsAppProvider
 from apps.orders.whatsapp.meta_webhooks import make_action_payload
 from apps.orders.whatsapp.services import (
@@ -164,6 +165,18 @@ class MetaButtonWebhookTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, "cancelled")
         self.assertIn("تم إلغاء طلبك", mocked_send.call_args.args[1])
+
+    @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=True)
+    def test_cancel_button_restores_reserved_stock_once(self, mocked_send):
+        category = Category.objects.create(name="Tops", slug="tops")
+        product = Product.objects.create(name="Tee", slug="tee", base_sku="TEE", category=category, price=100)
+        variant = ProductVariant.objects.create(product=product, sku="TEE-1", stock_quantity=2)
+        OrderItem.objects.create(order=self.order, variant=variant, variant_sku=variant.sku, product_name=product.name, quantity=1, unit_price=100, line_total=100)
+        self.assertEqual(self.click("cancel").status_code, 200)
+        self.assertEqual(self.click("cancel").status_code, 200)
+        variant.refresh_from_db()
+        self.assertEqual(variant.stock_quantity, 3)
+        self.assertEqual(InventoryMovement.objects.filter(variant=variant, movement_type="return").count(), 1)
 
     @patch("apps.orders.whatsapp.meta.MetaWhatsAppProvider.send_text", return_value=False)
     def test_failed_reply_retries_without_repeating_transition(self, mocked_send):

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.core.numbers import latin_digits
 from apps.orders.models import Order, OrderEvent, WhatsAppWebhookEvent
+from apps.orders.inventory import restore_cancelled_order_stock
 from .services import normalize_phone_number, resolve_order_reference
 
 logger = logging.getLogger(__name__)
@@ -314,6 +315,8 @@ def process_webhook_event(event: ParsedWebhook) -> ProcessResult:
         order.confirmed_at = timezone.now()
         update_fields.append("confirmed_at")
     order.save(update_fields=update_fields)
+    if action == "cancel":
+        restore_cancelled_order_stock(order)
     OrderEvent.objects.create(
         order=order,
         status=order.status,

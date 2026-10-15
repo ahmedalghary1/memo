@@ -7,6 +7,7 @@ from apps.orders.models import Coupon
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import AnonymousUser
+from django.urls import reverse
 
 class CartTests(TestCase):
     def setUp(self):
@@ -26,3 +27,7 @@ class CartTests(TestCase):
         Coupon.objects.create(code="SAVE10",discount_type="percentage",value=10,min_order=500,starts_at=timezone.now()-timedelta(days=1),ends_at=timezone.now()+timedelta(days=1))
         cart.apply_coupon("save10")
         self.assertEqual(cart.discount,Decimal("100")); self.assertEqual(cart.total,Decimal("900"))
+
+    def test_add_does_not_redirect_to_external_site(self):
+        response = self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1, "next": "https://external.example/path"})
+        self.assertRedirects(response, reverse("cart:detail"))

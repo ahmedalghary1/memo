@@ -1,11 +1,11 @@
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from apps.cart.services import Cart
 from apps.catalog.models import InventoryMovement, ProductVariant
-from apps.orders.models import Order, OrderEvent, OrderItem
+from apps.orders.models import Coupon, Order, OrderEvent, OrderItem, OrderNotification
 from apps.core.models import StoreSettings
-from apps.orders.whatsapp.services import send_order_confirmation_safely
 from .forms import CheckoutForm
 
 @transaction.atomic
@@ -35,19 +35,28 @@ def checkout(request):
             messages.error(request, "تغيّر المخزون قبل إتمام الطلب. راجع الكميات المتاحة وحاول مرة أخرى.")
             return redirect("cart:detail")
         shipping = store_settings.express_shipping if form.cleaned_data["shipping_method"] == "express" else store_settings.standard_shipping
-        coupon = cart.coupon
+        coupon_id = request.session.get(Cart.COUPON_KEY)
+        coupon = Coupon.objects.select_for_update().filter(pk=coupon_id).first() if coupon_id else None
+        if coupon_id:
+            try:
+                cart.validate_coupon(coupon)
+            except ValueError as exc:
+                request.session.pop(Cart.COUPON_KEY, None)
+                request.session.modified = True
+                messages.error(request, str(exc))
+                return redirect("cart:detail")
         order = Order.objects.create(user=request.user if request.user.is_authenticated else None, status="pending_confirmation", subtotal=cart.subtotal, discount_total=cart.discount, shipping_total=shipping, grand_total=cart.total+shipping, coupon=coupon, customer_name=form.cleaned_data["name"], customer_phone=form.cleaned_data["phone"], customer_email=form.cleaned_data["email"], governorate=form.cleaned_data["governorate"], area=form.cleaned_data["area"], address_line=form.cleaned_data["address"], address_details=form.cleaned_data["details"], notes=form.cleaned_data["notes"], payment_method=form.cleaned_data["payment_method"])
         for item in items:
-            variant = locked[item["variant"].pk]; variant.stock_quantity -= item["quantity"]; variant.save(update_fields=["stock_quantity"])
+            variant = locked[item["variant"].pk]
+            ProductVariant.objects.filter(pk=variant.pk).update(stock_quantity=F("stock_quantity") - item["quantity"])
             image = item["product"].primary_image
-            OrderItem.objects.create(order=order, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", color_name=variant.color.name if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
+            OrderItem.objects.create(order=order, variant=variant, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", color_name=variant.color.name if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
             InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="طلب جديد")
         OrderEvent.objects.create(order=order, status="pending_confirmation", note="تم استلام الطلب وبانتظار التأكيد")
         if coupon:
-            coupon.uses += 1
-            coupon.save(update_fields=["uses"])
+            Coupon.objects.filter(pk=coupon.pk).update(uses=F("uses") + 1)
+        OrderNotification.objects.create(order=order)
         cart.clear(); request.session["last_order"] = order.order_number
-        transaction.on_commit(lambda order_id=order.pk: send_order_confirmation_safely(order_id))
         return redirect("checkout:success", order_number=order.order_number)
     return render(request, "checkout/checkout.html", {"form": form, "cart": cart, "shipping": shipping, "addresses": addresses})
 

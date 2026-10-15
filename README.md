@@ -1,5 +1,7 @@
 # MEMO — Premium Arabic Fashion E-commerce
 
+> Production now uses PostgreSQL. For existing SQLite deployments, follow [POSTGRESQL_MIGRATION.md](POSTGRESQL_MIGRATION.md) before starting the updated web and notifications services. New orders queue WhatsApp confirmations in the database, and the `notifications` service sends them with retries.
+
 متجر Django عربي RTL بواجهة editorial، catalog وvariants حقيقية، session cart، coupons، guest checkout، order snapshots، حسابات، wishlist، ولوحة تشغيل مخصصة بصلاحيات server-side.
 
 ## Official WhatsApp Cloud API order notifications
@@ -15,7 +17,7 @@ The Meta test sender cannot message arbitrary customer numbers.
 
 Keep the access token only in the ignored `.env` on each server. A temporary
 Meta developer token expires; replace it with an appropriate long-lived token
-before relying on this integration. Run `docker compose up -d --build web nginx`
+before relying on this integration. Run `docker compose up -d --build web notifications nginx`
 after updating the server's `.env`. Evolution services are optional and start
 only with `docker compose --profile legacy-whatsapp up -d`.
 

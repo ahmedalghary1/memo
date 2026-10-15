@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 from apps.catalog.models import ProductVariant
 from .services import Cart
 
@@ -17,7 +18,8 @@ def add(request):
         messages.success(request, "أُضيفت القطعة إلى الحقيبة.")
     except (ValueError, TypeError) as exc: messages.error(request, str(exc) or "تعذرت إضافة القطعة.")
     if added and request.POST.get("buy_now"): return redirect("checkout:checkout")
-    return redirect(request.POST.get("next") or "cart:detail")
+    next_url = request.POST.get("next", "")
+    return redirect(next_url if url_has_allowed_host_and_scheme(next_url, {request.get_host()}, require_https=request.is_secure()) else "cart:detail")
 
 @require_POST
 def update(request, variant_id):
