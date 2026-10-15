@@ -11,7 +11,7 @@ from .forms import CheckoutForm
 @transaction.atomic
 def checkout(request):
     cart = Cart(request)
-    if not cart.count: messages.info(request, "حقيبتك فارغة."); return redirect("cart:detail")
+    if not cart.count: messages.info(request, "Your bag is empty."); return redirect("cart:detail")
     store_settings = StoreSettings.load()
     initial = {}
     addresses = []
@@ -20,7 +20,7 @@ def checkout(request):
         initial = {"name": request.user.get_full_name(), "email": request.user.email}
         default_address = next((address for address in addresses if address.is_default), None)
         if default_address:
-            initial.update({"name": default_address.name, "phone": default_address.phone, "governorate": default_address.governorate, "area": default_address.area, "address": default_address.address_line, "details": "، ".join(part for part in [default_address.building and f"مبنى {default_address.building}", default_address.floor and f"الدور {default_address.floor}", default_address.apartment and f"شقة {default_address.apartment}"] if part), "notes": default_address.notes})
+            initial.update({"name": default_address.name, "phone": default_address.phone, "governorate": default_address.governorate, "area": default_address.area, "address": default_address.address_line, "details": ", ".join(part for part in [default_address.building and f"Building {default_address.building}", default_address.floor and f"Floor {default_address.floor}", default_address.apartment and f"Apartment {default_address.apartment}"] if part), "notes": default_address.notes})
     form = CheckoutForm(request.POST or None, initial=initial, store_settings=store_settings)
     shipping = store_settings.standard_shipping
     if request.method == "POST" and form.is_valid():
@@ -32,7 +32,7 @@ def checkout(request):
             or locked[item["variant"].pk].stock_quantity < item["quantity"]
             for item in items
         ):
-            messages.error(request, "تغيّر المخزون قبل إتمام الطلب. راجع الكميات المتاحة وحاول مرة أخرى.")
+            messages.error(request, "Stock changed before checkout. Review the available quantities and try again.")
             return redirect("cart:detail")
         shipping = store_settings.express_shipping if form.cleaned_data["shipping_method"] == "express" else store_settings.standard_shipping
         coupon_id = request.session.get(Cart.COUPON_KEY)
@@ -51,8 +51,8 @@ def checkout(request):
             ProductVariant.objects.filter(pk=variant.pk).update(stock_quantity=F("stock_quantity") - item["quantity"])
             image = item["product"].primary_image
             OrderItem.objects.create(order=order, variant=variant, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", color_name=variant.color.name if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
-            InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="طلب جديد")
-        OrderEvent.objects.create(order=order, status="pending_confirmation", note="تم استلام الطلب وبانتظار التأكيد")
+            InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="New order")
+        OrderEvent.objects.create(order=order, status="pending_confirmation", note="Order received and awaiting confirmation")
         if coupon:
             Coupon.objects.filter(pk=coupon.pk).update(uses=F("uses") + 1)
         OrderNotification.objects.create(order=order)

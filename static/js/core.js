@@ -86,11 +86,11 @@ qsa('.desktop-nav a,.mobile-menu nav a').forEach(link=>{
 });
 
 const video=qs('[data-pause-offscreen]'); const videoToggle=qs('[data-video-toggle]');
-if(video){if(matchMedia('(prefers-reduced-motion: reduce)').matches)video.pause();else new IntersectionObserver(([e])=>e.isIntersecting?video.play().catch(()=>{}):video.pause(),{threshold:.15}).observe(video);videoToggle?.addEventListener('click',()=>{if(video.paused){video.play();videoToggle.textContent='إيقاف';videoToggle.setAttribute('aria-label','إيقاف الفيديو')}else{video.pause();videoToggle.textContent='تشغيل';videoToggle.setAttribute('aria-label','تشغيل الفيديو')}})}
+if(video){if(matchMedia('(prefers-reduced-motion: reduce)').matches)video.pause();else new IntersectionObserver(([e])=>e.isIntersecting?video.play().catch(()=>{}):video.pause(),{threshold:.15}).observe(video);videoToggle?.addEventListener('click',()=>{if(video.paused){video.play();videoToggle.textContent='Pause';videoToggle.setAttribute('aria-label','Pause video')}else{video.pause();videoToggle.textContent='Play';videoToggle.setAttribute('aria-label','Play video')}})}
 
 const variantForm=qs('[data-variant-form]');
 if(variantForm){const variants=JSON.parse(variantForm.dataset.variants||'[]'), colorInputs=qsa('input[name="color"]',variantForm), sizeInputs=qsa('input[name="size"]',variantForm), id=qs('[data-variant-id]',variantForm), stock=qs('[data-stock]',variantForm), add=qs('[data-add-button]',variantForm), mobile=qs('[data-mobile-add]'), selectedColor=qs('[data-selected-color]',variantForm);
-  function update(){const checkedColor=qs('input[name="color"]:checked',variantForm),checkedSize=qs('input[name="size"]:checked',variantForm),color=checkedColor?.value??'',size=checkedSize?.value??'',needsColor=colorInputs.length>0,needsSize=sizeInputs.length>0;colorInputs.forEach(c=>{if(c.checked&&selectedColor)selectedColor.textContent=c.dataset.label});sizeInputs.forEach(s=>{const match=variants.some(v=>v.color===color&&v.size===s.value&&v.stock>0);s.disabled=needsColor&&!checkedColor||!!checkedColor&&!match});const v=variants.find(x=>x.color===color&&x.size===size);if(!v){id.value='';const missing=[];if(needsColor&&!checkedColor)missing.push('اللون');if(needsSize&&!checkedSize)missing.push('المقاس');stock.textContent=missing.length?`اختر ${missing.join(' و')}.`:'لا توجد كمية متاحة حاليًا.';stock.className='stock-message';add.disabled=true;add.textContent=missing.length?`اختر ${missing.join(' و')}`:'غير متوفر';if(mobile){mobile.disabled=true;mobile.textContent=missing.length?`اختر ${missing.join(' و')}`:'غير متوفر'}return}id.value=v.id;const ok=v.stock>0;add.disabled=!ok;add.textContent=ok?'أضف إلى الحقيبة':'نفدت مؤقتًا';stock.textContent=v.status==='low'?`تبقّت ${v.stock} قطع فقط.`:ok?'متوفر وجاهز للشحن.':'هذا الاختيار غير متوفر.';stock.className=`stock-message ${v.status}`;if(mobile){mobile.disabled=!ok;mobile.textContent=ok?'أضف إلى الحقيبة':'غير متوفر'}}
+function update(){const checkedColor=qs('input[name="color"]:checked',variantForm),checkedSize=qs('input[name="size"]:checked',variantForm),color=checkedColor?.value??'',size=checkedSize?.value??'',needsColor=colorInputs.length>0,needsSize=sizeInputs.length>0;colorInputs.forEach(c=>{if(c.checked&&selectedColor)selectedColor.textContent=c.dataset.label});sizeInputs.forEach(s=>{const match=variants.some(v=>v.color===color&&v.size===s.value&&v.stock>0);s.disabled=needsColor&&!checkedColor||!!checkedColor&&!match});const v=variants.find(x=>x.color===color&&x.size===size);if(!v){id.value='';const missing=[];if(needsColor&&!checkedColor)missing.push('color');if(needsSize&&!checkedSize)missing.push('size');stock.textContent=missing.length?`Choose ${missing.join(' and ')}.`:'No stock is currently available.';stock.className='stock-message';add.disabled=true;add.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable';if(mobile){mobile.disabled=true;mobile.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable'}return}id.value=v.id;const ok=v.stock>0;add.disabled=!ok;add.textContent=ok?'Add to bag':'Sold out';stock.textContent=v.status==='low'?`Only ${v.stock} left.`:ok?'In stock and ready to ship.':'This option is unavailable.';stock.className=`stock-message ${v.status}`;if(mobile){mobile.disabled=!ok;mobile.textContent=ok?'Add to bag':'Unavailable'}}
   [...colorInputs,...sizeInputs].forEach(i=>i.addEventListener('change',update));mobile?.addEventListener('click',()=>variantForm.requestSubmit());const firstColor=colorInputs[0];if(firstColor&&!colorInputs.some(input=>input.checked))firstColor.click();else update();
 }
 
@@ -104,7 +104,7 @@ if(variantForm){
   const firstColor=qs('input[name="color"]',variantForm); if(firstColor&&!qs('input[name="color"]:checked',variantForm))firstColor.click();
   syncBuy();
 }
-qs('[data-share]')?.addEventListener('click',async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else{await navigator.clipboard.writeText(location.href);alert('تم نسخ رابط المنتج.')}}catch(error){if(error.name!=='AbortError')console.warn(error)}});
+qs('[data-share]')?.addEventListener('click',async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else{await navigator.clipboard.writeText(location.href);alert('Product link copied.')}}catch(error){if(error.name!=='AbortError')console.warn(error)}});
 qsa('[data-quantity-stepper]').forEach(stepper=>{
   const input=qs('input[name="quantity"]',stepper),minimum=Math.max(1,Number(input?.min)||1);
   if(!input)return;
@@ -155,24 +155,24 @@ if(checkoutForm&&checkoutSummary){
   const normalizeNumber=value=>Number(String(value??'').replace(/[٠-٩]/g,digit=>'٠١٢٣٤٥٦٧٨٩'.indexOf(digit)).replace(/[٬,\s]/g,'').replace('٫','.'));
   const shippingPrices={standard:normalizeNumber(checkoutSummary.dataset.standardShipping),express:normalizeNumber(checkoutSummary.dataset.expressShipping)};
   const parsedTotal=normalizeNumber(checkoutSummary.dataset.orderTotal),baseTotal=Number.isFinite(parsedTotal)?parsedTotal:0;
-  const money=value=>`${Math.round(Number.isFinite(value)?value:0).toLocaleString('en-US')} ج.م`;
+const money=value=>`${Math.round(Number.isFinite(value)?value:0).toLocaleString('en-US')} EGP`;
   const updateCheckoutTotal=()=>{
     const method=qs('input[name="shipping_method"]:checked',checkoutForm)?.value||qs('select[name="shipping_method"]',checkoutForm)?.value||'standard';
     const shipping=shippingPrices[method]??shippingPrices.standard;
     if(shippingTotal)shippingTotal.textContent=money(shipping);
     if(grandTotal)grandTotal.textContent=money(baseTotal+shipping);
-    if(estimate)estimate.textContent=method==='express'?'الوصول المتوقع خلال 1–2 يوم عمل.':'الوصول المتوقع خلال 2–5 أيام عمل.';
+if(estimate)estimate.textContent=method==='express'?'Estimated delivery in 1–2 business days.':'Estimated delivery in 2–5 business days.';
   };
   qsa('input[name="shipping_method"],select[name="shipping_method"]',checkoutForm).forEach(input=>input.addEventListener('change',updateCheckoutTotal));
   const savedAddress=qs('[data-saved-address]',checkoutForm);
   savedAddress?.addEventListener('change',()=>{
     const option=savedAddress.selectedOptions[0];if(!option?.value)return;
     const values={name:option.dataset.name,phone:option.dataset.phone,governorate:option.dataset.governorate,area:option.dataset.area,address:option.dataset.address,notes:option.dataset.notes};
-    const details=[option.dataset.building&&`مبنى ${option.dataset.building}`,option.dataset.floor&&`الدور ${option.dataset.floor}`,option.dataset.apartment&&`شقة ${option.dataset.apartment}`].filter(Boolean).join('، ');values.details=details;
+const details=[option.dataset.building&&`Building ${option.dataset.building}`,option.dataset.floor&&`Floor ${option.dataset.floor}`,option.dataset.apartment&&`Apartment ${option.dataset.apartment}`].filter(Boolean).join(', ');values.details=details;
     Object.entries(values).forEach(([name,value])=>{const field=checkoutForm.elements.namedItem(name);if(field)field.value=value||''});
   });
   const summaryDetails=qs('[data-checkout-summary-details]',checkoutSummary);if(summaryDetails&&matchMedia('(max-width:767px)').matches)summaryDetails.removeAttribute('open');
-  checkoutForm.addEventListener('submit',()=>{const button=qs('button[type="submit"]',checkoutForm);if(button){button.disabled=true;button.textContent='جارٍ تسجيل الطلب…'}});
+checkoutForm.addEventListener('submit',()=>{const button=qs('button[type="submit"]',checkoutForm);if(button){button.disabled=true;button.textContent='Placing order…'}});
   updateCheckoutTotal();
 }
 
@@ -183,8 +183,8 @@ if(liveSearch){
   input?.addEventListener('input',()=>{
     clearTimeout(timer);controller?.abort();const query=input.value.trim();
     if(query.length<2){results.replaceChildren();input.setAttribute('aria-expanded','false');return}
-    results.innerHTML='<p class="search-loading">جارٍ البحث…</p>';
-    timer=setTimeout(async()=>{controller=new AbortController();try{const url=new URL(liveSearch.dataset.suggestUrl,location.origin);url.searchParams.set('q',query);const response=await fetch(url,{signal:controller.signal,headers:{'X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error('search failed');const data=await response.json();results.innerHTML=data.results.length?data.results.map(item=>`<a href="${escapeHtml(item.url)}">${item.image?`<img src="${escapeHtml(item.image)}" alt="" width="52" height="66">`:''}<span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.category)} · ${escapeHtml(item.price)} ج.م</small></span></a>`).join(''):'<p class="search-loading">لا توجد نتائج مطابقة.</p>';input.setAttribute('aria-expanded',String(data.results.length>0));}catch(error){if(error.name!=='AbortError')results.replaceChildren()}},220);
+results.innerHTML='<p class="search-loading">Searching…</p>';
+timer=setTimeout(async()=>{controller=new AbortController();try{const url=new URL(liveSearch.dataset.suggestUrl,location.origin);url.searchParams.set('q',query);const response=await fetch(url,{signal:controller.signal,headers:{'X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error('search failed');const data=await response.json();results.innerHTML=data.results.length?data.results.map(item=>`<a href="${escapeHtml(item.url)}">${item.image?`<img src="${escapeHtml(item.image)}" alt="" width="52" height="66">`:''}<span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.category)} · ${escapeHtml(item.price)} EGP</small></span></a>`).join(''):'<p class="search-loading">No matching results.</p>';input.setAttribute('aria-expanded',String(data.results.length>0));}catch(error){if(error.name!=='AbortError')results.replaceChildren()}},220);
   });
 }
 
@@ -214,4 +214,4 @@ if(gallery){
 }
 
 const networkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-if(video&&(networkConnection?.saveData||networkConnection?.effectiveType?.includes('2g'))){video.pause();video.removeAttribute('autoplay');qsa('source',video).forEach(source=>{source.dataset.src=source.src;source.removeAttribute('src')});video.load();if(videoToggle){videoToggle.textContent='تشغيل';videoToggle.setAttribute('aria-label','تشغيل الفيديو')}}
+if(video&&(networkConnection?.saveData||networkConnection?.effectiveType?.includes('2g'))){video.pause();video.removeAttribute('autoplay');qsa('source',video).forEach(source=>{source.dataset.src=source.src;source.removeAttribute('src')});video.load();if(videoToggle){videoToggle.textContent='Play';videoToggle.setAttribute('aria-label','Play video')}}

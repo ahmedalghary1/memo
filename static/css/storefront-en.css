@@ -1,0 +1,13 @@
+/* English storefront typography and directional adjustments. */
+body { font-family: "Manrope", system-ui, sans-serif; }
+.eyebrow { direction: ltr; }
+.site-header .header__inner, .header-primary, .desktop-nav { direction: ltr; }
+.ref-hero__copy { align-items: flex-start; text-align: left; }
+.ref-hero__overlay { background: linear-gradient(90deg, rgba(0,0,0,.7), rgba(0,0,0,.16) 65%, transparent); }
+.account aside nav > a, .account aside nav button, table { text-align: left; }
+.shop-toolbar, .filters, .sort-form, .pdp-info, .cart-summary, .checkout, .auth-form, .account-content { text-align: left; }
+.mobile-menu nav .menu-category__link::after { content: "→"; }
+@media (max-width: 767px) {
+  .ref-hero__copy { align-items: flex-start; }
+  .hero-scroll { display: none !important; }
+}

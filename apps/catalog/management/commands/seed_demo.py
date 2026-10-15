@@ -11,24 +11,24 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         category_specs = [
             # المستوى الأول
-            (1, "رجالي", "men", None, "memo-black-tee-logo-v3.webp"),
-            (2, "نسائي", "women", None, "memo-sand-hoodie-logo-v3.webp"),
-            (3, "للجميع", "unisex", None, "memo-white-tee-logo-v3.webp"),
+            (1, "Men", "men", None, "memo-black-tee-logo-v3.webp"),
+            (2, "Women", "women", None, "memo-sand-hoodie-logo-v3.webp"),
+            (3, "Unisex", "unisex", None, "memo-white-tee-logo-v3.webp"),
             # المستوى الثاني
-            (1, "بناطيل", "trousers", "men", "memo-gray-sweat-logo-v3.webp"),
-            (2, "قمصان", "shirts", "men", "memo-white-tee-logo-v3.webp"),
-            (1, "قطع علوية", "women-tops", "women", "memo-sand-hoodie-logo-v3.webp"),
-            (2, "قطع سفلية", "women-bottoms", "women", "memo-gray-sweat-logo-v3.webp"),
-            (1, "تيشيرتات", "t-shirts", "unisex", "memo-black-tee-logo-v3.webp"),
-            (2, "هوديز", "hoodies", "unisex", "memo-sand-hoodie-logo-v3.webp"),
-            (3, "قصّات واسعة", "oversized", "unisex", "memo-gray-sweat-logo-v3.webp"),
+            (1, "Trousers", "trousers", "men", "memo-gray-sweat-logo-v3.webp"),
+            (2, "Shirts", "shirts", "men", "memo-white-tee-logo-v3.webp"),
+            (1, "Tops", "women-tops", "women", "memo-sand-hoodie-logo-v3.webp"),
+            (2, "Bottoms", "women-bottoms", "women", "memo-gray-sweat-logo-v3.webp"),
+            (1, "T-shirts", "t-shirts", "unisex", "memo-black-tee-logo-v3.webp"),
+            (2, "Hoodies", "hoodies", "unisex", "memo-sand-hoodie-logo-v3.webp"),
+            (3, "Oversized", "oversized", "unisex", "memo-gray-sweat-logo-v3.webp"),
             # المستوى الثالث
-            (1, "بناطيل جينز", "jeans", "trousers", "memo-black-tee-logo-v3.webp"),
-            (2, "بناطيل ترينج", "joggers", "trousers", "memo-gray-sweat-logo-v3.webp"),
-            (1, "قمصان كاجوال", "casual-shirts", "shirts", "memo-white-tee-logo-v3.webp"),
-            (2, "أوفرشيرت", "overshirts", "shirts", "memo-sand-hoodie-logo-v3.webp"),
-            (1, "تيشيرتات نسائي", "women-tshirts", "women-tops", "memo-white-tee-logo-v3.webp"),
-            (1, "بناطيل نسائي", "women-pants", "women-bottoms", "memo-sand-hoodie-logo-v3.webp"),
+            (1, "Jeans", "jeans", "trousers", "memo-black-tee-logo-v3.webp"),
+            (2, "Joggers", "joggers", "trousers", "memo-gray-sweat-logo-v3.webp"),
+            (1, "Casual shirts", "casual-shirts", "shirts", "memo-white-tee-logo-v3.webp"),
+            (2, "Overshirts", "overshirts", "shirts", "memo-sand-hoodie-logo-v3.webp"),
+            (1, "Women's T-shirts", "women-tshirts", "women-tops", "memo-white-tee-logo-v3.webp"),
+            (1, "Women's trousers", "women-pants", "women-bottoms", "memo-sand-hoodie-logo-v3.webp"),
         ]
         categories = {}
         for order, name, slug, parent_slug, image_name in category_specs:
@@ -41,28 +41,28 @@ class Command(BaseCommand):
                     "sort_order": order,
                     "is_active": True,
                     "image": f"categories/{image_name}",
-                    "description": "قطع معاصرة بقَصّات واثقة وخامات مختارة.",
+                    "description": "Contemporary pieces with confident cuts and selected fabrics.",
                 },
             )
             categories[slug] = category
-        collection, _ = Collection.objects.update_or_create(slug="drop-01", defaults={"name":"DROP 01","description":"الإصدار الأول من MEMO.","cover_image":"collections/memo-drop-01.png","hero_image":"collections/memo-drop-01.png","is_active":True})
-        colors = [Color.objects.update_or_create(slug=slug, defaults={"name":name,"hex_code":hex_code,"sort_order":i})[0] for i,(name,slug,hex_code) in enumerate([("أسود","black","#101010"),("عاجي","ivory","#E8DFD0"),("رملي","sand","#B7A185")])]
+        collection, _ = Collection.objects.update_or_create(slug="drop-01", defaults={"name":"DROP 01","description":"The first MEMO release.","cover_image":"collections/memo-drop-01.png","hero_image":"collections/memo-drop-01.png","is_active":True})
+        colors = [Color.objects.update_or_create(slug=slug, defaults={"name":name,"hex_code":hex_code,"sort_order":i})[0] for i,(name,slug,hex_code) in enumerate([("Black","black","#101010"),("Ivory","ivory","#E8DFD0"),("Sand","sand","#B7A185")])]
         sizes = [Size.objects.update_or_create(slug=s.lower(), defaults={"name":s,"sort_order":i})[0] for i,s in enumerate(["S","M","L","XL"])]
         products = [
-            ("تيشيرت Essential الأسود","essential-black-tee","MEMO-TS-001",790,990,0,"t-shirts"),
-            ("هودي Form العاجي","form-ivory-hoodie","MEMO-HD-002",1390,None,1,"hoodies"),
-            ("تيشيرت Structure الرملي","structure-sand-tee","MEMO-TS-003",890,None,2,"women-tshirts"),
-            ("بنطال Jogger Signature الأسود","signature-black-sweatshirt","MEMO-SW-004",1290,1490,0,"joggers"),
-            ("تيشيرت Quiet الأبيض","quiet-ivory-tee","MEMO-TS-005",760,None,1,"t-shirts"),
-            ("هودي After Dark","after-dark-hoodie","MEMO-HD-006",1490,None,0,"oversized"),
-            ("قميص Canvas واسع","canvas-overshirt","MEMO-OS-007",1690,1890,2,"overshirts"),
-            ("بنطال Denim Line الأسود","line-black-trouser","MEMO-TR-008",1450,None,0,"jeans"),
+            ("Essential Black Tee","essential-black-tee","MEMO-TS-001",790,990,0,"t-shirts"),
+            ("Form Ivory Hoodie","form-ivory-hoodie","MEMO-HD-002",1390,None,1,"hoodies"),
+            ("Structure Sand Tee","structure-sand-tee","MEMO-TS-003",890,None,2,"women-tshirts"),
+            ("Signature Black Joggers","signature-black-sweatshirt","MEMO-SW-004",1290,1490,0,"joggers"),
+            ("Quiet Ivory Tee","quiet-ivory-tee","MEMO-TS-005",760,None,1,"t-shirts"),
+            ("After Dark Hoodie","after-dark-hoodie","MEMO-HD-006",1490,None,0,"oversized"),
+            ("Canvas Overshirt","canvas-overshirt","MEMO-OS-007",1690,1890,2,"overshirts"),
+            ("Denim Line Black Trousers","line-black-trouser","MEMO-TR-008",1450,None,0,"jeans"),
         ]
         catalog_images = ["memo-black-tee-logo-v3.webp", "memo-sand-hoodie-logo-v3.webp", "memo-white-tee-logo-v3.webp", "memo-gray-sweat-logo-v3.webp"]
         for idx,(name,slug,sku,price,compare,color_idx,category_slug) in enumerate(products):
-            product,_ = Product.objects.update_or_create(slug=slug, defaults={"name":name,"base_sku":sku,"short_description":"قَصّة معاصرة وخامة ثقيلة بانسيابية مدروسة.","description":"قطعة يومية صُممت حول راحة الحركة ووضوح القَصّة. تفاصيل قليلة، محسوبة، وحضور يبقى.","material":"قطن ثقيل فاخر 100%.","care_instructions":"غسيل بارد مع ألوان مشابهة. تجفيف طبيعي.","price":price,"compare_at_price":compare,"category":categories[category_slug],"status":"active","featured":idx<4,"new_arrival":idx<5,"bestseller":idx in [0,1,3,5]})
+            product,_ = Product.objects.update_or_create(slug=slug, defaults={"name":name,"base_sku":sku,"short_description":"Modern fit and substantial fabric with a considered drape.","description":"An everyday piece designed for comfort and clean lines. Minimal, thoughtful details with lasting presence.","material":"100% premium heavyweight cotton.","care_instructions":"Wash cold with similar colors. Air dry.","price":price,"compare_at_price":compare,"category":categories[category_slug],"status":"active","featured":idx<4,"new_arrival":idx<5,"bestseller":idx in [0,1,3,5]})
             product.collections.add(collection)
-            ProductImage.objects.update_or_create(product=product, sort_order=0, defaults={"image":f"products/{catalog_images[idx % len(catalog_images)]}","alt_text":f"{name} — إطلالة MEMO","is_primary":True})
+            ProductImage.objects.update_or_create(product=product, sort_order=0, defaults={"image":f"products/{catalog_images[idx % len(catalog_images)]}","alt_text":f"{name} — MEMO look","is_primary":True})
             color=colors[color_idx]
             for size_idx,size in enumerate(sizes):
                 stock = 0 if (idx+size_idx)%7==0 else (2 if (idx+size_idx)%5==0 else 9+size_idx)

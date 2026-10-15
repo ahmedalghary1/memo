@@ -1,12 +1,12 @@
 {% extends 'base/base.html' %}
-{% block title %}البحث — MEMO{% endblock %}
+{% block title %}Search — MEMO{% endblock %}
 {% block content %}
 <section class="search-page shell">
   <p class="eyebrow">SEARCH / MEMO</p>
-  <h1>{% if query %}نتائج “{{ query }}”{% else %}ابحث في MEMO{% endif %}</h1>
-  <form action="{% url 'core:search' %}"><label class="sr-only" for="page-search">ابحث عن قطعة</label><input id="page-search" name="q" value="{{ query }}" placeholder="اسم القطعة، الكود، أو المجموعة" required><button class="btn btn--dark">بحث</button></form>
-  {% if query %}<p class="search-count">{{ page_obj.paginator.count }} نتيجة مطابقة</p>{% endif %}
+  <h1>{% if query %}Results for “{{ query }}”{% else %}Search MEMO{% endif %}</h1>
+  <form action="{% url 'core:search' %}"><label class="sr-only" for="page-search">Find a piece</label><input id="page-search" name="q" value="{{ query }}" placeholder="Product name, code, or collection" required><button class="btn btn--dark">Search</button></form>
+  {% if query %}<p class="search-count">{{ page_obj.paginator.count }} matching results</p>{% endif %}
   {% include 'components/product-grid.html' with products=products %}
-  {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="صفحات نتائج البحث">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}" aria-label="الصفحة السابقة">‹</a>{% endif %}<span>{{ page_obj.number }}</span><small>من {{ page_obj.paginator.num_pages }}</small>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}" aria-label="الصفحة التالية">›</a>{% endif %}</nav>{% endif %}
+  {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="Search result pages">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">‹</a>{% endif %}<span>{{ page_obj.number }}</span><small>of {{ page_obj.paginator.num_pages }}</small>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}" aria-label="Next page">›</a>{% endif %}</nav>{% endif %}
 </section>
 {% endblock %}

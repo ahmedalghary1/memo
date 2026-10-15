@@ -3,16 +3,16 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from apps.orders.models import Address
 from apps.core.numbers import latin_digits
-from apps.core.choices import EGYPT_GOVERNORATES
+from apps.core.choices import EGYPT_GOVERNORATES_EN
 
 class RegisterForm(UserCreationForm):
-    first_name = forms.CharField(label="الاسم الأول")
-    last_name = forms.CharField(label="اسم العائلة")
-    email = forms.EmailField(label="البريد الإلكتروني")
+    first_name = forms.CharField(label="First name")
+    last_name = forms.CharField(label="Last name")
+    email = forms.EmailField(label="Email address")
     class Meta: model = User; fields = ("first_name", "last_name", "email", "username", "password1", "password2")
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
-        if User.objects.filter(email__iexact=email).exists(): raise forms.ValidationError("هذا البريد مستخدم بالفعل.")
+        if User.objects.filter(email__iexact=email).exists(): raise forms.ValidationError("This email is already in use.")
         return email
 
 
@@ -20,17 +20,17 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("first_name", "last_name", "email")
-        labels = {"first_name": "الاسم الأول", "last_name": "اسم العائلة", "email": "البريد الإلكتروني"}
+        labels = {"first_name": "First name", "last_name": "Last name", "email": "Email address"}
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("هذا البريد مستخدم في حساب آخر.")
+            raise forms.ValidationError("This email is used by another account.")
         return email
 
 
 class AddressForm(forms.ModelForm):
-    governorate = forms.ChoiceField(label="المحافظة", choices=[("", "اختر المحافظة")] + EGYPT_GOVERNORATES)
+    governorate = forms.ChoiceField(label="Governorate", choices=[("", "Choose a governorate")] + EGYPT_GOVERNORATES_EN)
     class Meta:
         model = Address
         fields = (
@@ -38,16 +38,16 @@ class AddressForm(forms.ModelForm):
             "building", "floor", "apartment", "notes", "is_default",
         )
         labels = {
-            "name": "اسم المستلم",
-            "phone": "رقم الهاتف",
-            "governorate": "المحافظة",
-            "area": "المنطقة / المدينة",
-            "address_line": "اسم الشارع والعنوان",
-            "building": "رقم المبنى",
-            "floor": "الدور",
-            "apartment": "الشقة",
-            "notes": "علامة مميزة أو ملاحظات",
-            "is_default": "استخدامه كعنوان افتراضي",
+            "name": "Recipient name",
+            "phone": "Phone number",
+            "governorate": "Governorate",
+            "area": "Area / city",
+            "address_line": "Street address",
+            "building": "Building number",
+            "floor": "Floor",
+            "apartment": "Apartment",
+            "notes": "Landmark or notes",
+            "is_default": "Use as default address",
         }
         widgets = {
             "phone": forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}),
@@ -58,7 +58,7 @@ class AddressForm(forms.ModelForm):
     def clean_phone(self):
         phone = "".join(character for character in latin_digits(self.cleaned_data["phone"]) if character.isdigit() or character == "+")
         if len(phone.replace("+", "")) < 10:
-            raise forms.ValidationError("أدخل رقم هاتف صحيحًا لا يقل عن 10 أرقام.")
+            raise forms.ValidationError("Enter a valid phone number with at least 10 digits.")
         return phone
 
     def clean(self):

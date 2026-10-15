@@ -1,12 +1,12 @@
 {% extends 'base/base.html' %}
-{% block title %}تعديل الطلب {{ order.order_number }} — MEMO{% endblock %}
+{% block title %}Edit order {{ order.order_number }} — MEMO{% endblock %}
 {% block body_class %}checkout-page{% endblock %}
 {% block content %}
 <section class="whatsapp-edit-page shell">
   <header>
     <p class="eyebrow">WHATSAPP ORDER</p>
-    <h1>تعديل بيانات الطلب</h1>
-    <p>رقم الطلب <strong dir="ltr">{{ order.order_number }}</strong></p>
+    <h1>Edit order details</h1>
+    <p>Order number <strong dir="ltr">{{ order.order_number }}</strong></p>
   </header>
 
   {% if editable %}
@@ -14,31 +14,31 @@
       <form method="post" class="whatsapp-edit-form" novalidate>
         {% csrf_token %}
         {{ form.non_field_errors }}
-        <h2>بيانات التواصل والتوصيل</h2>
+        <h2>Contact and delivery details</h2>
         {% if meta_whatsapp %}
-          <p>راجع بيانات التواصل والتوصيل، ثم احفظ التعديلات. سيراجع فريق MEMO الطلب ويتواصل معك لتأكيده.</p>
+          <p>Review your contact and delivery details, then save. The MEMO team will review your order and contact you to confirm it.</p>
         {% else %}
-          <p>راجع البيانات التالية، ثم احفظ التعديلات وارجع إلى واتساب لتأكيد الطلب.</p>
+          <p>Review the details below, save your changes, then return to WhatsApp to confirm your order.</p>
         {% endif %}
         <div class="form-grid">
           {% for field in form %}{% include 'components/form-field.html' %}{% endfor %}
         </div>
-        <button class="btn btn--dark" type="submit">حفظ التعديلات</button>
+        <button class="btn btn--dark" type="submit">Save changes</button>
       </form>
 
       <aside class="whatsapp-edit-summary">
-        <h2>ملخص الطلب</h2>
+        <h2>Order summary</h2>
         {% for item in order.items.all %}
-          <div><strong>{{ item.product_name }}</strong><span>{{ item.quantity }} × {{ item.unit_price|floatformat:0 }} ج.م</span></div>
+          <div><strong>{{ item.product_name_en }}</strong><span>{{ item.quantity }} × {{ item.unit_price|floatformat:0 }} EGP</span></div>
         {% endfor %}
-        <p><span>الإجمالي</span><strong>{{ order.grand_total|floatformat:0 }} ج.م</strong></p>
-        {% if not meta_whatsapp %}<small>بعد الحفظ أرسل في واتساب:<br><b dir="ltr">1 {{ order.order_number }}</b></small>{% endif %}
+        <p><span>Total</span><strong>{{ order.grand_total|floatformat:0 }} EGP</strong></p>
+        {% if not meta_whatsapp %}<small>After saving, send this on WhatsApp:<br><b dir="ltr">1 {{ order.order_number }}</b></small>{% endif %}
       </aside>
     </div>
   {% else %}
     <div class="tracking-alert">
-      <strong>لا يمكن تعديل هذا الطلب الآن.</strong>
-      <p>حالة الطلب الحالية: {{ order.get_status_display }}.</p>
+      <strong>This order cannot be edited now.</strong>
+      <p>Current order status: {{ order.status_en }}.</p>
     </div>
   {% endif %}
 </section>

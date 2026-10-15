@@ -16,12 +16,12 @@ from .whatsapp.services import resolve_order_edit_token
 
 class OrderTrackingForm(forms.Form):
     order_number = forms.CharField(
-        label="رقم الطلب",
+        label="Order number",
         max_length=24,
-        widget=forms.TextInput(attrs={"placeholder": "مثال: MEMO-1A2B3C4D", "autocomplete": "off"}),
+        widget=forms.TextInput(attrs={"placeholder": "For example: MEMO-1A2B3C4D", "autocomplete": "off"}),
     )
     phone = forms.CharField(
-        label="رقم الهاتف المستخدم في الطلب",
+        label="Phone number used for the order",
         max_length=30,
         widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}),
     )
@@ -60,7 +60,7 @@ def whatsapp_edit(request, token):
     try:
         order_number = resolve_order_edit_token(token)
     except (signing.BadSignature, signing.SignatureExpired):
-        raise Http404("رابط تعديل الطلب غير صالح أو انتهت صلاحيته.")
+        raise Http404("This order edit link is invalid or has expired.")
 
     queryset = Order.objects.select_for_update() if request.method == "POST" else Order.objects.all()
     order = get_object_or_404(queryset.prefetch_related("items"), order_number=order_number)
@@ -74,12 +74,12 @@ def whatsapp_edit(request, token):
         OrderEvent.objects.create(
             order=order,
             status=order.status,
-            note="قام العميل بتعديل بيانات التواصل أو التوصيل من رابط WhatsApp",
+            note="Customer updated contact or delivery details through the WhatsApp link",
         )
         if settings.WHATSAPP_PROVIDER == "meta":
-            messages.success(request, "تم حفظ التعديلات على طلبك. سيراجعها فريق MEMO ويتواصل معك لتأكيد الطلب.")
+            messages.success(request, "Your changes have been saved. The MEMO team will review them and contact you to confirm your order.")
         else:
-            messages.success(request, "تم حفظ التعديلات. ارجع إلى واتساب وأرسل رقم 1 مع رقم الطلب لتأكيده.")
+            messages.success(request, "Your changes have been saved. Return to WhatsApp and send 1 with your order number to confirm.")
         return redirect("orders:whatsapp_edit", token=token)
 
     return render(

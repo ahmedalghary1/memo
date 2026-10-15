@@ -2,10 +2,10 @@ from django.db import models
 
 
 class StoreSettings(models.Model):
-    brand_tagline = models.CharField("وصف العلامة", max_length=180, default="تصميم هادئ. حضور لا يُنسى.")
+    brand_tagline = models.CharField("وصف العلامة", max_length=180, default="Quiet design. Lasting presence.")
     hero_kicker = models.CharField("عبارة واجهة المتجر الصغيرة", max_length=80, blank=True, default="MEMO / NEW SEASON")
-    hero_title = models.CharField("عنوان واجهة المتجر", max_length=180, blank=True, default="قطع يومية.\nبحضور واضح.")
-    hero_description = models.CharField("وصف واجهة المتجر", max_length=260, blank=True, default="قصّات معاصرة وخامات مختارة صُممت للراحة والتنسيق كل يوم.")
+    hero_title = models.CharField("عنوان واجهة المتجر", max_length=180, blank=True, default="Everyday pieces.\nDistinct presence.")
+    hero_description = models.CharField("وصف واجهة المتجر", max_length=260, blank=True, default="Modern cuts and selected fabrics, made for comfort every day.")
     hero_image = models.ImageField("صورة واجهة المتجر", upload_to="store/", blank=True)
     announcement_text = models.CharField("شريط الإعلان", max_length=180, blank=True)
     support_email = models.EmailField("بريد الدعم", blank=True)

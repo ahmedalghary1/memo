@@ -28,7 +28,7 @@ def profile(request):
     profile_form = UserProfileForm(profile_post, instance=request.user)
     if profile_post and profile_form.is_valid():
         profile_form.save()
-        messages.success(request, "تم تحديث بياناتك الشخصية.")
+        messages.success(request, "Your profile has been updated.")
         return redirect("accounts:profile")
     if address_post and form.is_valid():
         saved_address = form.save(commit=False)
@@ -36,7 +36,7 @@ def profile(request):
         saved_address.save()
         if saved_address.is_default:
             request.user.addresses.exclude(pk=saved_address.pk).update(is_default=False)
-        messages.success(request, "تم حفظ العنوان بنجاح.")
+        messages.success(request, "Your address has been saved.")
         return redirect("accounts:profile")
     return render(request, "accounts/profile.html", {
         "addresses": request.user.addresses.all().order_by("-is_default", "id"),
@@ -51,5 +51,5 @@ def address_delete(request, pk):
     address = get_object_or_404(Address, pk=pk, user=request.user)
     if request.method == "POST":
         address.delete()
-        messages.success(request, "تم حذف العنوان.")
+    messages.success(request, "The address has been deleted.")
     return redirect("accounts:profile")

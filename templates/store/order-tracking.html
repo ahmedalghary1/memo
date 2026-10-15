@@ -1,16 +1,16 @@
 {% extends 'base/base.html' %}
-{% block title %}تتبع طلبك — MEMO{% endblock %}
+{% block title %}Track your order — MEMO{% endblock %}
 {% block content %}
 <section class="tracking-page shell">
-  <header><p class="eyebrow">ORDER TRACKING</p><h1>أين طلبك؟</h1><p>أدخل رقم الطلب ورقم الهاتف نفسه المستخدم أثناء الشراء.</p></header>
-  <form class="tracking-form" method="post" novalidate>{% csrf_token %}{% for field in form %}{% include 'components/form-field.html' with field=field %}{% endfor %}<button class="btn btn--dark" type="submit">تتبع الطلب</button></form>
-  {% if not_found %}<div class="tracking-alert" role="alert"><strong>لم نتمكن من العثور على الطلب.</strong><p>راجع رقم الطلب والهاتف ثم حاول مرة أخرى.</p></div>{% endif %}
+  <header><p class="eyebrow">ORDER TRACKING</p><h1>Where is your order?</h1><p>Enter your order number and the phone number used at checkout.</p></header>
+  <form class="tracking-form" method="post" novalidate>{% csrf_token %}{% for field in form %}{% include 'components/form-field.html' with field=field %}{% endfor %}<button class="btn btn--dark" type="submit">Track order</button></form>
+  {% if not_found %}<div class="tracking-alert" role="alert"><strong>We could not find that order.</strong><p>Check the order number and phone number, then try again.</p></div>{% endif %}
   {% if order %}
   <article class="tracking-result">
-    <div class="tracking-result__head"><div><span>رقم الطلب</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.get_status_display }}</span></div>
-    <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>تم الاستلام</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التأكيد</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم الشحن</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>تم التسليم</span></div></div>
-    <dl class="tracking-meta"><div><dt>تاريخ الطلب</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>التوصيل إلى</dt><dd>{{ order.governorate }}، {{ order.area }}</dd></div><div><dt>الإجمالي</dt><dd>{{ order.grand_total|floatformat:0 }} ج.م</dd></div></dl>
-    <div class="tracking-events"><h2>آخر التحديثات</h2>{% for event in order.timeline.all %}<div><i></i><span><strong>{{ event.status_label }}</strong><small>{{ event.created_at|date:'d.m.Y — H:i' }}</small></span></div>{% empty %}<p>تم استلام الطلب وسيظهر أول تحديث بعد مراجعته.</p>{% endfor %}</div><a class="tracking-support" href="{% url 'core:info' 'contact' %}">هل تحتاج مساعدة بخصوص هذا الطلب؟</a>
+    <div class="tracking-result__head"><div><span>Order number</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.status_en }}</span></div>
+    <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>Received</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Confirmed</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Shipped</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Delivered</span></div></div>
+    <dl class="tracking-meta"><div><dt>Order date</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>Delivering to</dt><dd>{{ order.governorate_en }}, {{ order.area }}</dd></div><div><dt>Total</dt><dd>{{ order.grand_total|floatformat:0 }} EGP</dd></div></dl>
+    <div class="tracking-events"><h2>Latest updates</h2>{% for event in order.timeline.all %}<div><i></i><span><strong>{{ event.status_label_en }}</strong><small>{{ event.created_at|date:'d.m.Y — H:i' }}</small></span></div>{% empty %}<p>We have received your order. The first update will appear after review.</p>{% endfor %}</div><a class="tracking-support" href="{% url 'core:info' 'contact' %}">Need help with this order?</a>
   </article>
   {% endif %}
 </section>

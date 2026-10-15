@@ -64,19 +64,19 @@ def newsletter(request):
         email = request.POST.get("email", "").strip().lower()
         if email and "@" in email:
             NewsletterSubscriber.objects.update_or_create(email=email, defaults={"is_active": True})
-            messages.success(request, "أصبحت قريبًا من الإصدار القادم.")
-        else: messages.error(request, "أدخل بريدًا إلكترونيًا صحيحًا.")
+            messages.success(request, "You are on the list for the next release.")
+        else: messages.error(request, "Enter a valid email address.")
     return redirect(request.POST.get("next") or "core:home")
 
 def info_page(request, page):
     pages = {
-        "about": ("من نحن", "MEMO علامة أزياء معاصرة من القاهرة. نصمم قطعًا يومية بهوية واضحة، بخامات مختارة وقَصّات تُحترم فيها الحركة."),
-        "shipping": ("الشحن", "نجهّز الطلبات خلال يومي عمل، ويصل الشحن القياسي عادة خلال 2–5 أيام عمل داخل مصر."),
-        "returns": ("الاستبدال والاسترجاع", "يمكن طلب الاسترجاع خلال 14 يومًا من الاستلام للقطع غير المستخدمة وبحالتها الأصلية."),
-        "privacy": ("الخصوصية", "نستخدم بياناتك لتنفيذ الطلب وخدمتك فقط، ولا نبيع بيانات العملاء أو نشاركها لأغراض إعلانية خارجية."),
-        "terms": ("الشروط", "تخضع الطلبات لتأكيد المخزون وبيانات التوصيل. الأسعار المعروضة بالجنيه المصري وتشمل الضرائب المطبقة."),
-        "sizes": ("دليل المقاسات", "اختر مقاسك المعتاد لقَصّة MEMO الواسعة. قياسات كل قطعة تُراجع قبل الإطلاق، ويمكنك التواصل معنا قبل الطلب."),
-        "contact": ("تواصل معنا", "أرسل استفسارك أو بيانات طلبك مباشرة إلى فريق خدمة العملاء."),
+        "about": ("About us", "MEMO is a contemporary fashion brand from Cairo. We design everyday pieces with a clear identity, selected fabrics, and cuts made for movement."),
+        "shipping": ("Shipping", "We prepare orders within two business days. Standard delivery within Egypt usually takes 2–5 business days."),
+        "returns": ("Exchanges and returns", "You can request a return within 14 days of delivery for unused items in their original condition."),
+        "privacy": ("Privacy", "We use your data only to process your order and support you. We do not sell customer data or share it for external advertising."),
+        "terms": ("Terms", "Orders are subject to stock and delivery confirmation. Prices are in Egyptian pounds and include applicable taxes."),
+        "sizes": ("Size guide", "Choose your usual size for MEMO's relaxed fit. We review measurements for every piece before launch, and you can contact us before ordering."),
+        "contact": ("Contact us", "Send your question or order details directly to our customer support team."),
     }
     title, content = pages.get(page, pages["about"])
     edited_page = InfoPageContent.objects.filter(page=page).first()
@@ -87,7 +87,7 @@ def info_page(request, page):
         contact_form = ContactMessageForm(request.POST or None)
         if request.method == "POST" and contact_form.is_valid():
             contact_form.save()
-            messages.success(request, "وصلت رسالتك إلى فريق MEMO وسنتابعها في أقرب وقت.")
+            messages.success(request, "Your message has reached the MEMO team. We will get back to you soon.")
             return redirect("core:info", page="contact")
     return render(request, "store/info-page.html", {"title": title, "page_content": content, "custom_body": edited_page.body if edited_page else "", "page": page, "contact_form": contact_form})
 

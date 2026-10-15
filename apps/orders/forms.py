@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from apps.core.choices import EGYPT_GOVERNORATES
+from apps.core.choices import EGYPT_GOVERNORATES_EN
 from apps.core.numbers import latin_digits
 
 from .models import Order
@@ -22,17 +22,17 @@ class WhatsAppOrderEditForm(forms.ModelForm):
             "notes",
         )
         labels = {
-            "customer_name": "الاسم الكامل",
-            "customer_phone": "رقم الهاتف",
-            "customer_email": "البريد الإلكتروني",
-            "governorate": "المحافظة",
-            "area": "المنطقة",
-            "address_line": "العنوان",
-            "address_details": "المبنى، الطابق، الشقة",
-            "notes": "ملاحظات الطلب",
+            "customer_name": "Full name",
+            "customer_phone": "Phone number",
+            "customer_email": "Email address",
+            "governorate": "Governorate",
+            "area": "Area",
+            "address_line": "Address",
+            "address_details": "Building, floor, apartment",
+            "notes": "Order notes",
         }
         widgets = {
-            "governorate": forms.Select(choices=[("", "اختر المحافظة")] + EGYPT_GOVERNORATES),
+            "governorate": forms.Select(choices=[("", "Choose a governorate")] + EGYPT_GOVERNORATES_EN),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -46,14 +46,14 @@ class WhatsAppOrderEditForm(forms.ModelForm):
     def clean_customer_name(self):
         name = " ".join(self.cleaned_data["customer_name"].split())
         if len(name) < 3:
-            raise forms.ValidationError("أدخل الاسم الكامل بشكل صحيح.")
+            raise forms.ValidationError("Enter a valid full name.")
         return name
 
     def clean_customer_phone(self):
         phone = re.sub(r"[\s()\-]", "", latin_digits(self.cleaned_data["customer_phone"]))
         normalized = phone[1:] if phone.startswith("+") else phone
         if not normalized.isdigit() or not 10 <= len(normalized) <= 15:
-            raise forms.ValidationError("أدخل رقم هاتف صحيحًا من 10 إلى 15 رقمًا.")
+            raise forms.ValidationError("Enter a valid phone number with 10 to 15 digits.")
         return phone
 
     def clean_customer_email(self):

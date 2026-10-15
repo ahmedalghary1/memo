@@ -184,7 +184,7 @@ class ProductVariant(models.Model):
     def __str__(self): return f"{self.product} / {self.option_label}"
     @property
     def option_label(self):
-        return " / ".join(str(option) for option in (self.color, self.size) if option) or "بدون خيارات"
+        return " / ".join(str(option) for option in (self.color, self.size) if option) or "No options"
     def generate_sku(self):
         parts = [self.product.base_sku]
         if self.color_id: parts.append(self.color.slug)

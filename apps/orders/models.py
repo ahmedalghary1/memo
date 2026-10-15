@@ -2,6 +2,20 @@ import secrets
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from apps.core.choices import ENGLISH_GOVERNORATES
+
+ENGLISH_ORDER_STATUSES = {
+    "pending_confirmation": "Awaiting confirmation", "new": "New", "confirmed": "Confirmed",
+    "preparing": "Preparing", "shipped": "Shipped", "delivered": "Delivered",
+    "cancelled": "Cancelled", "returned": "Returned",
+}
+
+ENGLISH_SEEDED_PRODUCTS = {
+    "تيشيرت Essential الأسود": "Essential Black Tee", "هودي Form العاجي": "Form Ivory Hoodie",
+    "تيشيرت Structure الرملي": "Structure Sand Tee", "بنطال Jogger Signature الأسود": "Signature Black Joggers",
+    "تيشيرت Quiet الأبيض": "Quiet Ivory Tee", "هودي After Dark": "After Dark Hoodie",
+    "قميص Canvas واسع": "Canvas Overshirt", "بنطال Denim Line الأسود": "Denim Line Black Trousers",
+}
 
 class Address(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses")
@@ -10,6 +24,8 @@ class Address(models.Model):
     address_line = models.CharField(max_length=220); building = models.CharField(max_length=40, blank=True)
     floor = models.CharField(max_length=40, blank=True); apartment = models.CharField(max_length=40, blank=True)
     notes = models.TextField(blank=True); is_default = models.BooleanField(default=False)
+    @property
+    def governorate_en(self): return ENGLISH_GOVERNORATES.get(self.governorate, self.governorate)
 
 class Coupon(models.Model):
     TYPES = [("fixed", "قيمة ثابتة"), ("percentage", "نسبة")]
@@ -49,6 +65,10 @@ class Order(models.Model):
         if not self.order_number: self.order_number = f"MEMO-{secrets.token_hex(4).upper()}"
         super().save(*args, **kwargs)
     def __str__(self): return self.order_number
+    @property
+    def status_en(self): return ENGLISH_ORDER_STATUSES.get(self.status, self.status)
+    @property
+    def governorate_en(self): return ENGLISH_GOVERNORATES.get(self.governorate, self.governorate)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
@@ -57,6 +77,10 @@ class OrderItem(models.Model):
     size_name = models.CharField(max_length=40); color_name = models.CharField(max_length=80)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2); quantity = models.PositiveIntegerField()
     line_total = models.DecimalField(max_digits=10, decimal_places=2); product_image = models.CharField(max_length=300, blank=True)
+    @property
+    def product_name_en(self): return ENGLISH_SEEDED_PRODUCTS.get(self.product_name, self.product_name)
+    @property
+    def color_name_en(self): return {"أسود": "Black", "عاجي": "Ivory", "رملي": "Sand"}.get(self.color_name, self.color_name)
 
 class OrderEvent(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="timeline")
@@ -66,6 +90,8 @@ class OrderEvent(models.Model):
     class Meta: ordering = ["-created_at"]
     @property
     def status_label(self): return dict(Order.STATUS).get(self.status, self.status)
+    @property
+    def status_label_en(self): return ENGLISH_ORDER_STATUSES.get(self.status, self.status)
 
 
 class WhatsAppWebhookEvent(models.Model):

@@ -23,9 +23,9 @@ class Cart:
         current = int(self.data.get(key, 0))
         requested = quantity if replace else current + quantity
         if not variant.is_active:
-            raise ValueError("الكمية المطلوبة غير متاحة.")
+            raise ValueError("The requested quantity is unavailable.")
         if requested > variant.stock_quantity:
-            raise ValueError(f"المتاح حاليًا {variant.stock_quantity} قطعة فقط.")
+            raise ValueError(f"Only {variant.stock_quantity} items are currently available.")
         if requested <= 0: self.data.pop(key, None)
         else: self.data[key] = requested
         self.save()
@@ -65,13 +65,13 @@ class Cart:
     def validate_coupon(self, coupon):
         now = timezone.now()
         if not coupon or not coupon.is_active or coupon.starts_at > now or coupon.ends_at < now:
-            raise ValueError("كود الخصم غير صالح أو انتهت مدته.")
-        if coupon.usage_limit and coupon.uses >= coupon.usage_limit: raise ValueError("اكتمل الحد المتاح لهذا الكود.")
-        if self.subtotal < coupon.min_order: raise ValueError(f"الحد الأدنى لهذا الكود {coupon.min_order:.0f} ج.م.")
-        if self.request.user.is_authenticated and self.request.user.orders.filter(coupon=coupon).exclude(status__in=["cancelled", "returned"]).count() >= coupon.per_user_limit: raise ValueError("استخدمت هذا الكود من قبل.")
+            raise ValueError("This discount code is invalid or has expired.")
+        if coupon.usage_limit and coupon.uses >= coupon.usage_limit: raise ValueError("This discount code has reached its usage limit.")
+        if self.subtotal < coupon.min_order: raise ValueError(f"The minimum order for this code is {coupon.min_order:.0f} EGP.")
+        if self.request.user.is_authenticated and self.request.user.orders.filter(coupon=coupon).exclude(status__in=["cancelled", "returned"]).count() >= coupon.per_user_limit: raise ValueError("You have already used this discount code.")
         restricted_products = set(coupon.products.values_list("id", flat=True))
         restricted_categories = set(coupon.categories.values_list("id", flat=True))
-        if (restricted_products or restricted_categories) and not any(i["product"].id in restricted_products or i["product"].category_id in restricted_categories for i in self): raise ValueError("هذا الكود لا ينطبق على القطع الحالية.")
+        if (restricted_products or restricted_categories) and not any(i["product"].id in restricted_products or i["product"].category_id in restricted_categories for i in self): raise ValueError("This discount code does not apply to the items in your bag.")
         return coupon
     @property
     def coupon(self):
