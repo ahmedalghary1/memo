@@ -580,6 +580,19 @@ body.dashboard-shell .dash-sidebar nav a:hover {
   padding-inline-start: 16px;
 }
 
+/* Keep the full home image visible on tablet and desktop widths. */
+@media (min-width: 768px) {
+  .ref-hero {
+    height: auto;
+  }
+
+  .ref-hero > img {
+    display: block;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
 /* 16. Reduced Motion Accessibility */
 @media (prefers-reduced-motion: reduce) {
   html.motion-capable body::after {
