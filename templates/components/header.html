@@ -5,8 +5,108 @@
       <a class="brand" href="{% url 'core:home' %}" aria-label="MEMO Home"><img src="{% static 'images/memo-logo-transparent-v2.webp' %}?v=20261015" alt="MEMO" width="384" height="256" decoding="async"></a>
       <button class="icon-btn menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">Open menu</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
       <nav class="desktop-nav" aria-label="Main navigation">
-        <a href="{% url 'core:home' %}">Home</a><a href="{% url 'catalog:list' %}">Shop</a>
-        {% for cat in nav_categories|slice:':3' %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% endfor %}<a href="{% url 'core:info' 'about' %}">About us</a>
+        <div class="nav-item">
+          <a class="nav-link" href="{% url 'core:home' %}">Home</a>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" href="{% url 'catalog:list' %}">Shop</a>
+        </div>
+        {% for cat in nav_categories %}
+          <div class="nav-item has-dropdown">
+            <a class="nav-link" href="{{ cat.get_absolute_url }}">
+              <span>{{ cat.name }}</span>
+              {% if cat.nav_children or cat.nav_products %}
+                <svg class="dropdown-chevron" viewBox="0 0 10 6" aria-hidden="true" focusable="false"><path d="m1 1 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              {% endif %}
+            </a>
+            {% if cat.nav_children or cat.nav_products %}
+              <div class="mega-menu" aria-label="{{ cat.name }} navigation">
+                <div class="mega-menu__inner shell">
+                  <div class="mega-menu__content">
+                    <!-- Subcategories Column (Left) -->
+                    <div class="mega-menu__subcats">
+                      <div class="mega-subcats__head">
+                        <span class="mega-head__tag">Categories</span>
+                        <a href="{{ cat.get_absolute_url }}" class="mega-head__all">
+                          <span>All in {{ cat.name }}</span>
+                          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                      </div>
+                      <div class="mega-subcats__groups">
+                        {% for subcat in cat.nav_children %}
+                          <div class="mega-subcat-group">
+                            <a href="{{ subcat.get_absolute_url }}" class="mega-subcat-title">{{ subcat.name }}</a>
+                            {% if subcat.nav_children %}
+                              <ul class="mega-subcat-items">
+                                {% for deep in subcat.nav_children %}
+                                  <li>
+                                    <a href="{{ deep.get_absolute_url }}" class="mega-subcat-link">{{ deep.name }}</a>
+                                  </li>
+                                {% endfor %}
+                              </ul>
+                            {% endif %}
+                          </div>
+                        {% empty %}
+                          <div class="mega-subcat-group">
+                            <a href="{{ cat.get_absolute_url }}" class="mega-subcat-title">{{ cat.name }}</a>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+
+                    <!-- Products Showcase (Right - spread out like luxury global brands) -->
+                    <div class="mega-menu__products">
+                      <div class="mega-products__head">
+                        <span class="mega-head__tag">Featured in {{ cat.name }}</span>
+                        <a href="{{ cat.get_absolute_url }}" class="mega-head__view-all">View all {{ cat.name }} &rarr;</a>
+                      </div>
+                      <div class="mega-products__grid">
+                        {% for product in cat.nav_products %}
+                          <article class="mega-card">
+                            <a href="{{ product.get_absolute_url }}" class="mega-card__link" aria-label="{{ product.name }}">
+                              <div class="mega-card__media">
+                                {% if product.primary_image %}
+                                  <img src="{{ product.primary_image.optimized_url }}" alt="{{ product.name }}" width="240" height="300" loading="lazy">
+                                {% else %}
+                                  <div class="mega-card__placeholder">MEMO</div>
+                                {% endif %}
+                                {% if product.discount_percent %}
+                                  <span class="mega-card__badge badge-sale">-{{ product.discount_percent }}%</span>
+                                {% elif product.new_arrival %}
+                                  <span class="mega-card__badge badge-new">NEW</span>
+                                {% elif product.bestseller %}
+                                  <span class="mega-card__badge badge-hot">HOT</span>
+                                {% endif %}
+                              </div>
+                              <div class="mega-card__details">
+                                <span class="mega-card__cat">{{ product.category.name }}</span>
+                                <h4 class="mega-card__name">{{ product.name }}</h4>
+                                <div class="mega-card__price">
+                                  <strong>{{ product.price|floatformat:0 }} EGP</strong>
+                                  {% if product.compare_at_price and product.compare_at_price > product.price %}
+                                    <del>{{ product.compare_at_price|floatformat:0 }} EGP</del>
+                                  {% endif %}
+                                </div>
+                              </div>
+                            </a>
+                          </article>
+                        {% empty %}
+                          <div class="mega-products__empty">
+                            <p>Discover the latest {{ cat.name }} pieces.</p>
+                            <a href="{{ cat.get_absolute_url }}" class="btn btn-outline btn-sm">Explore {{ cat.name }}</a>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="nav-item">
+          <a class="nav-link" href="{% url 'core:info' 'about' %}">About us</a>
+        </div>
       </nav>
     </div>
     <div class="header-actions">
