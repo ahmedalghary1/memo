@@ -129,6 +129,22 @@ class Product(TimeStamped):
             return int((self.compare_at_price - self.price) / self.compare_at_price * 100)
         return 0
     @property
+    def description_html(self):
+        text = self.description or ""
+        if not text:
+            return ""
+        import re
+        from django.utils.safestring import mark_safe
+        normalized = re.sub(r'([^\n])\n(\s*[-*+]\s+)', r'\1\n\n\2', text)
+        normalized = re.sub(r'([^\n])\n(\s*\d+\.\s+)', r'\1\n\n\2', normalized)
+        try:
+            import markdown
+            html = markdown.markdown(normalized, extensions=['extra', 'nl2br', 'sane_lists'])
+        except Exception:
+            import html as html_lib
+            html = html_lib.escape(text).replace('\n', '<br>')
+        return mark_safe(html)
+    @property
     def primary_image(self):
         images = list(self.images.all())
         return next((image for image in images if image.is_primary), images[0] if images else None)
