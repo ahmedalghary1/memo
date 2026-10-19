@@ -47,3 +47,22 @@ document.querySelectorAll('[data-collection-picker]').forEach(picker=>{
     if(empty)empty.hidden=visible>0;
   });
 });
+
+document.querySelectorAll('[data-formset]').forEach(section=>{
+  const rows=section.querySelector('[data-form-rows]');
+  const template=section.querySelector('template[data-empty-form]');
+  const total=section.querySelector('input[name$="-TOTAL_FORMS"]');
+  section.querySelector('[data-add-form]')?.addEventListener('click',()=>{
+    const index=Number(total.value);
+    const wrapper=document.createElement('div');
+    wrapper.innerHTML=template.innerHTML.replaceAll('__prefix__',String(index)).trim();
+    const row=wrapper.firstElementChild;
+    row.classList.add('is-new');rows.append(row);total.value=String(index+1);
+    row.querySelector('select,input:not([type="hidden"])')?.focus();
+    row.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+  });
+  rows?.addEventListener('change',event=>{
+    if(!event.target.matches('input[name$="-DELETE"]'))return;
+    event.target.closest('.editor-row')?.classList.toggle('is-deleted',event.target.checked);
+  });
+});

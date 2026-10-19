@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.orders.models import Coupon, Order, OrderEvent, OrderItem
-from apps.catalog.models import Category, Collection, Color, InventoryMovement, Product, ProductVariant, Size
+from apps.catalog.models import Category, Collection, Color, InventoryMovement, Product, ProductImage, ProductVariant, Size
 from apps.core.models import ContactMessage, InfoPageContent, StoreSettings
 from django.utils import timezone
 from datetime import timedelta
@@ -212,6 +212,40 @@ class DashboardPermissionTests(TestCase):
         self.assertEqual(variant.sku, "BAG-1")
         self.assertIsNone(variant.color)
         self.assertIsNone(variant.size)
+
+    def test_product_editor_saves_colour_size_stock_and_colour_image_together(self):
+        import base64
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.login_authorized()
+        category = Category.objects.create(name="Tops", slug="editor-tops")
+        product = Product.objects.create(name="Tee", slug="editor-tee", base_sku="EDIT-TEE", price=500, category=category, status="active")
+        color = Color.objects.create(name="Black", slug="editor-black", hex_code="#000000")
+        size = Size.objects.create(name="M", slug="editor-m")
+        image = SimpleUploadedFile(
+            "black.png",
+            base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="),
+            content_type="image/png",
+        )
+        payload = {
+            "name": product.name, "slug": product.slug, "base_sku": product.base_sku,
+            "category": category.pk, "short_description": "", "description": "", "material": "",
+            "care_instructions": "", "fit_notes": "", "model_info": "", "measurement_notes": "",
+            "price": "500", "compare_at_price": "", "cost_price": "", "status": "active",
+            "meta_title": "", "meta_description": "",
+            "variants-TOTAL_FORMS": "1", "variants-INITIAL_FORMS": "0", "variants-MIN_NUM_FORMS": "0", "variants-MAX_NUM_FORMS": "1000",
+            "variants-0-color": str(color.pk), "variants-0-size": str(size.pk), "variants-0-stock_quantity": "7",
+            "variants-0-price_override": "", "variants-0-is_active": "on", "variants-0-low_stock_threshold": "2",
+            "images-TOTAL_FORMS": "1", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+            "images-0-color": str(color.pk), "images-0-image": image, "images-0-alt_text": "Black tee",
+            "images-0-sort_order": "0", "images-0-is_primary": "on",
+        }
+
+        response = self.client.post(reverse("dashboard:product_edit", args=[product.pk]), payload)
+
+        self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+        self.assertTrue(ProductVariant.objects.filter(product=product, color=color, size=size, stock_quantity=7).exists())
+        self.assertTrue(ProductImage.objects.filter(product=product, color=color, alt_text="Black tee").exists())
 
     def test_staff_can_edit_order_customer_details(self):
         self.login_authorized()

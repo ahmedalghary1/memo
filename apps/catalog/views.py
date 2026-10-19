@@ -1,8 +1,8 @@
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from .models import Category, Color, Collection, Product, ProductVariant, Size
+from .models import Category, Color, Collection, Product, ProductImage, ProductVariant, Size
 
 def product_list(request, slug=None):
     products = Product.objects.available().prefetch_related("images", "variants__color", "variants__size")
@@ -73,14 +73,24 @@ def collection_detail(request, slug):
     })
 
 def product_detail(request, slug):
-    product = get_object_or_404(Product.objects.available().prefetch_related("images", "variants__color", "variants__size"), slug=slug)
+    product = get_object_or_404(
+        Product.objects.available().prefetch_related(
+            Prefetch("images", queryset=ProductImage.objects.select_related("color")),
+            "variants__color", "variants__size",
+        ),
+        slug=slug,
+    )
     variants = list(product.variants.filter(is_active=True).select_related("color", "size"))
-    color_options = list({variant.color_id: variant.color for variant in variants if variant.color_id}.values())
-    size_options = list({variant.size_id: variant.size for variant in variants if variant.size_id}.values())
+    color_options = sorted({variant.color_id: variant.color for variant in variants if variant.color_id}.values(), key=lambda item: (item.sort_order, item.name))
+    size_options = sorted({variant.size_id: variant.size for variant in variants if variant.size_id}.values(), key=lambda item: (item.sort_order, item.name))
+    requested_color = request.GET.get("color")
+    selected_color = next((color for color in color_options if color.slug == requested_color), None)
+    if not selected_color:
+        selected_color = next((variant.color for variant in variants if variant.color_id and variant.stock_quantity > 0), color_options[0] if color_options else None)
     related = Product.objects.available().filter(category=product.category).exclude(pk=product.pk).prefetch_related("images", "variants__color", "variants__size")[:4]
     return render(request, "store/product-detail.html", {
         "product": product, "variants": variants, "related": related,
-        "color_options": color_options, "size_options": size_options,
+        "color_options": color_options, "size_options": size_options, "selected_color": selected_color,
         "has_colorless": any(not variant.color_id for variant in variants),
         "has_sizeless": any(not variant.size_id for variant in variants),
     })

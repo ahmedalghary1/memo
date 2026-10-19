@@ -90,9 +90,19 @@ if(video){if(matchMedia('(prefers-reduced-motion: reduce)').matches)video.pause(
 
 const variantForm=qs('[data-variant-form]');
 if(variantForm){const variants=JSON.parse(variantForm.dataset.variants||'[]'), colorInputs=qsa('input[name="color"]',variantForm), sizeInputs=qsa('input[name="size"]',variantForm), id=qs('[data-variant-id]',variantForm), stock=qs('[data-stock]',variantForm), add=qs('[data-add-button]',variantForm), mobile=qs('[data-mobile-add]'), selectedColor=qs('[data-selected-color]',variantForm);
-function update(){const checkedColor=qs('input[name="color"]:checked',variantForm),checkedSize=qs('input[name="size"]:checked',variantForm),color=checkedColor?.value??'',size=checkedSize?.value??'',needsColor=colorInputs.length>0,needsSize=sizeInputs.length>0;colorInputs.forEach(c=>{if(c.checked&&selectedColor)selectedColor.textContent=c.dataset.label});sizeInputs.forEach(s=>{const match=variants.some(v=>v.color===color&&v.size===s.value&&v.stock>0);s.disabled=needsColor&&!checkedColor||!!checkedColor&&!match});const v=variants.find(x=>x.color===color&&x.size===size);if(!v){id.value='';const missing=[];if(needsColor&&!checkedColor)missing.push('color');if(needsSize&&!checkedSize)missing.push('size');stock.textContent=missing.length?`Choose ${missing.join(' and ')}.`:'No stock is currently available.';stock.className='stock-message';add.disabled=true;add.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable';if(mobile){mobile.disabled=true;mobile.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable'}return}id.value=v.id;const ok=v.stock>0;add.disabled=!ok;add.textContent=ok?'Add to bag':'Sold out';stock.textContent=v.status==='low'?`Only ${v.stock} left.`:ok?'In stock and ready to ship.':'This option is unavailable.';stock.className=`stock-message ${v.status}`;if(mobile){mobile.disabled=!ok;mobile.textContent=ok?'Add to bag':'Unavailable'}}
-  [...colorInputs,...sizeInputs].forEach(i=>i.addEventListener('change',update));mobile?.addEventListener('click',()=>variantForm.requestSubmit());const firstColor=colorInputs[0];if(firstColor&&!colorInputs.some(input=>input.checked))firstColor.click();else update();
+function update(){const checkedColor=qs('input[name="color"]:checked',variantForm),checkedSize=qs('input[name="size"]:checked',variantForm),color=checkedColor?.value??'',size=checkedSize?.value??'',needsColor=colorInputs.length>0,needsSize=sizeInputs.length>0;if(checkedColor&&selectedColor)selectedColor.textContent=checkedColor.dataset.label||'';sizeInputs.forEach(s=>{const match=variants.some(v=>v.color===color&&v.size===s.value&&v.stock>0);s.disabled=needsColor&&!checkedColor||!!checkedColor&&!match;if(s.disabled&&s.checked)s.checked=false});window.dispatchEvent(new CustomEvent('productcolorchange',{detail:{color}}));if(checkedColor&&color){const url=new URL(location.href);url.searchParams.set('color',color);history.replaceState({},'',url)}const activeSize=qs('input[name="size"]:checked',variantForm)?.value??'';const v=variants.find(x=>x.color===color&&x.size===activeSize);if(!v){id.value='';const missing=[];if(needsColor&&!checkedColor)missing.push('color');if(needsSize&&!qs('input[name="size"]:checked',variantForm))missing.push('size');stock.textContent=missing.length?`Choose ${missing.join(' and ')}.`:'No stock is currently available.';stock.className='stock-message';add.disabled=true;add.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable';if(mobile){mobile.disabled=true;mobile.textContent=missing.length?`Choose ${missing.join(' and ')}`:'Unavailable'}return}id.value=v.id;const ok=v.stock>0;add.disabled=!ok;add.textContent=ok?'Add to bag':'Sold out';stock.textContent=v.status==='low'?`Only ${v.stock} left.`:ok?'In stock and ready to ship.':'This option is unavailable.';stock.className=`stock-message ${v.status}`;if(mobile){mobile.disabled=!ok;mobile.textContent=ok?'Add to bag':'Unavailable'}}
+  [...colorInputs,...sizeInputs].forEach(i=>i.addEventListener('change',update));mobile?.addEventListener('click',()=>variantForm.requestSubmit());const firstColor=colorInputs.find(input=>!input.disabled);if(firstColor&&!colorInputs.some(input=>input.checked))firstColor.click();else update();
 }
+
+qsa('.product-card').forEach(card=>{
+  const image=qs('[data-card-image]',card),swatches=qsa('[data-card-swatch]',card),links=qsa('[data-card-link]',card);
+  swatches.forEach((swatch,index)=>swatch.addEventListener('click',()=>{
+    swatches.forEach(item=>item.classList.remove('is-active'));swatch.classList.add('is-active');
+    if(image&&swatch.dataset.image){image.classList.add('is-changing');const preload=new Image();preload.onload=()=>{image.src=swatch.dataset.image;image.alt=swatch.dataset.alt||'';requestAnimationFrame(()=>image.classList.remove('is-changing'))};preload.src=swatch.dataset.image}
+    links.forEach(link=>{const url=new URL(link.href,location.href);url.searchParams.set('color',swatch.dataset.color);link.href=url});
+  }));
+  swatches[0]?.classList.add('is-active');
+});
 
 qsa('.toast').forEach(t=>setTimeout(()=>t.remove(),4500));
 
@@ -191,26 +201,18 @@ timer=setTimeout(async()=>{controller=new AbortController();try{const url=new UR
 const backToTop=qs('[data-back-to-top]');
 if(backToTop){addEventListener('scroll',()=>backToTop.classList.toggle('is-visible',scrollY>700),{passive:true});backToTop.addEventListener('click',()=>scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));}
 
-const gallery=qs('[data-gallery]'),galleryCurrent=qs('[data-gallery-current]'),lightbox=qs('[data-product-lightbox]');
+const gallery=qs('[data-gallery]'),galleryCurrent=qs('[data-gallery-current]'),galleryTotal=qs('[data-gallery-total]'),lightbox=qs('[data-product-lightbox]');
 if(gallery){
-  const galleryButtons=qsa('[data-gallery-image]',gallery),galleryImages=galleryButtons.map(button=>qs('img',button));let activeImage=0,galleryFrame;
-  const selectImage=index=>{
-    activeImage=(index+galleryImages.length)%galleryImages.length;
-    galleryButtons.forEach((button,buttonIndex)=>button.classList.toggle('is-active',buttonIndex===activeImage));
-    if(galleryCurrent)galleryCurrent.textContent=String(activeImage+1);
-    if(matchMedia('(min-width:768px)').matches&&activeImage>0){
-      const primary=galleryImages[0],selected=galleryImages[activeImage];
-      [primary.src,selected.src]=[selected.src,primary.src];[primary.alt,selected.alt]=[selected.alt,primary.alt];
-      activeImage=0;galleryButtons.forEach((button,index)=>button.classList.toggle('is-active',index===0));
-    }
-  };
-  const openLightbox=index=>{if(!lightbox)return;activeImage=index;const image=qs('[data-lightbox-image]',lightbox),source=galleryImages[activeImage];image.src=source.currentSrc||source.src;image.alt=source.alt;qs('[data-lightbox-count]',lightbox).textContent=`${activeImage+1} / ${galleryImages.length}`;lightbox.hidden=false;body.classList.add('is-locked');qs('[data-lightbox-close]',lightbox)?.focus()};
-  const stepLightbox=step=>{activeImage=(activeImage+step+galleryImages.length)%galleryImages.length;openLightbox(activeImage)};
-  galleryButtons.forEach((button,index)=>button.addEventListener('click',()=>{if(index>0&&matchMedia('(min-width:768px)').matches)selectImage(index);else openLightbox(index)}));
-  gallery.addEventListener('scroll',()=>{cancelAnimationFrame(galleryFrame);galleryFrame=requestAnimationFrame(()=>{const figures=qsa('figure',gallery),center=gallery.scrollLeft+gallery.clientWidth/2;let closest=0,distance=Infinity;figures.forEach((figure,index)=>{const figureCenter=figure.offsetLeft+figure.offsetWidth/2,nextDistance=Math.abs(figureCenter-center);if(nextDistance<distance){distance=nextDistance;closest=index}});if(galleryCurrent)galleryCurrent.textContent=String(closest+1)})},{passive:true});
-  const closeLightbox=()=>{if(!lightbox)return;lightbox.hidden=true;body.classList.remove('is-locked');galleryButtons[activeImage]?.focus()};
+  const figures=qsa('figure',gallery);let visibleFigures=[...figures],activeImage=0,galleryFrame;
+  const syncColor=color=>{const matched=figures.filter(figure=>figure.dataset.galleryColor===color),generic=figures.filter(figure=>!figure.dataset.galleryColor);visibleFigures=matched.length?matched:(generic.length?generic:figures);figures.forEach(figure=>figure.hidden=!visibleFigures.includes(figure));activeImage=0;gallery.scrollTo({left:0,behavior:'auto'});if(galleryCurrent)galleryCurrent.textContent='1';if(galleryTotal)galleryTotal.textContent=String(visibleFigures.length);visibleFigures.forEach((figure,index)=>qs('[data-gallery-image]',figure)?.classList.toggle('is-active',index===0));gallery.classList.remove('is-switching');requestAnimationFrame(()=>gallery.classList.add('is-switching'))};
+  const openLightbox=index=>{if(!lightbox||!visibleFigures.length)return;activeImage=(index+visibleFigures.length)%visibleFigures.length;const source=qs('img',visibleFigures[activeImage]),image=qs('[data-lightbox-image]',lightbox);image.src=source.currentSrc||source.src;image.alt=source.alt;qs('[data-lightbox-count]',lightbox).textContent=`${activeImage+1} / ${visibleFigures.length}`;lightbox.hidden=false;body.classList.add('is-locked');qs('[data-lightbox-close]',lightbox)?.focus()};
+  const stepLightbox=step=>openLightbox(activeImage+step);
+  figures.forEach(figure=>qs('[data-gallery-image]',figure)?.addEventListener('click',()=>openLightbox(visibleFigures.indexOf(figure))));
+  gallery.addEventListener('scroll',()=>{cancelAnimationFrame(galleryFrame);galleryFrame=requestAnimationFrame(()=>{const center=gallery.scrollLeft+gallery.clientWidth/2;let closest=0,distance=Infinity;visibleFigures.forEach((figure,index)=>{const nextDistance=Math.abs(figure.offsetLeft+figure.offsetWidth/2-center);if(nextDistance<distance){distance=nextDistance;closest=index}});if(galleryCurrent)galleryCurrent.textContent=String(closest+1)})},{passive:true});
+  const closeLightbox=()=>{if(!lightbox)return;lightbox.hidden=true;body.classList.remove('is-locked');qs('[data-gallery-image]',visibleFigures[activeImage])?.focus()};
   qs('[data-lightbox-close]',lightbox)?.addEventListener('click',closeLightbox);qs('[data-lightbox-prev]',lightbox)?.addEventListener('click',()=>stepLightbox(-1));qs('[data-lightbox-next]',lightbox)?.addEventListener('click',()=>stepLightbox(1));
   lightbox?.addEventListener('keydown',event=>{if(event.key==='Escape')closeLightbox();if(event.key==='ArrowLeft')stepLightbox(-1);if(event.key==='ArrowRight')stepLightbox(1)});
+  addEventListener('productcolorchange',event=>syncColor(event.detail.color));syncColor(qs('input[name="color"]:checked',variantForm)?.value||'');
 }
 
 const networkConnection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;

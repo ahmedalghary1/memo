@@ -88,3 +88,21 @@ class CategoryHierarchyTests(TestCase):
         response = self.client.get(self.product.get_absolute_url())
         self.assertContains(response, f'"id":{variant.pk}')
         self.assertNotContains(response, "اختر اللون والمقاس لمعرفة التوفر")
+
+    def test_product_detail_selects_requested_color_and_marks_color_images(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .models import Color, ProductImage, Size
+
+        black = Color.objects.create(name="Black", slug="black-detail", hex_code="#000000")
+        sand = Color.objects.create(name="Sand", slug="sand-detail", hex_code="#D8C3A5")
+        medium = Size.objects.create(name="M", slug="m-detail")
+        ProductVariant.objects.create(product=self.product, color=black, size=medium, stock_quantity=4)
+        ProductVariant.objects.create(product=self.product, color=sand, size=medium, stock_quantity=4)
+        image = SimpleUploadedFile("sand.gif", b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;", content_type="image/gif")
+        ProductImage.objects.create(product=self.product, color=sand, image=image, alt_text="Sand view")
+
+        response = self.client.get(self.product.get_absolute_url(), {"color": sand.slug})
+
+        self.assertEqual(response.context["selected_color"], sand)
+        self.assertContains(response, 'value="sand-detail" data-label="Sand" checked')
+        self.assertContains(response, 'data-gallery-color="sand-detail"')

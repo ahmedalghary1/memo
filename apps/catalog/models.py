@@ -139,6 +139,21 @@ class Product(TimeStamped):
             return None
         return next((image for image in self.images.all() if image.pk != primary.pk), None)
     @property
+    def card_color_options(self):
+        """Return each active colour with the best matching card image."""
+        variants = list(self.variants.all())
+        images = list(self.images.all())
+        fallback = self.primary_image
+        options, seen = [], set()
+        for variant in variants:
+            if not variant.is_active or not variant.color_id or variant.color_id in seen:
+                continue
+            seen.add(variant.color_id)
+            color_images = [image for image in images if image.color_id == variant.color_id]
+            image = next((item for item in color_images if item.is_primary), color_images[0] if color_images else fallback)
+            options.append({"color": variant.color, "image": image})
+        return options
+    @property
     def in_stock(self):
         prefetched = getattr(self, "_prefetched_objects_cache", {}).get("variants")
         if prefetched is not None:
@@ -147,6 +162,7 @@ class Product(TimeStamped):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
+    color = models.ForeignKey("Color", null=True, blank=True, on_delete=models.SET_NULL, related_name="product_images")
     image = models.ImageField(upload_to="products/", validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])])
     alt_text = models.CharField(max_length=220)
     sort_order = models.PositiveIntegerField(default=0)

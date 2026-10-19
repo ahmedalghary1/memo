@@ -24,7 +24,7 @@ from .forms import (
     CategoryForm, CollectionForm, ColorForm, ContactMessageStatusForm, CouponForm,
     NewsletterSubscriberForm, OrderDetailsForm, OrderWorkflowForm, ProductForm as ProductDashboardForm,
     ProductImageForm, ProductVariantForm, SizeForm, StoreSettingsForm, TeamMemberForm,
-    InfoPageContentForm,
+    InfoPageContentForm, ProductImageFormSet, ProductVariantFormSet,
 )
 
 
@@ -158,13 +158,22 @@ def products(request):
 def product_form(request, pk=None):
     product = get_object_or_404(Product, pk=pk) if pk else None
     form = ProductDashboardForm(request.POST or None, instance=product)
-    if request.method == "POST" and form.is_valid():
-        product = form.save()
-        messages.success(request, "تم حفظ المنتج بنجاح.")
-        return redirect("dashboard:product_edit", pk=product.pk)
-    return render(request, "dashboard/entity-form.html", {
+    variants = ProductVariantFormSet(request.POST or None, instance=product, prefix="variants") if product else None
+    images = ProductImageFormSet(request.POST or None, request.FILES or None, instance=product, prefix="images") if product else None
+    if request.method == "POST":
+        valid_related = not product or (variants.is_valid() and images.is_valid())
+        if form.is_valid() and valid_related:
+            with transaction.atomic():
+                product = form.save()
+                if variants and images:
+                    variants.save()
+                    images.save()
+            messages.success(request, "تم حفظ المنتج وألوانه ومقاساته وصوره بنجاح.")
+            return redirect("dashboard:product_edit", pk=product.pk)
+    return render(request, "dashboard/product-form.html", {
         "form": form, "title": "تعديل المنتج" if product else "منتج جديد", "label": "PRODUCT EDITOR",
-        "cancel_url": "dashboard:products", "multipart": False, "object": product,
+        "cancel_url": "dashboard:products", "multipart": True, "object": product,
+        "variant_formset": variants, "image_formset": images,
     })
 
 

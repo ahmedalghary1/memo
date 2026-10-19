@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import Permission, User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.forms import inlineformset_factory
 
 from apps.catalog.models import Category, Collection, Color, Product, ProductImage, ProductVariant, Size
 from apps.marketing.models import NewsletterSubscriber
@@ -150,7 +151,21 @@ class ProductVariantForm(DashboardModelForm):
 class ProductImageForm(DashboardModelForm):
     class Meta:
         model = ProductImage
-        fields = ("product", "image", "alt_text", "sort_order", "is_primary")
+        fields = ("product", "color", "image", "alt_text", "sort_order", "is_primary")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["color"].required = False
+        self.fields["color"].empty_label = "صورة عامة لكل الألوان"
+        self.fields["color"].help_text = "اختر اللون لتظهر هذه الصورة عند اختياره في المتجر."
+
+
+ProductVariantFormSet = inlineformset_factory(
+    Product, ProductVariant, form=ProductVariantForm, extra=1, can_delete=True,
+)
+ProductImageFormSet = inlineformset_factory(
+    Product, ProductImage, form=ProductImageForm, extra=1, can_delete=True,
+)
 
 
 class NewsletterSubscriberForm(DashboardModelForm):

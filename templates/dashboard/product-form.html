@@ -1,0 +1,34 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}{{ title }} — لوحة MEMO{% endblock %}
+{% block content %}
+<div class="dash-page product-editor">
+  <div class="dash-title"><div><p>{{ label }}</p><h1>{{ title }}</h1></div><div class="dash-title-actions">{% if object %}<a href="{{ object.get_absolute_url }}" target="_blank" rel="noopener">معاينة المنتج ↗</a>{% endif %}<a href="{% url 'dashboard:products' %}">العودة للمنتجات</a></div></div>
+  <form method="post" enctype="multipart/form-data" novalidate data-product-editor>
+    {% csrf_token %}
+    <section class="dash-panel editor-section">
+      <header><div><span class="editor-step">01</span><h2>بيانات المنتج</h2><p>المعلومات الأساسية والسعر وحالة الظهور في المتجر.</p></div></header>
+      {{ form.non_field_errors }}
+      <div class="entity-form-grid">{% for field in form %}{% if field.name == 'collections' %}<fieldset class="collection-picker" data-collection-picker><legend>{{ field.label }}</legend><input class="collection-picker__search" type="search" placeholder="ابحث داخل المجموعات"><div class="collection-picker__options">{{ field }}</div>{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</fieldset>{% else %}<label class="{% if field.field.widget.input_type == 'checkbox' %}check-field{% endif %}"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div>
+    </section>
+
+    {% if object %}
+    <section class="dash-panel editor-section" data-formset="variants">
+      <header><div><span class="editor-step">02</span><h2>الألوان والمقاسات والمخزون</h2><p>أضف صفًا لكل تركيبة لون ومقاس متاحة. مثال: أسود / M.</p></div><button class="editor-add" type="button" data-add-form>+ إضافة مقاس أو لون</button></header>
+      {{ variant_formset.management_form }}{{ variant_formset.non_form_errors }}
+      <div class="editor-rows" data-form-rows>{% for variant_form in variant_formset %}<div class="editor-row{% if variant_form.instance.pk %} is-saved{% endif %}">{% for hidden in variant_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="editor-row__fields">{% for field in variant_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ variant_form.DELETE }} <span>حذف هذا الخيار</span></label></div>{% endfor %}</div>
+      <template data-empty-form><div class="editor-row"><div class="editor-row__fields">{% for field in variant_formset.empty_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ variant_formset.empty_form.DELETE }} <span>حذف هذا الخيار</span></label></div></template>
+    </section>
+
+    <section class="dash-panel editor-section" data-formset="images">
+      <header><div><span class="editor-step">03</span><h2>صور كل لون</h2><p>اربط كل صورة بلونها. الصور العامة تظهر عندما لا توجد صور مخصصة للون.</p></div><button class="editor-add" type="button" data-add-form>+ إضافة صورة</button></header>
+      {{ image_formset.management_form }}{{ image_formset.non_form_errors }}
+      <div class="editor-rows editor-rows--images" data-form-rows>{% for image_form in image_formset %}<div class="editor-row editor-row--image{% if image_form.instance.pk %} is-saved{% endif %}">{% for hidden in image_form.hidden_fields %}{{ hidden }}{% endfor %}{% if image_form.instance.image %}<img class="editor-thumb" src="{{ image_form.instance.optimized_url }}" alt="">{% endif %}<div class="editor-row__fields">{% for field in image_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ image_form.DELETE }} <span>حذف الصورة</span></label></div>{% endfor %}</div>
+      <template data-empty-form><div class="editor-row editor-row--image"><div class="editor-row__fields">{% for field in image_formset.empty_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ image_formset.empty_form.DELETE }} <span>حذف الصورة</span></label></div></template>
+    </section>
+    {% else %}
+    <section class="dash-panel editor-onboarding"><strong>الخطوة التالية</strong><p>احفظ بيانات المنتج أولًا، وبعدها ستظهر هنا إدارة الألوان والمقاسات وصور كل لون.</p></section>
+    {% endif %}
+    <div class="editor-savebar"><span>{% if object %}احفظ جميع تغييرات المنتج من مكان واحد{% else %}احفظ للانتقال إلى الألوان والصور{% endif %}</span><div><a href="{% url 'dashboard:products' %}">إلغاء</a><button class="dash-btn" type="submit">حفظ المنتج</button></div></div>
+  </form>
+</div>
+{% endblock %}
