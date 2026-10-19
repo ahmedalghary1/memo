@@ -24,7 +24,7 @@ from .forms import (
     CategoryForm, CollectionForm, ColorForm, ContactMessageStatusForm, CouponForm,
     NewsletterSubscriberForm, OrderDetailsForm, OrderWorkflowForm, ProductForm as ProductDashboardForm,
     ProductImageForm, ProductVariantForm, SizeForm, StoreSettingsForm, TeamMemberForm,
-    InfoPageContentForm, ProductImageFormSet, ProductVariantFormSet,
+    InfoPageContentForm, ProductColorImagesUploadForm, ProductImageFormSet, ProductVariantFormSet,
 )
 
 
@@ -160,20 +160,38 @@ def product_form(request, pk=None):
     form = ProductDashboardForm(request.POST or None, instance=product)
     variants = ProductVariantFormSet(request.POST or None, instance=product, prefix="variants") if product else None
     images = ProductImageFormSet(request.POST or None, request.FILES or None, instance=product, prefix="images") if product else None
+    color_images = ProductColorImagesUploadForm(request.POST or None, request.FILES or None, prefix="batch") if product else None
     if request.method == "POST":
-        valid_related = not product or (variants.is_valid() and images.is_valid())
+        valid_related = not product or (variants.is_valid() and images.is_valid() and color_images.is_valid())
         if form.is_valid() and valid_related:
             with transaction.atomic():
                 product = form.save()
                 if variants and images:
                     variants.save()
                     images.save()
+                    uploaded = color_images.cleaned_data.get("images") or []
+                    upload_color = color_images.cleaned_data.get("color")
+                    primary_index = color_images.cleaned_data.get("primary_index")
+                    if uploaded and upload_color:
+                        if primary_index is None:
+                            primary_index = 0
+                        ProductImage.objects.filter(product=product, color=upload_color, is_primary=True).update(is_primary=False)
+                        start_order = product.images.order_by("-sort_order").values_list("sort_order", flat=True).first() or 0
+                        ProductImage.objects.bulk_create([
+                            ProductImage(
+                                product=product, color=upload_color, image=image,
+                                alt_text=f"{product.name} - {upload_color.name} - {index + 1}",
+                                sort_order=start_order + index + 1, is_primary=index == primary_index,
+                            )
+                            for index, image in enumerate(uploaded)
+                        ])
             messages.success(request, "تم حفظ المنتج وألوانه ومقاساته وصوره بنجاح.")
             return redirect("dashboard:product_edit", pk=product.pk)
     return render(request, "dashboard/product-form.html", {
         "form": form, "title": "تعديل المنتج" if product else "منتج جديد", "label": "PRODUCT EDITOR",
         "cancel_url": "dashboard:products", "multipart": True, "object": product,
         "variant_formset": variants, "image_formset": images,
+        "color_images_form": color_images,
         "available_colors": Color.objects.all(), "available_sizes": Size.objects.all(),
     })
 

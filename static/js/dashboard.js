@@ -48,6 +48,26 @@ document.querySelectorAll('[data-collection-picker]').forEach(picker=>{
   });
 });
 
+document.querySelectorAll('[data-color-image-uploader]').forEach(uploader=>{
+  const input=uploader.querySelector('input[type="file"]'),previews=uploader.querySelector('[data-image-previews]'),empty=uploader.querySelector('[data-image-empty]'),primary=uploader.querySelector('input[name$="-primary_index"]'),fileLabel=uploader.querySelector('[data-file-label]');let previewUrls=[];
+  input?.addEventListener('change',()=>{
+    previewUrls.forEach(URL.revokeObjectURL);previewUrls=[];
+    previews.querySelectorAll('.color-image-preview').forEach(card=>card.remove());
+    const files=[...input.files];empty.hidden=files.length>0;fileLabel.textContent=files.length?`${files.length} صور مختارة`:'اختر حتى 4 صور أو أكثر من جهازك';
+    if(!files.length){primary.value='';return}
+    files.forEach((file,index)=>{
+      const url=URL.createObjectURL(file);previewUrls.push(url);
+      const card=document.createElement('label');card.className='color-image-preview';
+      const radio=document.createElement('input');radio.type='radio';radio.name='batch-primary-choice';radio.checked=index===0;
+      const image=document.createElement('img');image.src=url;image.alt='';
+      const badge=document.createElement('span');badge.textContent=index===0?'الصورة الرئيسية':'اجعلها الرئيسية';
+      radio.addEventListener('change',()=>{primary.value=String(index);previews.querySelectorAll('.color-image-preview span').forEach((item,itemIndex)=>item.textContent=itemIndex===index?'الصورة الرئيسية':'اجعلها الرئيسية')});
+      card.append(radio,image,badge);previews.append(card);
+    });
+    primary.value='0';
+  });
+});
+
 document.querySelectorAll('[data-formset]').forEach(section=>{
   const rows=section.querySelector('[data-form-rows]');
   const template=section.querySelector('template[data-empty-form]');

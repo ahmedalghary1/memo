@@ -160,6 +160,36 @@ class ProductImageForm(DashboardModelForm):
         self.fields["color"].help_text = "اختر اللون لتظهر هذه الصورة عند اختياره في المتجر."
 
 
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    widget = MultipleImageInput(attrs={"accept": "image/jpeg,image/png,image/webp,image/avif", "multiple": True})
+
+    def clean(self, data, initial=None):
+        clean_one = super().clean
+        if not data:
+            return []
+        return [clean_one(item, initial) for item in (data if isinstance(data, (list, tuple)) else [data])]
+
+
+class ProductColorImagesUploadForm(forms.Form):
+    color = forms.ModelChoiceField(label="لون الصور", queryset=Color.objects.all(), required=False, empty_label="اختر اللون")
+    images = MultipleImageField(label="صور اللون", required=False)
+    primary_index = forms.IntegerField(required=False, min_value=0, widget=forms.HiddenInput)
+
+    def clean(self):
+        cleaned = super().clean()
+        images = cleaned.get("images") or []
+        if images and not cleaned.get("color"):
+            self.add_error("color", "اختر اللون الذي تنتمي إليه الصور.")
+        primary_index = cleaned.get("primary_index")
+        if images and primary_index is not None and primary_index >= len(images):
+            self.add_error("primary_index", "اختيار الصورة الرئيسية غير صالح.")
+        return cleaned
+
+
 ProductVariantFormSet = inlineformset_factory(
     Product, ProductVariant, form=ProductVariantForm, extra=1, can_delete=True,
 )
