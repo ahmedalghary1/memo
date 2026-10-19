@@ -13,8 +13,18 @@
 
     {% if object %}
     <section class="dash-panel editor-section" data-formset="variants">
-      <header><div><span class="editor-step">02</span><h2>الألوان والمقاسات والمخزون</h2><p>أضف صفًا لكل تركيبة لون ومقاس متاحة. مثال: أسود / M.</p></div><button class="editor-add" type="button" data-add-form>+ إضافة مقاس أو لون</button></header>
+      <header><div><span class="editor-step">02</span><h2>الألوان والمقاسات والمخزون</h2><p>اختر اللون ثم حدد كل المقاسات المتاحة له دفعة واحدة.</p></div><button class="editor-add" type="button" data-add-form>+ إضافة خيار يدويًا</button></header>
       {{ variant_formset.management_form }}{{ variant_formset.non_form_errors }}
+      <div class="variant-builder" data-variant-builder>
+        <label><span>اللون</span><select class="dash-input" data-builder-color><option value="">اختر اللون أولًا</option>{% for color in available_colors %}<option value="{{ color.pk }}" data-name="{{ color.name }}">{{ color.name }}</option>{% endfor %}</select></label>
+        <details class="variant-size-picker" data-size-picker>
+          <summary><span>المقاسات المتاحة</span><strong data-size-summary>اختر المقاسات</strong></summary>
+          <div>{% for size in available_sizes %}<label><input type="checkbox" value="{{ size.pk }}" data-name="{{ size.name }}" data-builder-size><span>{{ size.name }}</span></label>{% empty %}<p>أضف المقاسات من قسم المقاسات أولًا.</p>{% endfor %}</div>
+        </details>
+        <label><span>الكمية لكل مقاس</span><input class="dash-input" type="number" min="0" value="1" inputmode="numeric" data-builder-stock></label>
+        <button class="dash-btn variant-builder__submit" type="button" data-build-variants>إضافة المقاسات المختارة</button>
+        <p class="variant-builder__message" data-builder-message aria-live="polite">اختر لونًا ثم افتح قائمة المقاسات وحدد المتاح منه.</p>
+      </div>
       <div class="editor-rows" data-form-rows>{% for variant_form in variant_formset %}<div class="editor-row{% if variant_form.instance.pk %} is-saved{% endif %}">{% for hidden in variant_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="editor-row__fields">{% for field in variant_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ variant_form.DELETE }} <span>حذف هذا الخيار</span></label></div>{% endfor %}</div>
       <template data-empty-form><div class="editor-row"><div class="editor-row__fields">{% for field in variant_formset.empty_form.visible_fields %}{% if field.name != 'DELETE' %}<label><span>{{ field.label }}</span>{{ field }}</label>{% endif %}{% endfor %}</div><label class="editor-delete">{{ variant_formset.empty_form.DELETE }} <span>حذف هذا الخيار</span></label></div></template>
     </section>

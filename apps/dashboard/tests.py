@@ -222,6 +222,9 @@ class DashboardPermissionTests(TestCase):
         product = Product.objects.create(name="Tee", slug="editor-tee", base_sku="EDIT-TEE", price=500, category=category, status="active")
         color = Color.objects.create(name="Black", slug="editor-black", hex_code="#000000")
         size = Size.objects.create(name="M", slug="editor-m")
+        editor = self.client.get(reverse("dashboard:product_edit", args=[product.pk]))
+        self.assertContains(editor, "data-variant-builder")
+        self.assertContains(editor, "المقاسات المتاحة")
         image = SimpleUploadedFile(
             "black.png",
             base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="),

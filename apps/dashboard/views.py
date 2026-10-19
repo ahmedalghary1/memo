@@ -174,6 +174,7 @@ def product_form(request, pk=None):
         "form": form, "title": "تعديل المنتج" if product else "منتج جديد", "label": "PRODUCT EDITOR",
         "cancel_url": "dashboard:products", "multipart": True, "object": product,
         "variant_formset": variants, "image_formset": images,
+        "available_colors": Color.objects.all(), "available_sizes": Size.objects.all(),
     })
 
 

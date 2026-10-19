@@ -52,17 +52,34 @@ document.querySelectorAll('[data-formset]').forEach(section=>{
   const rows=section.querySelector('[data-form-rows]');
   const template=section.querySelector('template[data-empty-form]');
   const total=section.querySelector('input[name$="-TOTAL_FORMS"]');
-  section.querySelector('[data-add-form]')?.addEventListener('click',()=>{
+  const addForm=(values={})=>{
     const index=Number(total.value);
     const wrapper=document.createElement('div');
     wrapper.innerHTML=template.innerHTML.replaceAll('__prefix__',String(index)).trim();
     const row=wrapper.firstElementChild;
     row.classList.add('is-new');rows.append(row);total.value=String(index+1);
-    row.querySelector('select,input:not([type="hidden"])')?.focus();
+    Object.entries(values).forEach(([field,value])=>{const input=row.querySelector(`[name$="-${field}"]`);if(input){if(input.type==='checkbox')input.checked=Boolean(value);else input.value=String(value)}});
+    return row;
+  };
+  section.querySelector('[data-add-form]')?.addEventListener('click',()=>{
+    const row=addForm();row.querySelector('select,input:not([type="hidden"])')?.focus();
     row.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
   });
   rows?.addEventListener('change',event=>{
     if(!event.target.matches('input[name$="-DELETE"]'))return;
     event.target.closest('.editor-row')?.classList.toggle('is-deleted',event.target.checked);
   });
+  const builder=section.querySelector('[data-variant-builder]');
+  if(builder){
+    const color=builder.querySelector('[data-builder-color]'),sizePicker=builder.querySelector('[data-size-picker]'),sizes=[...builder.querySelectorAll('[data-builder-size]')],summary=builder.querySelector('[data-size-summary]'),stock=builder.querySelector('[data-builder-stock]'),message=builder.querySelector('[data-builder-message]');
+    const syncBuilder=()=>{const selected=sizes.filter(input=>input.checked);summary.textContent=selected.length?selected.map(input=>input.dataset.name).join('، '):'اختر المقاسات';sizePicker.classList.toggle('is-disabled',!color.value);if(!color.value)sizePicker.removeAttribute('open')};
+    color.addEventListener('change',syncBuilder);sizes.forEach(input=>input.addEventListener('change',syncBuilder));syncBuilder();
+    sizePicker.addEventListener('click',event=>{if(!color.value){event.preventDefault();message.textContent='اختر اللون أولًا لعرض قائمة المقاسات.';color.focus()}});
+    builder.querySelector('[data-build-variants]').addEventListener('click',()=>{
+      const selected=sizes.filter(input=>input.checked);if(!color.value){message.textContent='اختر اللون أولًا.';color.focus();return}if(!selected.length){message.textContent='اختر مقاسًا واحدًا على الأقل.';sizePicker.open=true;return}
+      const existing=new Set([...rows.querySelectorAll('.editor-row:not(.is-deleted)')].map(row=>`${row.querySelector('[name$="-color"]')?.value}|${row.querySelector('[name$="-size"]')?.value}`));let added=0;
+      selected.forEach(size=>{const key=`${color.value}|${size.value}`;if(existing.has(key))return;addForm({color:color.value,size:size.value,stock_quantity:Math.max(0,Number(stock.value)||0),is_active:true,low_stock_threshold:3});existing.add(key);added++});
+      message.textContent=added?`تمت إضافة ${added} من المقاسات للون ${color.selectedOptions[0].dataset.name}.`:'كل المقاسات المختارة مضافة بالفعل.';sizes.forEach(input=>input.checked=false);sizePicker.removeAttribute('open');syncBuilder();rows.lastElementChild?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+    });
+  }
 });
