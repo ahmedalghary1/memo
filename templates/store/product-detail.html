@@ -13,6 +13,18 @@
       {% for image in product.images.all %}<figure data-gallery-color="{{ image.color.slug|default:'' }}" data-is-primary="{{ image.is_primary|yesno:'true,false' }}"{% if forloop.first %} class="is-featured"{% endif %}><button class="gallery-image-button{% if forloop.first %} is-active{% endif %}" type="button" data-gallery-image aria-label="View {{ image.alt_text|default:product.name }}"><img src="{{ image.optimized_url }}" alt="{{ image.alt_text }}" width="1000" height="1250" {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}></button></figure>{% empty %}<figure data-gallery-color="" data-is-primary="true" class="is-featured"><button class="gallery-image-button is-active" type="button" data-gallery-image aria-label="Enlarge product image"><img src="{% static 'images/memo-campaign.webp' %}" alt="{{ product.name }}" width="1000" height="1250"></button></figure>{% endfor %}
     </div>
     {% if product.images.count > 1 %}<div class="gallery-count" aria-live="polite"><span data-gallery-current>1</span> / <span data-gallery-total>{{ product.images.count }}</span></div>{% endif %}
+    {% if color_options %}
+    <div class="mobile-color-bar" data-mobile-colors aria-label="Available colors">
+      <span class="mobile-color-label">Color: <strong data-selected-color-mobile>{{ selected_color.name }}</strong></span>
+      <div class="mobile-color-swatches">
+        {% for color in color_options %}
+        <button type="button" class="mobile-swatch{% if selected_color.pk == color.pk %} is-active{% endif %}" data-color-slug="{{ color.slug }}" data-color-name="{{ color.name }}" style="--swatch:{{ color.hex_code }}" aria-label="{{ color.name }}" title="{{ color.name }}">
+          <i class="sr-only">{{ color.name }}</i>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
   </div>
   <div class="pdp-info">
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="{% url 'core:home' %}">Home</a><span>/</span><a href="{% url 'catalog:list' %}">Shop</a>{% for ancestor in product.category.ancestors %}<span>/</span><a href="{{ ancestor.get_absolute_url }}">{{ ancestor.name }}</a>{% endfor %}<span>/</span><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></nav>
