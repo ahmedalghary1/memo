@@ -196,7 +196,7 @@
   .pdp-gallery figure:not(:first-child) { display: block; }
   .pdp-gallery figure,
   .pdp-gallery figure img { border-radius: 0; }
-  .gallery-count { bottom: 14px; border-radius: 999px; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); }
+  .gallery-count { bottom: 14px; border-radius: 999px; background: rgba(18,20,22,.82); color: #fff; backdrop-filter: blur(8px); }
   .pdp-info { padding: 27px var(--mobile-gutter) 112px; background: #f8f6f1; }
   .pdp-info h1 { margin-bottom: 11px; font-size: 27px; }
   .pdp-lead { font-size: 12px; line-height: 1.8; }
