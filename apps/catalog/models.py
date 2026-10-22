@@ -20,6 +20,11 @@ class TimeStamped(models.Model):
 
 class Category(TimeStamped):
     MAX_LEVELS = 3
+    VISUAL_THEMES = [
+        ("inherit", "Inherit from parent"),
+        ("default", "MEMO Default"),
+        ("kids", "MEMO Kids"),
+    ]
     name = models.CharField(max_length=120)
     slug = models.SlugField(unique=True, allow_unicode=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
@@ -29,6 +34,7 @@ class Category(TimeStamped):
     sort_order = models.PositiveIntegerField(default=0)
     seo_title = models.CharField(max_length=160, blank=True)
     seo_description = models.CharField(max_length=300, blank=True)
+    visual_theme = models.CharField(max_length=24, choices=VISUAL_THEMES, default="inherit")
     class Meta: ordering = ["sort_order", "name"]; verbose_name_plural = "Categories"
     def __str__(self): return f"{'— ' * self.depth}{self.name}"
     def get_absolute_url(self): return reverse("catalog:category", args=[self.slug])
@@ -52,6 +58,15 @@ class Category(TimeStamped):
             items.append(ancestor)
             ancestor = ancestor.parent
         return list(reversed(items))
+    @property
+    def resolved_visual_theme(self):
+        category, seen = self, set()
+        while category and category.pk not in seen:
+            seen.add(category.pk)
+            if category.visual_theme != "inherit":
+                return category.visual_theme
+            category = category.parent
+        return "default"
     def clean(self):
         super().clean()
         level, ancestor, seen = 1, self.parent, set()

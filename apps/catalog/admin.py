@@ -4,8 +4,8 @@ class ProductImageInline(admin.TabularInline): model = ProductImage; extra = 0
 class ProductVariantInline(admin.TabularInline): model = ProductVariant; extra = 0
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "parent", "is_active", "sort_order")
-    list_filter = ("is_active",)
+    list_display = ("display_name", "parent", "visual_theme", "is_active", "sort_order")
+    list_filter = ("visual_theme", "is_active")
     search_fields = ("name", "slug", "parent__name")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ("parent",)

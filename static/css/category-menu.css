@@ -1,5 +1,5 @@
 /* Nested store navigation in the existing MEMO drawer. */
-.menu-trigger{display:inline-grid!important;flex:0 0 auto}
+.menu-trigger{display:none!important;flex:0 0 auto}
 .mobile-menu__body{overscroll-behavior:contain}
 .mobile-menu nav{max-height:none;overflow:visible;counter-reset:none}
 .mobile-menu nav a,
@@ -16,6 +16,6 @@
 .mobile-menu nav .menu-category__children summary{font-size:14px;min-height:48px;color:#ddd8ce}
 .mobile-menu nav .menu-category__all{min-height:42px;font-size:11px;color:#d9b56a;text-decoration:underline;text-underline-offset:4px}
 .mobile-menu nav a[aria-current="page"]{color:#e4bb62;background:rgba(209,162,61,.08)}
-@media (max-width:767px){.header-primary>.menu-trigger{width:42px;height:42px}}
+@media (max-width:920px){.menu-trigger{display:inline-grid!important}.header-primary>.menu-trigger{width:42px;height:42px}}
 @media (max-width:430px){.mobile-menu nav a,.mobile-menu nav summary{min-height:52px}}
 @media (prefers-reduced-motion:reduce){.menu-category__arrow{transition:none}}

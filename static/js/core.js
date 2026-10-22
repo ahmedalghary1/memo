@@ -2,18 +2,21 @@ const body = document.body;
 const qs = (s, root = document) => root.querySelector(s);
 const qsa = (s, root = document) => [...root.querySelectorAll(s)];
 
-function dialog(openButton, closeButton, panel, openClass = 'is-open') {
+function dialog(openButton, closeButton, panel, openClass = 'is-open', canOpen = () => true) {
   if (!openButton || !panel) return;
-  let previous;
+  let previous, closeTimer;
   const focusables = () => qsa('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])', panel).filter(el => !el.disabled && el.tabIndex !== -1);
-  const open = () => { previous = document.activeElement; panel.hidden = false; requestAnimationFrame(() => panel.classList.add(openClass)); body.classList.add('is-locked'); openButton.setAttribute('aria-expanded','true'); focusables()[0]?.focus(); };
-  const close = () => { panel.classList.remove(openClass); body.classList.remove('is-locked'); openButton.setAttribute('aria-expanded','false'); setTimeout(() => panel.hidden = true, 360); previous?.focus(); };
+  const open = () => { if (!canOpen()) return; clearTimeout(closeTimer); previous = document.activeElement; panel.hidden = false; panel.setAttribute('aria-hidden','false'); requestAnimationFrame(() => panel.classList.add(openClass)); body.classList.add('is-locked'); openButton.setAttribute('aria-expanded','true'); focusables()[0]?.focus(); };
+  const close = ({ restoreFocus = true } = {}) => { clearTimeout(closeTimer); panel.classList.remove(openClass); body.classList.remove('is-locked'); openButton.setAttribute('aria-expanded','false'); panel.setAttribute('aria-hidden','true'); closeTimer = setTimeout(() => panel.hidden = true, 360); if (restoreFocus) previous?.focus(); };
   openButton.addEventListener('click', open); closeButton?.addEventListener('click', close);
   qsa('[data-dialog-dismiss]', panel).forEach(button => button.addEventListener('click', close));
   panel.addEventListener('keydown', e => { if (e.key === 'Escape') close(); if (e.key === 'Tab') { const f = focusables(); if (!f.length) return; const first=f[0], last=f.at(-1); if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()} } });
+  return { open, close };
 }
 
-dialog(qs('[data-menu-open]'), qs('[data-menu-close]'), qs('#mobile-menu'));
+const mobileMenuMedia = matchMedia('(max-width:920px)');
+const mobileMenuDialog = dialog(qs('[data-menu-open]'), qs('[data-menu-close]'), qs('#mobile-menu'), 'is-open', () => mobileMenuMedia.matches);
+mobileMenuMedia.addEventListener('change', event => { if (!event.matches) mobileMenuDialog?.close({ restoreFocus: false }); });
 dialog(qs('[data-search-open]'), qs('[data-search-close]'), qs('#search-overlay'));
 const cartOpen=qs('[data-cart-open]'), cartDrawer=qs('#cart-drawer'), cartBackdrop=qs('[data-cart-backdrop]');
 if(cartOpen&&cartDrawer){let cartPrevious;const close=()=>{cartDrawer.classList.remove('is-open');cartBackdrop?.classList.remove('is-open');body.classList.remove('is-locked');cartOpen.setAttribute('aria-expanded','false');setTimeout(()=>{cartDrawer.hidden=true;if(cartBackdrop)cartBackdrop.hidden=true},300);cartPrevious?.focus()};cartOpen.addEventListener('click',e=>{e.preventDefault();cartPrevious=document.activeElement;cartDrawer.hidden=false;if(cartBackdrop)cartBackdrop.hidden=false;requestAnimationFrame(()=>{cartDrawer.classList.add('is-open');cartBackdrop?.classList.add('is-open')});body.classList.add('is-locked');cartOpen.setAttribute('aria-expanded','true');qs('[data-cart-close]',cartDrawer)?.focus()});qs('[data-cart-close]',cartDrawer)?.addEventListener('click',close);cartBackdrop?.addEventListener('click',close);cartDrawer.addEventListener('keydown',e=>{if(e.key==='Escape')close()})}

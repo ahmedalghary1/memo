@@ -45,7 +45,8 @@ def product_list(request, slug=None):
         item.active_children = children.get(item.pk, [])
     category_roots = children.get(None, [])
     category_children = children.get(category.pk, []) if category else children.get(None, [])
-    return render(request, "store/collection.html", {"page_obj": page, "category": category, "category_children": category_children, "category_roots": category_roots, "sizes": Size.objects.all(), "colors": Color.objects.all(), "all_categories": all_categories, "selected_sizes": size, "selected_colors": color, "selected_size_objects": Size.objects.filter(slug__in=size), "selected_color_objects": Color.objects.filter(slug__in=color), "active_filter_count": len(size)+len(color)+bool(request.GET.get("available"))+bool(request.GET.get("price_min"))+bool(request.GET.get("price_max"))})
+    category_theme = category.resolved_visual_theme if category else "default"
+    return render(request, "store/collection.html", {"page_obj": page, "category": category, "category_children": category_children, "category_roots": category_roots, "sizes": Size.objects.all(), "colors": Color.objects.all(), "all_categories": all_categories, "selected_sizes": size, "selected_colors": color, "selected_size_objects": Size.objects.filter(slug__in=size), "selected_color_objects": Color.objects.filter(slug__in=color), "active_filter_count": len(size)+len(color)+bool(request.GET.get("available"))+bool(request.GET.get("price_min"))+bool(request.GET.get("price_max")), "category_theme": category_theme, "is_kids": category_theme == "kids"})
 
 def collections_list(request):
     now = timezone.now()

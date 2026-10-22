@@ -70,8 +70,12 @@ class ProductForm(DashboardModelForm):
 class CategoryForm(DashboardModelForm):
     class Meta:
         model = Category
-        fields = ("name", "slug", "parent", "image", "description", "is_active", "sort_order", "seo_title", "seo_description")
+        fields = ("name", "slug", "parent", "image", "description", "visual_theme", "is_active", "sort_order", "seo_title", "seo_description")
         widgets = {"description": forms.Textarea(attrs={"rows": 4}), "seo_description": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["visual_theme"].label = "الهوية البصرية"
 
 
 class CollectionProductChoiceField(forms.ModelMultipleChoiceField):

@@ -12,7 +12,7 @@
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/memo-campaign.png' %}{% endblock %}">
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#0A0A0A">
+  <meta name="theme-color" content="{% block theme_color %}#0A0A0A{% endblock %}">
   <script>document.documentElement.classList.add('motion-capable')</script>
   <link rel="icon" type="image/webp" sizes="256x256" href="{% static 'images/memo-logo.webp' %}?v=20261015">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="{% static 'css/category-menu.css' %}?v=20261014-1">
   <link rel="stylesheet" href="{% static 'css/collections.css' %}?v=20261014-1">
   <link rel="stylesheet" href="{% static 'css/storefront-en.css' %}?v=20261015-1">
+  <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261022-1">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}{% if store_settings.announcement_text %} has-announcement{% endif %}">

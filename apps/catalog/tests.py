@@ -31,6 +31,18 @@ class CategoryHierarchyTests(TestCase):
         response = self.client.get(reverse("catalog:category", args=[self.jeans.slug]))
         self.assertEqual(response.status_code, 200)
 
+    def test_kids_theme_is_inherited_by_nested_categories(self):
+        kids = Category.objects.create(name="Kids", slug="kids-test", visual_theme="kids")
+        tops = Category.objects.create(name="Tops", slug="kids-tops-test", parent=kids)
+
+        response = self.client.get(tops.get_absolute_url())
+
+        self.assertEqual(tops.resolved_visual_theme, "kids")
+        self.assertContains(response, 'class="theme-kids')
+        self.assertContains(response, "images/memo-kids-logo.jpeg")
+        self.assertContains(response, "Big smiles. Bold colours. Little originals.")
+        self.assertContains(response, "Little looks are on the way.")
+
     def test_parent_category_includes_products_from_third_level(self):
         response = self.client.get(reverse("catalog:category", args=[self.men.slug]))
         self.assertContains(response, self.product.name)
