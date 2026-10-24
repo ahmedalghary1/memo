@@ -12,6 +12,10 @@ from .models import InfoPageContent
 
 def home(request):
     products = Product.objects.available().prefetch_related("images", "variants__color", "variants__size")
+    active_categories = Category.objects.filter(is_active=True)
+    home_categories = list(active_categories.filter(parent__isnull=True)[:6])
+    if not home_categories:
+        home_categories = list(active_categories[:6])
     now = timezone.now()
     featured_collection = (
         Collection.objects.filter(is_active=True)
@@ -22,7 +26,7 @@ def home(request):
     context = {
         "featured_products": products.filter(new_arrival=True)[:4],
         "best_sellers": products.filter(bestseller=True)[:6],
-        "categories": Category.objects.filter(is_active=True, parent__isnull=True)[:6],
+        "categories": home_categories,
         "featured_collection": featured_collection,
     }
     return render(request, "store/home.html", context)

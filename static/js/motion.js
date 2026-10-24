@@ -279,42 +279,6 @@
 
     if (!ScrollTrigger) return;
 
-    // --- B. Category Rail Staggered Reveal ---
-    const catRail = document.querySelector('.category-rail');
-    if (catRail) {
-      const catTitle = catRail.querySelector('.section-title');
-      const catItems = catRail.querySelectorAll('.category-rail__grid > a');
-
-      if (catTitle) {
-        gsap.from(catTitle, {
-          opacity: 0,
-          y: 22,
-          duration: 0.75,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: catRail,
-            start: 'top 86%',
-            once: true
-          }
-        });
-      }
-
-      if (catItems.length) {
-        gsap.from(catItems, {
-          opacity: 0,
-          y: 30,
-          stagger: 0.07,
-          duration: 0.8,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: catRail.querySelector('.category-rail__grid') || catRail,
-            start: 'top 88%',
-            once: true
-          }
-        });
-      }
-    }
-
     // --- C. Featured Products & Best Sellers Rails/Grids ---
     const productSections = document.querySelectorAll('.ref-products');
     productSections.forEach((section) => {
