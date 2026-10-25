@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import reverse
+from django.utils.translation import get_language
 
 
 def optimized_image_url(image_field):
@@ -114,15 +115,23 @@ class ProductQuerySet(models.QuerySet):
 class Product(TimeStamped):
     STATUS = [("draft", "مسودة"), ("active", "نشط"), ("archived", "مؤرشف")]
     name = models.CharField(max_length=180)
+    name_ar = models.CharField(max_length=180, blank=True, verbose_name="الاسم بالعربية")
     slug = models.SlugField(unique=True, allow_unicode=True)
     base_sku = models.CharField(max_length=60, unique=True)
     short_description = models.CharField(max_length=260, blank=True)
+    short_description_ar = models.CharField(max_length=260, blank=True, verbose_name="الوصف المختصر بالعربية")
     description = models.TextField(blank=True)
+    description_ar = models.TextField(blank=True, verbose_name="الوصف بالعربية")
     material = models.CharField(max_length=220, blank=True)
+    material_ar = models.CharField(max_length=220, blank=True, verbose_name="الخامة بالعربية")
     care_instructions = models.TextField(blank=True)
+    care_instructions_ar = models.TextField(blank=True, verbose_name="تعليمات العناية بالعربية")
     fit_notes = models.CharField(max_length=240, blank=True)
+    fit_notes_ar = models.CharField(max_length=240, blank=True, verbose_name="ملاحظات القَصّة بالعربية")
     model_info = models.CharField(max_length=240, blank=True)
+    model_info_ar = models.CharField(max_length=240, blank=True, verbose_name="بيانات الموديل بالعربية")
     measurement_notes = models.TextField(blank=True)
+    measurement_notes_ar = models.TextField(blank=True, verbose_name="ملاحظات القياسات بالعربية")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     compare_at_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -133,11 +142,34 @@ class Product(TimeStamped):
     new_arrival = models.BooleanField(default=False)
     bestseller = models.BooleanField(default=False)
     meta_title = models.CharField(max_length=160, blank=True)
+    meta_title_ar = models.CharField(max_length=160, blank=True, verbose_name="عنوان الصفحة بالعربية")
     meta_description = models.CharField(max_length=300, blank=True)
+    meta_description_ar = models.CharField(max_length=300, blank=True, verbose_name="وصف الصفحة بالعربية")
     objects = ProductQuerySet.as_manager()
     class Meta: ordering = ["-created_at"]
     def __str__(self): return self.name
     def get_absolute_url(self): return reverse("catalog:product", args=[self.slug])
+    def localized(self, field):
+        value = getattr(self, f"{field}_ar", "") if get_language() == "ar" else ""
+        return value or getattr(self, field)
+    @property
+    def display_name(self): return self.localized("name")
+    @property
+    def display_short_description(self): return self.localized("short_description")
+    @property
+    def display_material(self): return self.localized("material")
+    @property
+    def display_care_instructions(self): return self.localized("care_instructions")
+    @property
+    def display_fit_notes(self): return self.localized("fit_notes")
+    @property
+    def display_model_info(self): return self.localized("model_info")
+    @property
+    def display_measurement_notes(self): return self.localized("measurement_notes")
+    @property
+    def display_meta_title(self): return self.localized("meta_title")
+    @property
+    def display_meta_description(self): return self.localized("meta_description")
     @property
     def discount_percent(self):
         if self.compare_at_price and self.compare_at_price > self.price:
@@ -145,7 +177,7 @@ class Product(TimeStamped):
         return 0
     @property
     def description_html(self):
-        text = self.description or ""
+        text = self.localized("description") or ""
         if not text:
             return ""
         import re
@@ -231,7 +263,7 @@ class ProductVariant(models.Model):
     def __str__(self): return f"{self.product} / {self.option_label}"
     @property
     def option_label(self):
-        return " / ".join(str(option) for option in (self.color, self.size) if option) or "No options"
+        return " / ".join(str(option) for option in (self.color, self.size) if option) or ("بدون خيارات" if get_language() == "ar" else "No options")
     def generate_sku(self):
         parts = [self.product.base_sku]
         if self.color_id: parts.append(self.color.slug)

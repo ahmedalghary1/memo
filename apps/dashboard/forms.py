@@ -54,10 +54,13 @@ class ProductForm(DashboardModelForm):
     class Meta:
         model = Product
         fields = (
-            "name", "slug", "base_sku", "category", "collections", "short_description",
-            "description", "material", "care_instructions", "fit_notes", "model_info",
-            "measurement_notes", "price", "compare_at_price", "cost_price", "status",
-            "featured", "new_arrival", "bestseller", "meta_title", "meta_description",
+            "name", "name_ar", "slug", "base_sku", "category", "collections",
+            "short_description", "short_description_ar", "description", "description_ar",
+            "material", "material_ar", "care_instructions", "care_instructions_ar",
+            "fit_notes", "fit_notes_ar", "model_info", "model_info_ar",
+            "measurement_notes", "measurement_notes_ar", "price", "compare_at_price", "cost_price", "status",
+            "featured", "new_arrival", "bestseller", "meta_title", "meta_title_ar",
+            "meta_description", "meta_description_ar",
         )
         widgets = {
             "description": forms.Textarea(attrs={"rows": 5}),
@@ -65,6 +68,23 @@ class ProductForm(DashboardModelForm):
             "measurement_notes": forms.Textarea(attrs={"rows": 3}),
             "meta_description": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        english_labels = {
+            "name": "اسم المنتج بالإنجليزية",
+            "short_description": "الوصف المختصر بالإنجليزية",
+            "description": "الوصف بالإنجليزية",
+            "material": "الخامة بالإنجليزية",
+            "care_instructions": "تعليمات العناية بالإنجليزية",
+            "fit_notes": "ملاحظات القَصّة بالإنجليزية",
+            "model_info": "بيانات الموديل بالإنجليزية",
+            "measurement_notes": "ملاحظات القياسات بالإنجليزية",
+            "meta_title": "عنوان الصفحة بالإنجليزية",
+            "meta_description": "وصف الصفحة بالإنجليزية",
+        }
+        for name, label in english_labels.items():
+            self.fields[name].label = label
 
 
 class CategoryForm(DashboardModelForm):

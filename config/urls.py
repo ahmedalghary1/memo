@@ -4,12 +4,14 @@ from django.contrib import admin
 from django.urls import include, path, register_converter
 from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
+from django.conf.urls.i18n import set_language
 from apps.core.sitemaps import StaticSitemap, ProductSitemap, CategorySitemap, CollectionSitemap
 from apps.core.converters import UnicodeSlugConverter
 
 register_converter(UnicodeSlugConverter, "uslug")
 
 urlpatterns = [
+    path("i18n/setlang/", set_language, name="set_language"),
     path("django-admin/", admin.site.urls),
     path("", include("apps.core.urls")),
     path("shop/", include("apps.catalog.urls")),

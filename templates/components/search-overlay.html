@@ -1,13 +1,13 @@
 <div class="search-overlay" id="search-overlay" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
   <button class="icon-btn search-close" type="button" data-search-close><span class="sr-only">Close search</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
   <div class="search-inner">
-    <p class="eyebrow">SEARCH / MEMO</p><h2 id="search-title">What are you looking for?</h2>
+    <p class="eyebrow">SEARCH / MEMO</p><h2 id="search-title">{% if request.LANGUAGE_CODE == 'ar' %}ما الذي تبحث عنه؟{% else %}What are you looking for?{% endif %}</h2>
     <form action="{% url 'core:search' %}" data-live-search data-suggest-url="{% url 'core:search_suggestions' %}">
-      <label class="sr-only" for="global-search">Product name or code</label>
-      <input id="global-search" name="q" type="search" placeholder="Enter a product name or code" autocomplete="off" aria-controls="search-live-results" aria-expanded="false">
-      <button type="submit">Search</button>
+      <label class="sr-only" for="global-search">{% if request.LANGUAGE_CODE == 'ar' %}اسم المنتج أو رمزه{% else %}Product name or code{% endif %}</label>
+      <input id="global-search" name="q" type="search" placeholder="{% if request.LANGUAGE_CODE == 'ar' %}اكتب اسم المنتج أو رمزه{% else %}Enter a product name or code{% endif %}" autocomplete="off" aria-controls="search-live-results" aria-expanded="false">
+      <button type="submit">{% if request.LANGUAGE_CODE == 'ar' %}بحث{% else %}Search{% endif %}</button>
     </form>
     <div class="search-live-results" id="search-live-results" aria-live="polite"></div>
-    <div class="search-suggestions"><span>Suggestions</span><a href="{% url 'catalog:list' %}?sort=new">New collection</a><a href="{% url 'catalog:list' %}">All pieces</a><a href="{% url 'orders:track' %}">Track your order</a></div>
+    <div class="search-suggestions"><span>{% if request.LANGUAGE_CODE == 'ar' %}اقتراحات{% else %}Suggestions{% endif %}</span><a href="{% url 'catalog:list' %}?sort=new">{% if request.LANGUAGE_CODE == 'ar' %}أحدث مجموعة{% else %}New collection{% endif %}</a><a href="{% url 'catalog:list' %}">{% if request.LANGUAGE_CODE == 'ar' %}كل المنتجات{% else %}All pieces{% endif %}</a><a href="{% url 'orders:track' %}">{% if request.LANGUAGE_CODE == 'ar' %}تتبّع طلبك{% else %}Track your order{% endif %}</a></div>
   </div>
 </div>

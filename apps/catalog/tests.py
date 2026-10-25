@@ -3,13 +3,15 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
+from django.conf import settings
+from django.utils import translation
 
 from .models import Category, Product, ProductVariant
 
 
 class CategoryHierarchyTests(TestCase):
     def setUp(self):
-        self.men = Category.objects.create(name="رجالي", slug="men")
+        self.men = Category.objects.create(name="رجالي", slug="catalog-men")
         self.trousers = Category.objects.create(name="بناطيل", slug="trousers", parent=self.men)
         self.jeans = Category.objects.create(name="جينز", slug="jeans", parent=self.trousers)
         self.product = Product.objects.create(
@@ -48,6 +50,7 @@ class CategoryHierarchyTests(TestCase):
         self.assertContains(response, self.product.name)
 
     def test_sidebar_renders_expandable_tree_and_opens_active_path(self):
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
         response = self.client.get(reverse("catalog:category", args=[self.jeans.slug]))
         self.assertContains(response, 'class="category-tree"')
         self.assertContains(response, 'class="category-tree__branch"', count=2)
@@ -55,6 +58,7 @@ class CategoryHierarchyTests(TestCase):
         self.assertContains(response, "عرض كل بناطيل")
 
     def test_header_menu_shows_nested_active_categories(self):
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
         hidden = Category.objects.create(name="مخفي", slug="hidden", parent=self.men, is_active=False)
         response = self.client.get(reverse("core:home"))
         self.assertContains(response, 'class="menu-category"', count=2)
@@ -93,13 +97,39 @@ class CategoryHierarchyTests(TestCase):
     def test_variant_options_are_optional_and_sku_is_generated(self):
         variant = ProductVariant.objects.create(product=self.product, stock_quantity=8)
         self.assertEqual(variant.sku, "DENIM-1")
-        self.assertEqual(variant.option_label, "بدون خيارات")
+        with translation.override("ar"):
+            self.assertEqual(variant.option_label, "بدون خيارات")
 
     def test_product_without_options_can_be_selected_on_detail_page(self):
         variant = ProductVariant.objects.create(product=self.product, stock_quantity=8)
         response = self.client.get(self.product.get_absolute_url())
         self.assertContains(response, f'"id":{variant.pk}')
         self.assertNotContains(response, "اختر اللون والمقاس لمعرفة التوفر")
+
+    def test_filters_match_one_available_variant(self):
+        from .models import Color, Size
+
+        black = Color.objects.create(name="Black", slug="filter-black", hex_code="#000000")
+        white = Color.objects.create(name="White", slug="filter-white", hex_code="#FFFFFF")
+        small = Size.objects.create(name="S", slug="filter-s")
+        large = Size.objects.create(name="L", slug="filter-l")
+        ProductVariant.objects.create(product=self.product, color=black, size=small, stock_quantity=0)
+        ProductVariant.objects.create(product=self.product, color=white, size=large, stock_quantity=5)
+
+        url = reverse("catalog:list")
+        wrong_combination = self.client.get(url, {"color": black.slug, "size": large.slug})
+        self.assertNotIn(self.product, wrong_combination.context["page_obj"].object_list)
+
+        out_of_stock = self.client.get(url, {"color": black.slug, "size": small.slug, "available": "1"})
+        self.assertNotIn(self.product, out_of_stock.context["page_obj"].object_list)
+
+        matching = self.client.get(url, {"color": white.slug, "size": large.slug, "available": "1"})
+        self.assertIn(self.product, matching.context["page_obj"].object_list)
+
+    def test_invalid_price_filter_does_not_crash_shop(self):
+        response = self.client.get(reverse("catalog:list"), {"price_min": "abc", "price_max": "NaN"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.product, response.context["page_obj"].object_list)
 
     def test_product_detail_selects_requested_color_and_marks_color_images(self):
         from django.core.files.uploadedfile import SimpleUploadedFile

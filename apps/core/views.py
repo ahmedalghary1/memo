@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import ContactMessageForm
 from .models import InfoPageContent
 
@@ -36,7 +37,7 @@ def search(request):
     products = Product.objects.available()
     if q:
         from django.db.models import Q
-        products = products.filter(Q(name__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q) | Q(collections__name__icontains=q)).distinct()
+        products = products.filter(Q(name__icontains=q) | Q(name_ar__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q) | Q(collections__name__icontains=q)).distinct()
     else:
         products = products.none()
     products = products.prefetch_related("images", "variants__color", "variants__size")
@@ -50,11 +51,11 @@ def search_suggestions(request):
         return JsonResponse({"results": []})
     from django.db.models import Q
     products = Product.objects.available().filter(
-        Q(name__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q)
+        Q(name__icontains=q) | Q(name_ar__icontains=q) | Q(base_sku__icontains=q) | Q(category__name__icontains=q)
     ).distinct().prefetch_related("images")[:6]
     return JsonResponse({"results": [
         {
-            "name": product.name,
+            "name": product.display_name,
             "category": product.category.name,
             "price": f"{product.price:.0f}",
             "url": product.get_absolute_url(),
@@ -70,7 +71,10 @@ def newsletter(request):
             NewsletterSubscriber.objects.update_or_create(email=email, defaults={"is_active": True})
             messages.success(request, "You are on the list for the next release.")
         else: messages.error(request, "Enter a valid email address.")
-    return redirect(request.POST.get("next") or "core:home")
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        next_url = "core:home"
+    return redirect(next_url)
 
 def info_page(request, page):
     pages = {

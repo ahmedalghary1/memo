@@ -2,6 +2,7 @@ from decimal import Decimal
 from apps.catalog.models import ProductVariant
 from apps.orders.models import Coupon
 from django.utils import timezone
+from django.utils.translation import get_language
 from .models import CartItem
 
 class Cart:
@@ -23,9 +24,9 @@ class Cart:
         current = int(self.data.get(key, 0))
         requested = quantity if replace else current + quantity
         if not variant.is_active:
-            raise ValueError("The requested quantity is unavailable.")
+            raise ValueError("الكمية المطلوبة غير متاحة." if get_language() == "ar" else "The requested quantity is unavailable.")
         if requested > variant.stock_quantity:
-            raise ValueError(f"Only {variant.stock_quantity} items are currently available.")
+            raise ValueError(f"المتاح حاليًا {variant.stock_quantity} قطعة فقط." if get_language() == "ar" else f"Only {variant.stock_quantity} items are currently available.")
         if requested <= 0: self.data.pop(key, None)
         else: self.data[key] = requested
         self.save()

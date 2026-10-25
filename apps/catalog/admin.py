@@ -17,7 +17,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     list_display = ("name", "base_sku", "category", "price", "status", "featured")
     list_filter = ("status", "featured", "new_arrival", "bestseller", "category")
-    search_fields = ("name", "base_sku"); prepopulated_fields = {"slug": ("name",)}
+    search_fields = ("name", "name_ar", "base_sku"); prepopulated_fields = {"slug": ("name",)}
     inlines = [ProductImageInline, ProductVariantInline]
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):

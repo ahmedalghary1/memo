@@ -1,10 +1,10 @@
 {% extends 'base/base.html' %}
-{% block title %}Track your order — MEMO{% endblock %}
+{% block title %}{% if request.LANGUAGE_CODE == 'ar' %}تتبع طلبك{% else %}Track your order{% endif %} — MEMO{% endblock %}
 {% block content %}
 <section class="tracking-page shell">
-  <header><p class="eyebrow">ORDER TRACKING</p><h1>Where is your order?</h1><p>Enter your order number and the phone number used at checkout.</p></header>
-  <form class="tracking-form" method="post" novalidate>{% csrf_token %}{% for field in form %}{% include 'components/form-field.html' with field=field %}{% endfor %}<button class="btn btn--dark" type="submit">Track order</button></form>
-  {% if not_found %}<div class="tracking-alert" role="alert"><strong>We could not find that order.</strong><p>Check the order number and phone number, then try again.</p></div>{% endif %}
+  <header><p class="eyebrow">{% if request.LANGUAGE_CODE == 'ar' %}تتبع الطلب{% else %}ORDER TRACKING{% endif %}</p><h1>{% if request.LANGUAGE_CODE == 'ar' %}أين طلبك؟{% else %}Where is your order?{% endif %}</h1><p>{% if request.LANGUAGE_CODE == 'ar' %}أدخل رقم الطلب ورقم الهاتف المستخدم عند إتمامه.{% else %}Enter your order number and the phone number used at checkout.{% endif %}</p></header>
+  <form class="tracking-form" method="post" novalidate>{% csrf_token %}{% for field in form %}{% include 'components/form-field.html' with field=field %}{% endfor %}<button class="btn btn--dark" type="submit">{% if request.LANGUAGE_CODE == "ar" %}تتبّع الطلب{% else %}Track order{% endif %}</button></form>
+  {% if not_found %}<div class="tracking-alert" role="alert"><strong>{% if request.LANGUAGE_CODE == 'ar' %}لم نتمكن من العثور على الطلب.{% else %}We could not find that order.{% endif %}</strong><p>{% if request.LANGUAGE_CODE == 'ar' %}تحقق من رقم الطلب والهاتف ثم حاول مرة أخرى.{% else %}Check the order number and phone number, then try again.{% endif %}</p></div>{% endif %}
   {% if order %}
   <article class="tracking-result">
     <div class="tracking-result__head"><div><span>Order number</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.status_en }}</span></div>

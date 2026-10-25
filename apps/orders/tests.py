@@ -21,6 +21,7 @@ class GuestOrderTrackingTests(TestCase):
         self.assertContains(response, self.order.order_number)
 
     def test_tracking_does_not_reveal_order_for_wrong_phone(self):
+        self.client.cookies["django_language"] = "ar"
         response = self.client.post(reverse("orders:track"), {
             "order_number": self.order.order_number, "phone": "01111111111",
         })

@@ -136,19 +136,20 @@ class DashboardPermissionTests(TestCase):
         self.login_authorized()
         response = self.client.post(reverse("dashboard:section_create", args=["categories"]), {
             "name": "ملابس عربية", "slug": "ملابس-عربية", "description": "", "sort_order": 1,
-            "seo_title": "", "seo_description": "", "is_active": "on",
+            "seo_title": "", "seo_description": "", "visual_theme": "inherit", "is_active": "on",
         })
         category = Category.objects.get(slug="ملابس-عربية")
         self.assertRedirects(response, reverse("dashboard:section_edit", args=["categories", category.pk]))
 
         response = self.client.post(reverse("dashboard:product_create"), {
-            "name": "تيشيرت عربي", "slug": "تيشيرت-عربي", "base_sku": "AR-TEE",
+            "name": "Arabic Tee", "name_ar": "تيشيرت عربي", "slug": "تيشيرت-عربي", "base_sku": "AR-TEE",
             "category": category.pk, "short_description": "", "description": "", "material": "",
             "care_instructions": "", "fit_notes": "", "model_info": "", "measurement_notes": "",
             "price": "500", "compare_at_price": "", "cost_price": "", "status": "active",
             "meta_title": "", "meta_description": "",
         })
         product = Product.objects.get(slug="تيشيرت-عربي")
+        self.assertEqual(product.name_ar, "تيشيرت عربي")
         self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
 
     def test_collection_can_mix_full_category_tree_and_specific_products(self):

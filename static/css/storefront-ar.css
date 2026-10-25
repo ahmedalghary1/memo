@@ -1,0 +1,75 @@
+/* Arabic storefront: readable Arabic typography and RTL-aware page flow. */
+body { font-family: "Cairo", system-ui, sans-serif; }
+html[dir="rtl"] body { direction: rtl; }
+html[dir="rtl"] .site-header .header__inner,
+html[dir="rtl"] .header-primary,
+html[dir="rtl"] .desktop-nav { direction: rtl; }
+html[dir="rtl"] .ref-hero__copy { align-items: flex-start; text-align: right; }
+html[dir="rtl"] .ref-hero__overlay { background: linear-gradient(270deg, rgba(0,0,0,.7), rgba(0,0,0,.16) 65%, transparent); }
+html[dir="rtl"] .account aside nav > a,
+html[dir="rtl"] .account aside nav button,
+html[dir="rtl"] table,
+html[dir="rtl"] .shop-toolbar,
+html[dir="rtl"] .filters,
+html[dir="rtl"] .sort-form,
+html[dir="rtl"] .pdp-info,
+html[dir="rtl"] .cart-summary,
+html[dir="rtl"] .checkout,
+html[dir="rtl"] .auth-form,
+html[dir="rtl"] .account-content { text-align: right; }
+.language-switcher { margin: 0; display: flex; align-items: center; }
+.language-switcher button { border: 1px solid currentColor; border-radius: 999px; color: inherit; background: transparent; padding: 7px 12px; min-height: 36px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.language-switcher button:hover { background: rgba(255,255,255,.1); }
+html[dir="rtl"] .mobile-menu nav .menu-category__link::after { content: "←"; }
+
+/* Keep the category product flyout inside the header in RTL as well. */
+.desktop-nav .nav-item { position: static; }
+.desktop-nav .mega-menu {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  display: block;
+  z-index: 120;
+  max-height: calc(88vh - 70px);
+  overflow-y: auto;
+  color: #f7f4ee;
+  background: rgba(13, 14, 16, .985);
+  border-block: 1px solid rgba(201, 153, 57, .28);
+  box-shadow: 0 36px 72px rgba(0, 0, 0, .7);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity .24s ease, transform .24s ease, visibility .24s;
+}
+.desktop-nav .nav-item.has-dropdown:hover .mega-menu,
+.desktop-nav .nav-item.has-dropdown:focus-within .mega-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.mega-menu__inner { width: min(100% - 48px, 1280px); margin-inline: auto; padding-block: 28px 34px; }
+.mega-menu__content { display: grid; grid-template-columns: minmax(220px, 290px) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
+.mega-menu__subcats { display: flex; flex-direction: column; gap: 16px; padding-inline-end: 22px; border-inline-end: 1px solid rgba(255,255,255,.12); }
+.mega-subcats__head,.mega-products__head { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.mega-head__tag { color: #d1a23d; font-size: 10px; letter-spacing: .1em; }
+.mega-subcats__groups { display: grid; grid-template-columns: repeat(auto-fit,minmax(100px,1fr)); gap: 16px; }
+.mega-subcat-group { display: flex; flex-direction: column; gap: 7px; }
+.mega-subcat-items { margin: 0; padding: 0; list-style: none; }
+.mega-subcat-link { display: inline-block; padding-block: 3px; color: #aaa !important; font-size: 12px; }
+.mega-menu__products { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+.mega-products__head { flex-direction: row; justify-content: space-between; align-items: center; }
+.mega-products__grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+.mega-card,.mega-card__link { display: flex; min-width: 0; flex-direction: column; color: #f7f4ee; }
+.mega-card__media { position: relative; aspect-ratio: 4/5; overflow: hidden; background: #17181c; }
+.mega-card__media img { width: 100%; height: 100%; object-fit: cover; }
+.mega-card__details { padding-top: 7px; font-size: 11px; }
+.mega-card__name { margin: 3px 0; font-size: 12px; }
+@media (max-width: 920px) {
+  .desktop-nav .mega-menu { display: none !important; }
+}
+@media (max-width: 767px) {
+  html[dir="rtl"] .ref-hero__copy { align-items: flex-start; }
+  .language-switcher button { padding: 6px 10px; }
+}

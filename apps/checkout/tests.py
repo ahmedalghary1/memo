@@ -15,7 +15,7 @@ from apps.core.models import StoreSettings
 
 class CheckoutTests(TestCase):
     def setUp(self):
-        category = Category.objects.create(name="Unisex", slug="unisex")
+        category = Category.objects.create(name="Unisex", slug="checkout-unisex")
         product = Product.objects.create(
             name="Essential", slug="essential", base_sku="E1",
             price=Decimal("700"), category=category, status="active",
@@ -110,6 +110,7 @@ class CheckoutTests(TestCase):
         self.assertFalse(Order.objects.exists())
 
     def test_guest_checkout_requires_complete_contact_and_address(self):
+        self.client.cookies["django_language"] = "ar"
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.pk, "quantity": 1})
         response = self.client.post(reverse("checkout:checkout"), self.checkout_data(email="", details=""))
         self.assertEqual(response.status_code, 200)

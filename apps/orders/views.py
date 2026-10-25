@@ -6,6 +6,7 @@ from django.core import signing
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import get_language
 
 from apps.core.numbers import latin_digits
 
@@ -74,12 +75,12 @@ def whatsapp_edit(request, token):
         OrderEvent.objects.create(
             order=order,
             status=order.status,
-            note="Customer updated contact or delivery details through the WhatsApp link",
+            note="العميل حدّث بيانات التواصل أو التوصيل عبر رابط WhatsApp" if get_language() == "ar" else "Customer updated contact or delivery details through the WhatsApp link",
         )
         if settings.WHATSAPP_PROVIDER == "meta":
-            messages.success(request, "Your changes have been saved. The MEMO team will review them and contact you to confirm your order.")
+            messages.success(request, "تم حفظ التعديلات. سيراجع فريق ميمو طلبك ويتواصل معك لتأكيده." if get_language() == "ar" else "Your changes have been saved. The MEMO team will review them and contact you to confirm your order.")
         else:
-            messages.success(request, "Your changes have been saved. Return to WhatsApp and send 1 with your order number to confirm.")
+            messages.success(request, "تم حفظ التعديلات. ارجع إلى WhatsApp وأرسل 1 مع رقم الطلب للتأكيد." if get_language() == "ar" else "Your changes have been saved. Return to WhatsApp and send 1 with your order number to confirm.")
         return redirect("orders:whatsapp_edit", token=token)
 
     return render(

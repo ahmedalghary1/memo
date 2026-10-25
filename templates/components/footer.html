@@ -3,7 +3,7 @@
   <div class="footer-top shell">
     <div class="footer-brand">
       <img class="footer-logo" src="{% static 'images/memo-logo-transparent-v2.webp' %}?v=20261015" alt="MEMO" width="140" height="90" loading="lazy" decoding="async">
-      <p class="footer-tagline">{{ store_settings.brand_tagline|default:"Everyday pieces. Distinct presence." }}</p>
+      <p class="footer-tagline">{% if request.LANGUAGE_CODE == 'ar' %}تفاصيل يومية. حضور مختلف.{% else %}{{ store_settings.brand_tagline|default:"Everyday pieces. Distinct presence." }}{% endif %}</p>
       {% if store_settings.support_email or store_settings.support_phone %}
       <div class="footer-contacts">
         {% if store_settings.support_phone %}
@@ -23,27 +23,27 @@
     </div>
 
     <div class="footer-nav-col">
-      <h3>Shop</h3>
-      <a href="{% url 'catalog:list' %}">All pieces</a>
-      <a href="{% url 'catalog:collections' %}">Collections</a>
-      <a href="{% url 'catalog:list' %}?sort=new">New arrivals</a>
-      <a href="{% url 'wishlist:detail' %}">Saved items</a>
+      <h3>{% if request.LANGUAGE_CODE == 'ar' %}تسوّق{% else %}Shop{% endif %}</h3>
+      <a href="{% url 'catalog:list' %}">{% if request.LANGUAGE_CODE == 'ar' %}كل المنتجات{% else %}All pieces{% endif %}</a>
+      <a href="{% url 'catalog:collections' %}">{% if request.LANGUAGE_CODE == 'ar' %}المجموعات{% else %}Collections{% endif %}</a>
+      <a href="{% url 'catalog:list' %}?sort=new">{% if request.LANGUAGE_CODE == 'ar' %}وصل حديثًا{% else %}New arrivals{% endif %}</a>
+      <a href="{% url 'wishlist:detail' %}">{% if request.LANGUAGE_CODE == 'ar' %}قائمة الأمنيات{% else %}Saved items{% endif %}</a>
     </div>
 
     <div class="footer-nav-col">
-      <h3>Help</h3>
-      <a href="{% url 'orders:track' %}">Track your order</a>
-      <a href="{% url 'core:info' 'shipping' %}">Shipping</a>
-      <a href="{% url 'core:info' 'returns' %}">Exchanges & returns</a>
-      <a href="{% url 'core:info' 'sizes' %}">Size guide</a>
-      <a href="{% url 'core:info' 'contact' %}">Contact us</a>
+      <h3>{% if request.LANGUAGE_CODE == 'ar' %}المساعدة{% else %}Help{% endif %}</h3>
+      <a href="{% url 'orders:track' %}">{% if request.LANGUAGE_CODE == 'ar' %}تتبّع طلبك{% else %}Track your order{% endif %}</a>
+      <a href="{% url 'core:info' 'shipping' %}">{% if request.LANGUAGE_CODE == 'ar' %}الشحن{% else %}Shipping{% endif %}</a>
+      <a href="{% url 'core:info' 'returns' %}">{% if request.LANGUAGE_CODE == 'ar' %}الاستبدال والاسترجاع{% else %}Exchanges & returns{% endif %}</a>
+      <a href="{% url 'core:info' 'sizes' %}">{% if request.LANGUAGE_CODE == 'ar' %}دليل المقاسات{% else %}Size guide{% endif %}</a>
+      <a href="{% url 'core:info' 'contact' %}">{% if request.LANGUAGE_CODE == 'ar' %}تواصل معنا{% else %}Contact us{% endif %}</a>
     </div>
 
     <div class="footer-nav-col">
-      <h3>Policies</h3>
-      <a href="{% url 'core:info' 'privacy' %}">Privacy</a>
-      <a href="{% url 'core:info' 'terms' %}">Terms</a>
-      <a href="{% url 'core:info' 'about' %}">About MEMO</a>
+      <h3>{% if request.LANGUAGE_CODE == 'ar' %}السياسات{% else %}Policies{% endif %}</h3>
+      <a href="{% url 'core:info' 'privacy' %}">{% if request.LANGUAGE_CODE == 'ar' %}الخصوصية{% else %}Privacy{% endif %}</a>
+      <a href="{% url 'core:info' 'terms' %}">{% if request.LANGUAGE_CODE == 'ar' %}الشروط والأحكام{% else %}Terms{% endif %}</a>
+      <a href="{% url 'core:info' 'about' %}">{% if request.LANGUAGE_CODE == 'ar' %}عن ميمو{% else %}About MEMO{% endif %}</a>
     </div>
   </div>
 
@@ -63,9 +63,9 @@
       {% endif %}
     </div>
     <div class="footer-perks">
-      <span><i class="perk-dot"></i> Cash on Delivery</span>
-      <span><i class="perk-dot"></i> Exchanges in 14 Days</span>
-      <span><i class="perk-dot"></i> Selected Fabrics</span>
+      <span><i class="perk-dot"></i> {% if request.LANGUAGE_CODE == 'ar' %}الدفع عند الاستلام{% else %}Cash on Delivery{% endif %}</span>
+      <span><i class="perk-dot"></i> {% if request.LANGUAGE_CODE == 'ar' %}الاستبدال خلال 14 يومًا{% else %}Exchanges in 14 Days{% endif %}</span>
+      <span><i class="perk-dot"></i> {% if request.LANGUAGE_CODE == 'ar' %}خامات مختارة{% else %}Selected Fabrics{% endif %}</span>
     </div>
   </div>
 

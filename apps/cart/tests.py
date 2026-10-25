@@ -8,10 +8,12 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
+from django.conf import settings
 
 class CartTests(TestCase):
     def setUp(self):
-        c=Category.objects.create(name="رجالي",slug="men")
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        c=Category.objects.create(name="رجالي",slug="cart-men")
         p=Product.objects.create(name="تيشيرت",slug="tee",base_sku="T1",price=Decimal("500"),category=c,status="active")
         color=Color.objects.create(name="أسود",slug="black",hex_code="#000000"); size=Size.objects.create(name="M",slug="m")
         self.variant=ProductVariant.objects.create(product=p,color=color,size=size,sku="T1-B-M",stock_quantity=3)

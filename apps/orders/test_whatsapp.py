@@ -639,6 +639,7 @@ class WhatsAppWebhookTests(TestCase):
 
 class WhatsAppOrderEditTests(TestCase):
     def setUp(self):
+        self.client.cookies["django_language"] = "ar"
         self.order = Order.objects.create(
             status="pending_confirmation",
             subtotal=500,

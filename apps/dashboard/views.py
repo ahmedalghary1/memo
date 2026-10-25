@@ -148,7 +148,7 @@ def products(request):
     products_qs = Product.objects.select_related("category").annotate(stock=Sum("variants__stock_quantity"))
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "")
-    if query: products_qs = products_qs.filter(Q(name__icontains=query) | Q(base_sku__icontains=query) | Q(category__name__icontains=query))
+    if query: products_qs = products_qs.filter(Q(name__icontains=query) | Q(name_ar__icontains=query) | Q(base_sku__icontains=query) | Q(category__name__icontains=query))
     if status in dict(Product.STATUS): products_qs = products_qs.filter(status=status)
     page_obj = Paginator(products_qs, 25).get_page(request.GET.get("page"))
     return render(request, "dashboard/products.html", {"products": page_obj, "page_obj": page_obj, "query": query, "active_status": status, "statuses": Product.STATUS})
@@ -202,8 +202,8 @@ def products_export(request):
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="memo-products.csv"'
     response.write("\ufeff")
-    writer = csv.writer(response); writer.writerow(["المنتج", "الكود", "الفئة", "السعر", "المخزون", "الحالة"])
-    for product in products_qs: writer.writerow([product.name, product.base_sku, product.category.name, product.price, product.stock or 0, product.get_status_display()])
+    writer = csv.writer(response); writer.writerow(["المنتج بالإنجليزية", "المنتج بالعربية", "الكود", "الفئة", "السعر", "المخزون", "الحالة"])
+    for product in products_qs: writer.writerow([product.name, product.name_ar, product.base_sku, product.category.name, product.price, product.stock or 0, product.get_status_display()])
     return response
 
 

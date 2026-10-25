@@ -1,5 +1,5 @@
 {% load static %}<!doctype html>
-<html lang="en" dir="ltr">
+<html lang="{{ request.LANGUAGE_CODE|default:'en' }}" dir="{% if request.LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -17,7 +17,7 @@
   <link rel="icon" type="image/webp" sizes="256x256" href="{% static 'images/memo-logo.webp' %}?v=20261015">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
@@ -32,10 +32,11 @@
   <link rel="stylesheet" href="{% static 'css/collections.css' %}?v=20261014-1">
   <link rel="stylesheet" href="{% static 'css/storefront-en.css' %}?v=20261015-1">
   <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261022-1">
+  {% if request.LANGUAGE_CODE == 'ar' %}<link rel="stylesheet" href="{% static 'css/storefront-ar.css' %}?v=20261025-3">{% endif %}
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}{% if store_settings.announcement_text %} has-announcement{% endif %}">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main">{% if request.LANGUAGE_CODE == 'ar' %}تخطَّ إلى المحتوى{% else %}Skip to content{% endif %}</a>
   {% if store_settings.announcement_text %}<div class="announcement-bar">{{ store_settings.announcement_text }}</div>{% endif %}
   {% include 'components/header.html' %}
   {% include 'components/search-overlay.html' %}

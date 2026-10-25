@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.core.paginator import Paginator
 from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, render
@@ -16,14 +18,22 @@ def product_list(request, slug=None):
         products = products.filter(category_id__in=category_ids)
     size = request.GET.getlist("size")
     color = request.GET.getlist("color")
-    if size: products = products.filter(variants__size__slug__in=size)
-    if color: products = products.filter(variants__color__slug__in=color)
-    if request.GET.get("available"): products = products.filter(variants__stock_quantity__gt=0)
-    try:
-        if request.GET.get("price_min"): products = products.filter(price__gte=request.GET["price_min"])
-        if request.GET.get("price_max"): products = products.filter(price__lte=request.GET["price_max"])
-    except (ValueError, TypeError):
-        pass
+    variant_filters = {}
+    if size: variant_filters["variants__size__slug__in"] = size
+    if color: variant_filters["variants__color__slug__in"] = color
+    if request.GET.get("available"): variant_filters["variants__stock_quantity__gt"] = 0
+    if variant_filters:
+        products = products.filter(variants__is_active=True, **variant_filters)
+    for parameter, lookup in (("price_min", "price__gte"), ("price_max", "price__lte")):
+        raw_price = request.GET.get(parameter)
+        if not raw_price:
+            continue
+        try:
+            price = Decimal(raw_price)
+        except InvalidOperation:
+            continue
+        if price.is_finite() and price >= 0:
+            products = products.filter(**{lookup: price})
     order = {"price_asc": "price", "price_desc": "-price", "new": "-created_at", "discount": "compare_at_price"}.get(request.GET.get("sort"), "-created_at")
     products = products.distinct().order_by(order)
     page = Paginator(products, 12).get_page(request.GET.get("page"))
