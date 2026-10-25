@@ -1,16 +1,16 @@
-{% load static %}<!doctype html>
+{% load ui_tags %}{% load static %}<!doctype html>
 <html lang="{{ request.LANGUAGE_CODE|default:'en' }}" dir="{% if request.LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>{% block title %}MEMO — Everyday pieces. Distinct presence.{% endblock %}</title>
-  <meta name="description" content="{% block description %}MEMO Contemporary fashion — Quiet design. Lasting presence.{% endblock %}">
+  <title>{% block title %}{% if request.LANGUAGE_CODE == 'ar' %}ميمو — قطع يومية بحضور مختلف{% else %}MEMO — Everyday pieces. Distinct presence.{% endif %}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{% if request.LANGUAGE_CODE == 'ar' %}ميمو للأزياء المعاصرة — تصميم هادئ وحضور يدوم.{% else %}MEMO Contemporary fashion — Quiet design. Lasting presence.{% endif %}{% endblock %}">
   <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-  <meta property="og:title" content="{% block og_title %}MEMO — Contemporary fashion{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}Everyday pieces with modern cuts and selected fabrics.{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{% if request.LANGUAGE_CODE == 'ar' %}ميمو — أزياء معاصرة{% else %}MEMO — Contemporary fashion{% endif %}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% if request.LANGUAGE_CODE == 'ar' %}قطع يومية بقصّات عصرية وخامات مختارة.{% else %}Everyday pieces with modern cuts and selected fabrics.{% endif %}{% endblock %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/memo-campaign.png' %}{% endblock %}">
-  <meta property="og:locale" content="en_US">
+  <meta property="og:locale" content="{% if request.LANGUAGE_CODE == 'ar' %}ar_EG{% else %}en_US{% endif %}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="{% block theme_color %}#0A0A0A{% endblock %}">
   <script>document.documentElement.classList.add('motion-capable')</script>
@@ -35,17 +35,17 @@
   {% if request.LANGUAGE_CODE == 'ar' %}<link rel="stylesheet" href="{% static 'css/storefront-ar.css' %}?v=20261025-3">{% endif %}
   {% block head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}{% if store_settings.announcement_text %} has-announcement{% endif %}">
+<body class="{% block body_class %}{% endblock %}{% if store_settings.display_announcement_text %} has-announcement{% endif %}">
   <a class="skip-link" href="#main">{% if request.LANGUAGE_CODE == 'ar' %}تخطَّ إلى المحتوى{% else %}Skip to content{% endif %}</a>
-  {% if store_settings.announcement_text %}<div class="announcement-bar">{{ store_settings.announcement_text }}</div>{% endif %}
+  {% if store_settings.display_announcement_text %}<div class="announcement-bar">{{ store_settings.display_announcement_text }}</div>{% endif %}
   {% include 'components/header.html' %}
   {% include 'components/search-overlay.html' %}
   {% include 'components/cart-drawer.html' %}
-  <button class="filter-backdrop" type="button" data-filter-backdrop aria-label="Close filters" hidden></button>
-  {% if messages %}<div class="toast-region" aria-live="polite">{% for message in messages %}<div class="toast toast--{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  <button class="filter-backdrop" type="button" data-filter-backdrop aria-label="{{ "Close filters"|ui_text }}" hidden></button>
+  {% if messages %}<div class="toast-region" aria-live="polite">{% for message in messages %}<div class="toast toast--{{ message.tags }}">{{ message|ui_text }}</div>{% endfor %}</div>{% endif %}
   <main id="main">{% block content %}{% endblock %}</main>
   {% include 'components/footer.html' %}
-  <button class="back-to-top" type="button" data-back-to-top aria-label="Back to top">↑</button>
+  <button class="back-to-top" type="button" data-back-to-top aria-label="{{ "Back to top"|ui_text }}">↑</button>
   {% block motion_libraries %}
   <script src="{% static 'vendor/gsap.min.js' %}" defer></script>
   <script src="{% static 'vendor/ScrollTrigger.min.js' %}" defer></script>
@@ -53,7 +53,7 @@
   {% endblock %}
   <script src="{% static 'js/digits.js' %}?v=20260829-1" defer></script>
   <script src="{% static 'js/motion.js' %}?v=20261024-1" defer></script>
-  <script type="module" src="{% static 'js/core.js' %}?v=20261015-1"></script>
+  <script type="module" src="{% static 'js/core.js' %}?v=20261025-4"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

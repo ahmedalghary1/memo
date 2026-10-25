@@ -50,7 +50,7 @@ def checkout(request):
             variant = locked[item["variant"].pk]
             ProductVariant.objects.filter(pk=variant.pk).update(stock_quantity=F("stock_quantity") - item["quantity"])
             image = item["product"].primary_image
-            OrderItem.objects.create(order=order, variant=variant, product_name=item["product"].name, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", color_name=variant.color.name if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
+            OrderItem.objects.create(order=order, variant=variant, product_name=item["product"].name, product_name_ar=item["product"].name_ar, variant_sku=variant.sku, size_name=variant.size.name if variant.size else "", size_name_ar=variant.size.name_ar if variant.size else "", color_name=variant.color.name if variant.color else "", color_name_ar=variant.color.name_ar if variant.color else "", unit_price=item["unit_price"], quantity=item["quantity"], line_total=item["total"], product_image=image.optimized_url if image else "")
             InventoryMovement.objects.create(variant=variant, movement_type="out", quantity=-item["quantity"], reference=order.order_number, note="New order")
         OrderEvent.objects.create(order=order, status="pending_confirmation", note="Order received and awaiting confirmation")
         if coupon:

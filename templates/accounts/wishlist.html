@@ -1,19 +1,19 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load ui_tags %}
 {% block title %}Wishlist — MEMO{% endblock %}
 {% block content %}
 <section class="wishlist-page shell">
-  <header><p class="eyebrow">SAVED PIECES</p><h1>Wishlist <sup>({{ items|length }})</sup></h1><p>Choose a color and size before adding an item to your bag.</p></header>
+  <header><p class="eyebrow">{{ "SAVED PIECES"|ui_text }}</p><h1>{{ "Wishlist"|ui_text }} <sup>({{ items|length }})</sup></h1><p>{{ "Choose a color and size before adding an item to your bag."|ui_text }}</p></header>
   <div class="wishlist-list">
     {% for item in items %}
     <article>
-      {% with img=item.product.primary_image %}{% if img %}<a href="{{ item.product.get_absolute_url }}"><img src="{{ img.optimized_url }}" alt="{{ img.alt_text }}" loading="lazy"></a>{% endif %}{% endwith %}
+      {% with img=item.product.primary_image %}{% if img %}<a href="{{ item.product.get_absolute_url }}"><img src="{{ img.optimized_url }}" alt="{{ img.localized_alt_text }}" loading="lazy"></a>{% endif %}{% endwith %}
       <div>
-        <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.display_name }}</a></h2><p>{{ item.product.display_short_description }}</p><strong>{{ item.product.price|floatformat:0 }} EGP</strong>
-        <form class="wishlist-add-form" action="{% url 'cart:add' %}" method="post">{% csrf_token %}<input type="hidden" name="quantity" value="1"><input type="hidden" name="next" value="{% url 'wishlist:detail' %}"><label><span>Available options</span><select name="variant_id" required><option value="">Choose an option</option>{% for variant in item.product.variants.all %}{% if variant.is_active and variant.stock_quantity %}<option value="{{ variant.pk }}">{{ variant.option_label }}{% if variant.availability == 'low' %} — Only {{ variant.stock_quantity }}{% endif %}</option>{% endif %}{% endfor %}</select></label><button class="btn btn--dark">Add to bag</button></form>
+        <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.display_name }}</a></h2><p>{{ item.product.display_short_description }}</p><strong>{{ item.product.price|floatformat:0 }} {{ "EGP"|ui_text }}</strong>
+        <form class="wishlist-add-form" action="{% url 'cart:add' %}" method="post">{% csrf_token %}<input type="hidden" name="quantity" value="1"><input type="hidden" name="next" value="{% url 'wishlist:detail' %}"><label><span>{{ "Available options"|ui_text }}</span><select name="variant_id" required><option value="">{{ "Choose an option"|ui_text }}</option>{% for variant in item.product.variants.all %}{% if variant.is_active and variant.stock_quantity %}<option value="{{ variant.pk }}">{{ variant.option_label }}{% if variant.availability == 'low' %} — Only {{ variant.stock_quantity }}{% endif %}</option>{% endif %}{% endfor %}</select></label><button class="btn btn--dark">{{ "Add to bag"|ui_text }}</button></form>
       </div>
       <form action="{% url 'wishlist:toggle' item.product.pk %}" method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="wishlist-remove" aria-label="Remove {{ item.product.display_name }}">×</button></form>
     </article>
-    {% empty %}<div class="empty-state"><h2>No saved items yet.</h2><p>Save pieces you love and revisit them anytime.</p><a class="btn btn--dark" href="{% url 'catalog:list' %}">Explore pieces</a></div>{% endfor %}
+    {% empty %}<div class="empty-state"><h2>{{ "No saved items yet."|ui_text }}</h2><p>{{ "Save pieces you love and revisit them anytime."|ui_text }}</p><a class="btn btn--dark" href="{% url 'catalog:list' %}">{{ "Explore pieces"|ui_text }}</a></div>{% endfor %}
   </div>
 </section>
 {% endblock %}

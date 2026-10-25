@@ -1,7 +1,7 @@
-<div class="search-overlay" id="search-overlay" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
-  <button class="icon-btn search-close" type="button" data-search-close><span class="sr-only">Close search</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+{% load ui_tags %}<div class="search-overlay" id="search-overlay" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
+  <button class="icon-btn search-close" type="button" data-search-close><span class="sr-only">{{ "Close search"|ui_text }}</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
   <div class="search-inner">
-    <p class="eyebrow">SEARCH / MEMO</p><h2 id="search-title">{% if request.LANGUAGE_CODE == 'ar' %}ما الذي تبحث عنه؟{% else %}What are you looking for?{% endif %}</h2>
+    <p class="eyebrow">{{ "SEARCH / MEMO"|ui_text }}</p><h2 id="search-title">{% if request.LANGUAGE_CODE == 'ar' %}ما الذي تبحث عنه؟{% else %}What are you looking for?{% endif %}</h2>
     <form action="{% url 'core:search' %}" data-live-search data-suggest-url="{% url 'core:search_suggestions' %}">
       <label class="sr-only" for="global-search">{% if request.LANGUAGE_CODE == 'ar' %}اسم المنتج أو رمزه{% else %}Product name or code{% endif %}</label>
       <input id="global-search" name="q" type="search" placeholder="{% if request.LANGUAGE_CODE == 'ar' %}اكتب اسم المنتج أو رمزه{% else %}Enter a product name or code{% endif %}" autocomplete="off" aria-controls="search-live-results" aria-expanded="false">

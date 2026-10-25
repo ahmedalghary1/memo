@@ -2,6 +2,7 @@ import secrets
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import get_language
 from apps.core.choices import ENGLISH_GOVERNORATES
 
 ENGLISH_ORDER_STATUSES = {
@@ -26,6 +27,8 @@ class Address(models.Model):
     notes = models.TextField(blank=True); is_default = models.BooleanField(default=False)
     @property
     def governorate_en(self): return ENGLISH_GOVERNORATES.get(self.governorate, self.governorate)
+    @property
+    def display_governorate(self): return self.governorate if get_language() == "ar" else self.governorate_en
 
 class Coupon(models.Model):
     TYPES = [("fixed", "قيمة ثابتة"), ("percentage", "نسبة")]
@@ -69,18 +72,36 @@ class Order(models.Model):
     def status_en(self): return ENGLISH_ORDER_STATUSES.get(self.status, self.status)
     @property
     def governorate_en(self): return ENGLISH_GOVERNORATES.get(self.governorate, self.governorate)
+    @property
+    def display_status(self): return self.get_status_display() if get_language() == "ar" else self.status_en
+    @property
+    def display_governorate(self): return self.governorate if get_language() == "ar" else self.governorate_en
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     variant = models.ForeignKey("catalog.ProductVariant", null=True, blank=True, on_delete=models.PROTECT)
-    product_name = models.CharField(max_length=180); variant_sku = models.CharField(max_length=80)
-    size_name = models.CharField(max_length=40); color_name = models.CharField(max_length=80)
+    product_name = models.CharField(max_length=180); product_name_ar = models.CharField(max_length=180, blank=True)
+    variant_sku = models.CharField(max_length=80)
+    size_name = models.CharField(max_length=40); size_name_ar = models.CharField(max_length=40, blank=True)
+    color_name = models.CharField(max_length=80); color_name_ar = models.CharField(max_length=80, blank=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2); quantity = models.PositiveIntegerField()
     line_total = models.DecimalField(max_digits=10, decimal_places=2); product_image = models.CharField(max_length=300, blank=True)
     @property
     def product_name_en(self): return ENGLISH_SEEDED_PRODUCTS.get(self.product_name, self.product_name)
     @property
     def color_name_en(self): return {"أسود": "Black", "عاجي": "Ivory", "رملي": "Sand"}.get(self.color_name, self.color_name)
+    @property
+    def display_product_name(self):
+        if get_language() != "ar": return self.product_name_en
+        return self.product_name_ar or (self.variant.product.name_ar if self.variant_id and self.variant.product.name_ar else self.product_name)
+    @property
+    def display_color_name(self):
+        if get_language() != "ar": return self.color_name_en
+        return self.color_name_ar or (self.variant.color.name_ar if self.variant_id and self.variant.color_id and self.variant.color.name_ar else self.color_name)
+    @property
+    def display_size_name(self):
+        if get_language() != "ar": return self.size_name
+        return self.size_name_ar or (self.variant.size.name_ar if self.variant_id and self.variant.size_id and self.variant.size.name_ar else self.size_name)
 
 class OrderEvent(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="timeline")
@@ -92,6 +113,8 @@ class OrderEvent(models.Model):
     def status_label(self): return dict(Order.STATUS).get(self.status, self.status)
     @property
     def status_label_en(self): return ENGLISH_ORDER_STATUSES.get(self.status, self.status)
+    @property
+    def display_status_label(self): return self.status_label if get_language() == "ar" else self.status_label_en
 
 
 class WhatsAppWebhookEvent(models.Model):

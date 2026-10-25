@@ -1,46 +1,46 @@
-{% load static %}
+{% load ui_tags %}{% load static %}
 <header class="site-header" data-header>
   <div class="header__inner shell">
     <div class="header-primary">
       <a class="brand{% if is_kids %} brand--kids{% endif %}" href="{% if is_kids %}{% url 'catalog:category' 'kids' %}{% else %}{% url 'core:home' %}{% endif %}" aria-label="{% if is_kids %}MEMO Kids{% else %}MEMO Home{% endif %}"><img src="{% if is_kids %}{% static 'images/memo-kids-logo.jpeg' %}{% else %}{% static 'images/memo-logo-transparent-v2.webp' %}?v=20261015{% endif %}" alt="{% if is_kids %}MEMO Kids{% else %}MEMO{% endif %}" width="384" height="256" decoding="async"></a>
-      <button class="icon-btn menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">Open menu</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
-      <nav class="desktop-nav" aria-label="Main navigation">
+      <button class="icon-btn menu-trigger" type="button" data-menu-open aria-controls="mobile-menu" aria-expanded="false"><span class="sr-only">{{ "Open menu"|ui_text }}</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
+      <nav class="desktop-nav" aria-label="{{ "Main navigation"|ui_text }}">
         <div class="nav-item">
-          <a class="nav-link" href="{% url 'core:home' %}">{% if request.LANGUAGE_CODE == 'ar' %}الرئيسية{% else %}Home{% endif %}</a>
+          <a class="nav-link" href="{% url 'core:home' %}">{% if request.LANGUAGE_CODE == 'ar' %}الرئيسية{% else %}{{ "Home"|ui_text }}{% endif %}</a>
         </div>
         <div class="nav-item">
-          <a class="nav-link" href="{% url 'catalog:list' %}">{% if request.LANGUAGE_CODE == 'ar' %}تسوّق{% else %}Shop{% endif %}</a>
+          <a class="nav-link" href="{% url 'catalog:list' %}">{% if request.LANGUAGE_CODE == 'ar' %}تسوّق{% else %}{{ "Shop"|ui_text }}{% endif %}</a>
         </div>
         {% for cat in nav_categories %}
           <div class="nav-item has-dropdown">
             <a class="nav-link" href="{{ cat.get_absolute_url }}">
-              <span>{{ cat.name }}</span>
+              <span>{{ cat.localized_name }}</span>
               {% if cat.nav_children or cat.nav_products %}
                 <svg class="dropdown-chevron" viewBox="0 0 10 6" aria-hidden="true" focusable="false"><path d="m1 1 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               {% endif %}
             </a>
             {% if cat.nav_children or cat.nav_products %}
-              <div class="mega-menu" aria-label="{{ cat.name }} navigation">
+              <div class="mega-menu" aria-label="{% if request.LANGUAGE_CODE == 'ar' %}قائمة {{ cat.localized_name }}{% else %}{{ cat.localized_name }} navigation{% endif %}">
                 <div class="mega-menu__inner shell">
                   <div class="mega-menu__content">
                     <!-- Subcategories Column (Left) -->
                     <div class="mega-menu__subcats">
                       <div class="mega-subcats__head">
-                        <span class="mega-head__tag">Categories</span>
+                        <span class="mega-head__tag">{{ "Categories"|ui_text }}</span>
                         <a href="{{ cat.get_absolute_url }}" class="mega-head__all">
-                          <span>All in {{ cat.name }}</span>
+                          <span>{% if request.LANGUAGE_CODE == 'ar' %}كل منتجات {{ cat.localized_name }}{% else %}{{ "All in"|ui_text }} {{ cat.localized_name }}{% endif %}</span>
                           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
                       </div>
                       <div class="mega-subcats__groups">
                         {% for subcat in cat.nav_children %}
                           <div class="mega-subcat-group">
-                            <a href="{{ subcat.get_absolute_url }}" class="mega-subcat-title">{{ subcat.name }}</a>
+                            <a href="{{ subcat.get_absolute_url }}" class="mega-subcat-title">{{ subcat.localized_name }}</a>
                             {% if subcat.nav_children %}
                               <ul class="mega-subcat-items">
                                 {% for deep in subcat.nav_children %}
                                   <li>
-                                    <a href="{{ deep.get_absolute_url }}" class="mega-subcat-link">{{ deep.name }}</a>
+                                    <a href="{{ deep.get_absolute_url }}" class="mega-subcat-link">{{ deep.localized_name }}</a>
                                   </li>
                                 {% endfor %}
                               </ul>
@@ -48,7 +48,7 @@
                           </div>
                         {% empty %}
                           <div class="mega-subcat-group">
-                            <a href="{{ cat.get_absolute_url }}" class="mega-subcat-title">{{ cat.name }}</a>
+                            <a href="{{ cat.get_absolute_url }}" class="mega-subcat-title">{{ cat.localized_name }}</a>
                           </div>
                         {% endfor %}
                       </div>
@@ -57,8 +57,8 @@
                     <!-- Products Showcase (Right - spread out like luxury global brands) -->
                     <div class="mega-menu__products">
                       <div class="mega-products__head">
-                        <span class="mega-head__tag">Featured in {{ cat.name }}</span>
-                        <a href="{{ cat.get_absolute_url }}" class="mega-head__view-all">View all {{ cat.name }} &rarr;</a>
+                        <span class="mega-head__tag">{% if request.LANGUAGE_CODE == 'ar' %}منتجات مميزة من {{ cat.localized_name }}{% else %}{{ "Featured in"|ui_text }} {{ cat.localized_name }}{% endif %}</span>
+                        <a href="{{ cat.get_absolute_url }}" class="mega-head__view-all">{% if request.LANGUAGE_CODE == 'ar' %}عرض كل {{ cat.localized_name }} ←{% else %}{{ "View all"|ui_text }} {{ cat.localized_name }} &rarr;{% endif %}</a>
                       </div>
                       <div class="mega-products__grid">
                         {% for product in cat.nav_products %}
@@ -73,18 +73,18 @@
                                 {% if product.discount_percent %}
                                   <span class="mega-card__badge badge-sale">-{{ product.discount_percent }}%</span>
                                 {% elif product.new_arrival %}
-                                  <span class="mega-card__badge badge-new">NEW</span>
+                                  <span class="mega-card__badge badge-new">{{ "NEW"|ui_text }}</span>
                                 {% elif product.bestseller %}
-                                  <span class="mega-card__badge badge-hot">HOT</span>
+                                  <span class="mega-card__badge badge-hot">{{ "HOT"|ui_text }}</span>
                                 {% endif %}
                               </div>
                               <div class="mega-card__details">
-                                <span class="mega-card__cat">{{ product.category.name }}</span>
+                                <span class="mega-card__cat">{{ product.category.localized_name }}</span>
                                 <h4 class="mega-card__name">{{ product.display_name }}</h4>
                                 <div class="mega-card__price">
-                                  <strong>{{ product.price|floatformat:0 }} EGP</strong>
+                                  <strong>{{ product.price|floatformat:0 }} {{ "EGP"|ui_text }}</strong>
                                   {% if product.compare_at_price and product.compare_at_price > product.price %}
-                                    <del>{{ product.compare_at_price|floatformat:0 }} EGP</del>
+                                    <del>{{ product.compare_at_price|floatformat:0 }} {{ "EGP"|ui_text }}</del>
                                   {% endif %}
                                 </div>
                               </div>
@@ -92,8 +92,8 @@
                           </article>
                         {% empty %}
                           <div class="mega-products__empty">
-                            <p>Discover the latest {{ cat.name }} pieces.</p>
-                            <a href="{{ cat.get_absolute_url }}" class="btn btn-outline btn-sm">Explore {{ cat.name }}</a>
+                            <p>Discover the latest {{ cat.localized_name }} pieces.</p>
+                            <a href="{{ cat.get_absolute_url }}" class="btn btn-outline btn-sm">Explore {{ cat.localized_name }}</a>
                           </div>
                         {% endfor %}
                       </div>
@@ -112,23 +112,23 @@
     <div class="header-actions">
       <form class="language-switcher" action="{% url 'set_language' %}" method="post" aria-label="{% if request.LANGUAGE_CODE == 'ar' %}تغيير اللغة{% else %}Change language{% endif %}">{% csrf_token %}<input type="hidden" name="language" value="{% if request.LANGUAGE_CODE == 'ar' %}en{% else %}ar{% endif %}"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" lang="{% if request.LANGUAGE_CODE == 'ar' %}en{% else %}ar{% endif %}">{% if request.LANGUAGE_CODE == 'ar' %}English{% else %}العربية{% endif %}</button></form>
       <button class="icon-btn" type="button" data-search-open aria-controls="search-overlay" aria-expanded="false"><span class="sr-only">{% if request.LANGUAGE_CODE == 'ar' %}بحث{% else %}Search{% endif %}</span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
-      <a class="icon-btn desktop-only" href="{% url 'accounts:dashboard' %}"><span class="sr-only">Account</span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg></a>
-      <a class="icon-btn desktop-only" href="{% url 'wishlist:detail' %}"><span class="sr-only">Saved items</span><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg></a>
-      <a class="icon-btn cart-link" href="{% url 'cart:detail' %}" data-cart-open aria-controls="cart-drawer" aria-expanded="false"><span class="sr-only">Bag</span><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>{% if cart_count %}<b>{{ cart_count }}</b>{% endif %}</a>
+      <a class="icon-btn desktop-only" href="{% url 'accounts:dashboard' %}"><span class="sr-only">{{ "Account"|ui_text }}</span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg></a>
+      <a class="icon-btn desktop-only" href="{% url 'wishlist:detail' %}"><span class="sr-only">{{ "Saved items"|ui_text }}</span><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg></a>
+      <a class="icon-btn cart-link" href="{% url 'cart:detail' %}" data-cart-open aria-controls="cart-drawer" aria-expanded="false"><span class="sr-only">{{ "Bag"|ui_text }}</span><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>{% if cart_count %}<b>{{ cart_count }}</b>{% endif %}</a>
     </div>
   </div>
-  <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
-    <button class="mobile-menu__backdrop" type="button" data-dialog-dismiss tabindex="-1" aria-label="Close menu"></button>
+  <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="{{ "Menu"|ui_text }}" hidden>
+    <button class="mobile-menu__backdrop" type="button" data-dialog-dismiss tabindex="-1" aria-label="{{ "Close menu"|ui_text }}"></button>
     <aside class="mobile-menu__panel">
       <header class="mobile-menu__header">
         <a class="mobile-menu__logo{% if is_kids %} mobile-menu__logo--kids{% endif %}" href="{% if is_kids %}{% url 'catalog:category' 'kids' %}{% else %}{% url 'core:home' %}{% endif %}" aria-label="{% if is_kids %}MEMO Kids{% else %}MEMO Home{% endif %}"><img src="{% if is_kids %}{% static 'images/memo-kids-logo.jpeg' %}{% else %}{% static 'images/memo-logo-transparent-v2.webp' %}?v=20261015{% endif %}" alt="{% if is_kids %}MEMO Kids{% else %}MEMO{% endif %}" width="384" height="256" decoding="async"></a>
         <div><strong>{% if request.LANGUAGE_CODE == 'ar' %}القائمة{% else %}Menu{% endif %}</strong><small>MEMO / CAIRO</small></div>
-        <button class="icon-btn menu-close" type="button" data-menu-close><span class="sr-only">Close</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+        <button class="icon-btn menu-close" type="button" data-menu-close><span class="sr-only">{{ "Close"|ui_text }}</span><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
       </header>
       <div class="mobile-menu__body">
-        <p class="mobile-menu__eyebrow">{% if request.LANGUAGE_CODE == 'ar' %}اكتشف ميمو{% else %}Explore MEMO{% endif %}</p>
-        <nav aria-label="Shop categories">
-          <a class="menu-category__link" href="{% url 'core:home' %}"><span>{% if request.LANGUAGE_CODE == 'ar' %}الرئيسية{% else %}Home{% endif %}</span></a>
+        <p class="mobile-menu__eyebrow">{% if request.LANGUAGE_CODE == 'ar' %}اكتشف ميمو{% else %}{{ "Explore MEMO"|ui_text }}{% endif %}</p>
+        <nav aria-label="{{ "Shop categories"|ui_text }}">
+          <a class="menu-category__link" href="{% url 'core:home' %}"><span>{% if request.LANGUAGE_CODE == 'ar' %}الرئيسية{% else %}{{ "Home"|ui_text }}{% endif %}</span></a>
           <a class="menu-category__link" href="{% url 'catalog:list' %}"><span>{% if request.LANGUAGE_CODE == 'ar' %}كل المنتجات{% else %}All products{% endif %}</span></a>
           <a class="menu-category__link" href="{% url 'catalog:collections' %}"><span>{% if request.LANGUAGE_CODE == 'ar' %}المجموعات{% else %}Collections{% endif %}</span></a>
           {% include 'components/menu-category.html' with categories=nav_categories only %}
@@ -137,11 +137,11 @@
       </div>
       <footer class="mobile-menu__footer">
         <div class="mobile-menu__shortcuts">
-          <a href="{% url 'accounts:dashboard' %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg><span>{% if request.LANGUAGE_CODE == 'ar' %}حسابي{% else %}My account{% endif %}</span></a>
-          <a href="{% url 'wishlist:detail' %}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>{% if request.LANGUAGE_CODE == 'ar' %}قائمة الأمنيات{% else %}Wishlist{% endif %}</span></a>
-          <a href="{% url 'cart:detail' %}"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg><span>Bag{% if cart_count %} ({{ cart_count }}){% endif %}</span></a>
+          <a href="{% url 'accounts:dashboard' %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg><span>{% if request.LANGUAGE_CODE == 'ar' %}حسابي{% else %}{{ "My account"|ui_text }}{% endif %}</span></a>
+          <a href="{% url 'wishlist:detail' %}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.6a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>{% if request.LANGUAGE_CODE == 'ar' %}قائمة الأمنيات{% else %}{{ "Wishlist"|ui_text }}{% endif %}</span></a>
+          <a href="{% url 'cart:detail' %}"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg><span>{{ "Bag"|ui_text }}{% if cart_count %} ({{ cart_count }}){% endif %}</span></a>
         </div>
-        <p>Everyday pieces with a distinct presence.</p>
+        <p>{{ "Everyday pieces with a distinct presence."|ui_text }}</p>
       </footer>
     </aside>
   </div>

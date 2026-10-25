@@ -181,6 +181,7 @@ def product_form(request, pk=None):
                             ProductImage(
                                 product=product, color=upload_color, image=image,
                                 alt_text=f"{product.name} - {upload_color.name} - {index + 1}",
+                                alt_text_ar=f"{product.name_ar or product.name} - {upload_color.name_ar or upload_color.name} - {index + 1}",
                                 sort_order=start_order + index + 1, is_primary=index == primary_index,
                             )
                             for index, image in enumerate(uploaded)

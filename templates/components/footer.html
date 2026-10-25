@@ -1,9 +1,9 @@
-{% load static %}
+{% load ui_tags %}{% load static %}
 <footer class="site-footer">
   <div class="footer-top shell">
     <div class="footer-brand">
       <img class="footer-logo" src="{% static 'images/memo-logo-transparent-v2.webp' %}?v=20261015" alt="MEMO" width="140" height="90" loading="lazy" decoding="async">
-      <p class="footer-tagline">{% if request.LANGUAGE_CODE == 'ar' %}تفاصيل يومية. حضور مختلف.{% else %}{{ store_settings.brand_tagline|default:"Everyday pieces. Distinct presence." }}{% endif %}</p>
+      <p class="footer-tagline">{{ store_settings.display_brand_tagline }}</p>
       {% if store_settings.support_email or store_settings.support_phone %}
       <div class="footer-contacts">
         {% if store_settings.support_phone %}
@@ -23,20 +23,20 @@
     </div>
 
     <div class="footer-nav-col">
-      <h3>{% if request.LANGUAGE_CODE == 'ar' %}تسوّق{% else %}Shop{% endif %}</h3>
+      <h3>{% if request.LANGUAGE_CODE == 'ar' %}تسوّق{% else %}{{ "Shop"|ui_text }}{% endif %}</h3>
       <a href="{% url 'catalog:list' %}">{% if request.LANGUAGE_CODE == 'ar' %}كل المنتجات{% else %}All pieces{% endif %}</a>
       <a href="{% url 'catalog:collections' %}">{% if request.LANGUAGE_CODE == 'ar' %}المجموعات{% else %}Collections{% endif %}</a>
       <a href="{% url 'catalog:list' %}?sort=new">{% if request.LANGUAGE_CODE == 'ar' %}وصل حديثًا{% else %}New arrivals{% endif %}</a>
-      <a href="{% url 'wishlist:detail' %}">{% if request.LANGUAGE_CODE == 'ar' %}قائمة الأمنيات{% else %}Saved items{% endif %}</a>
+      <a href="{% url 'wishlist:detail' %}">{% if request.LANGUAGE_CODE == 'ar' %}قائمة الأمنيات{% else %}{{ "Saved items"|ui_text }}{% endif %}</a>
     </div>
 
     <div class="footer-nav-col">
       <h3>{% if request.LANGUAGE_CODE == 'ar' %}المساعدة{% else %}Help{% endif %}</h3>
       <a href="{% url 'orders:track' %}">{% if request.LANGUAGE_CODE == 'ar' %}تتبّع طلبك{% else %}Track your order{% endif %}</a>
-      <a href="{% url 'core:info' 'shipping' %}">{% if request.LANGUAGE_CODE == 'ar' %}الشحن{% else %}Shipping{% endif %}</a>
+      <a href="{% url 'core:info' 'shipping' %}">{% if request.LANGUAGE_CODE == 'ar' %}الشحن{% else %}{{ "Shipping"|ui_text }}{% endif %}</a>
       <a href="{% url 'core:info' 'returns' %}">{% if request.LANGUAGE_CODE == 'ar' %}الاستبدال والاسترجاع{% else %}Exchanges & returns{% endif %}</a>
-      <a href="{% url 'core:info' 'sizes' %}">{% if request.LANGUAGE_CODE == 'ar' %}دليل المقاسات{% else %}Size guide{% endif %}</a>
-      <a href="{% url 'core:info' 'contact' %}">{% if request.LANGUAGE_CODE == 'ar' %}تواصل معنا{% else %}Contact us{% endif %}</a>
+      <a href="{% url 'core:info' 'sizes' %}">{% if request.LANGUAGE_CODE == 'ar' %}دليل المقاسات{% else %}{{ "Size guide"|ui_text }}{% endif %}</a>
+      <a href="{% url 'core:info' 'contact' %}">{% if request.LANGUAGE_CODE == 'ar' %}تواصل معنا{% else %}{{ "Contact us"|ui_text }}{% endif %}</a>
     </div>
 
     <div class="footer-nav-col">
@@ -70,7 +70,7 @@
   </div>
 
   <div class="footer-bottom shell">
-    <span>© 2026 MEMO. ALL RIGHTS RESERVED.</span>
-    <span>CAIRO, EGYPT</span>
+    <span>{{ "© 2026 MEMO. ALL RIGHTS RESERVED."|ui_text }}</span>
+    <span>{{ "CAIRO, EGYPT"|ui_text }}</span>
   </div>
 </footer>

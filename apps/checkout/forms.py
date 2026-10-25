@@ -1,7 +1,8 @@
 import re
 from django import forms
 from apps.core.numbers import latin_digits
-from apps.core.choices import EGYPT_GOVERNORATES_EN
+from apps.core.choices import EGYPT_GOVERNORATES, EGYPT_GOVERNORATES_EN
+from django.utils.translation import get_language
 
 class CheckoutForm(forms.Form):
     name = forms.CharField(label="Full name", max_length=120)
@@ -17,13 +18,20 @@ class CheckoutForm(forms.Form):
 
     def __init__(self, *args, store_settings=None, **kwargs):
         super().__init__(*args, **kwargs)
+        arabic = get_language() == "ar"
+        if arabic:
+            self.fields["governorate"].choices = [("", "اختر المحافظة")] + EGYPT_GOVERNORATES
         if store_settings:
             self.fields["shipping_method"].choices = [
-                ("standard", f"Standard shipping — {store_settings.standard_shipping:.0f} EGP"),
-                ("express", f"Express shipping — {store_settings.express_shipping:.0f} EGP"),
+                ("standard", f"الشحن العادي — {store_settings.standard_shipping:.0f} ج.م" if arabic else f"Standard shipping — {store_settings.standard_shipping:.0f} EGP"),
+                ("express", f"الشحن السريع — {store_settings.express_shipping:.0f} ج.م" if arabic else f"Express shipping — {store_settings.express_shipping:.0f} EGP"),
             ]
+        if arabic:
+            self.fields["payment_method"].choices = [("cash", "الدفع عند الاستلام")]
         autocomplete = {"name": "name", "phone": "tel", "email": "email", "governorate": "address-level1", "area": "address-level2", "address": "street-address", "details": "address-line2"}
         placeholders = {"name": "Name as it should appear on the order", "phone": "01xxxxxxxxx", "email": "name@example.com", "governorate": "For example: Cairo", "area": "For example: Maadi", "address": "Street and building number", "details": "Building, floor, and apartment", "notes": "Optional"}
+        if arabic:
+            placeholders.update({"name": "الاسم كما يظهر في الطلب", "governorate": "مثال: القاهرة", "area": "مثال: المعادي", "address": "الشارع ورقم المبنى", "details": "المبنى والدور والشقة", "notes": "اختياري"})
         for name, field in self.fields.items():
             field.widget.attrs.setdefault("autocomplete", autocomplete.get(name, "off"))
             if name in placeholders: field.widget.attrs.setdefault("placeholder", placeholders[name])

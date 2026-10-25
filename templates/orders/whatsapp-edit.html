@@ -1,4 +1,4 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load ui_tags %}
 {% block title %}{% if request.LANGUAGE_CODE == 'ar' %}تعديل الطلب{% else %}Edit order{% endif %} {{ order.order_number }} — MEMO{% endblock %}
 {% block body_class %}checkout-page{% endblock %}
 {% block content %}
@@ -6,7 +6,7 @@
   <header>
     <p class="eyebrow">{% if request.LANGUAGE_CODE == 'ar' %}طلب WhatsApp{% else %}WHATSAPP ORDER{% endif %}</p>
     <h1>{% if request.LANGUAGE_CODE == 'ar' %}تعديل بيانات الطلب{% else %}Edit order details{% endif %}</h1>
-    <p>{% if request.LANGUAGE_CODE == 'ar' %}رقم الطلب{% else %}Order number{% endif %} <strong dir="ltr">{{ order.order_number }}</strong></p>
+    <p>{% if request.LANGUAGE_CODE == 'ar' %}رقم الطلب{% else %}{{ "Order number"|ui_text }}{% endif %} <strong dir="ltr">{{ order.order_number }}</strong></p>
   </header>
 
   {% if editable %}
@@ -23,22 +23,22 @@
         <div class="form-grid">
           {% for field in form %}{% include 'components/form-field.html' %}{% endfor %}
         </div>
-        <button class="btn btn--dark" type="submit">{% if request.LANGUAGE_CODE == 'ar' %}حفظ التعديلات{% else %}Save changes{% endif %}</button>
+        <button class="btn btn--dark" type="submit">{% if request.LANGUAGE_CODE == 'ar' %}حفظ التعديلات{% else %}{{ "Save changes"|ui_text }}{% endif %}</button>
       </form>
 
       <aside class="whatsapp-edit-summary">
         <h2>{% if request.LANGUAGE_CODE == 'ar' %}ملخص الطلب{% else %}Order summary{% endif %}</h2>
         {% for item in order.items.all %}
-          <div><strong>{% if request.LANGUAGE_CODE == 'ar' %}{{ item.product_name }}{% else %}{{ item.product_name_en }}{% endif %}</strong><span>{{ item.quantity }} × {{ item.unit_price|floatformat:0 }} EGP</span></div>
+          <div><strong>{{ item.display_product_name }}</strong><span>{{ item.quantity }} × {{ item.unit_price|floatformat:0 }} {{ "EGP"|ui_text }}</span></div>
         {% endfor %}
-        <p><span>{% if request.LANGUAGE_CODE == 'ar' %}الإجمالي{% else %}Total{% endif %}</span><strong>{{ order.grand_total|floatformat:0 }} EGP</strong></p>
+        <p><span>{% if request.LANGUAGE_CODE == 'ar' %}الإجمالي{% else %}{{ "Total"|ui_text }}{% endif %}</span><strong>{{ order.grand_total|floatformat:0 }} {{ "EGP"|ui_text }}</strong></p>
         {% if not meta_whatsapp %}<small>{% if request.LANGUAGE_CODE == 'ar' %}بعد الحفظ أرسل هذا عبر WhatsApp:{% else %}After saving, send this on WhatsApp:{% endif %}<br><b dir="ltr">1 {{ order.order_number }}</b></small>{% endif %}
       </aside>
     </div>
   {% else %}
     <div class="tracking-alert">
       <strong>{% if request.LANGUAGE_CODE == 'ar' %}لا يمكن تعديل هذا الطلب الآن.{% else %}This order cannot be edited now.{% endif %}</strong>
-      <p>{% if request.LANGUAGE_CODE == 'ar' %}حالة الطلب الحالية: {{ order.get_status_display }}.{% else %}Current order status: {{ order.status_en }}.{% endif %}</p>
+      <p>{% if request.LANGUAGE_CODE == 'ar' %}حالة الطلب الحالية: {{ order.get_status_display }}.{% else %}Current order status: {{ order.display_status }}.{% endif %}</p>
     </div>
   {% endif %}
 </section>

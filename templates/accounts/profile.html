@@ -1,30 +1,30 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load ui_tags %}
 {% block title %}My details — MEMO{% endblock %}
 {% block content %}
 <section class="account shell">
   <aside>
-    <p class="eyebrow">MY MEMO</p><h1>Your details.</h1>
-    <nav><a href="{% url 'accounts:dashboard' %}">Orders</a><a href="{% url 'wishlist:detail' %}">Saved items</a><a class="active" href="{% url 'accounts:profile' %}">Profile and addresses</a><a href="{% url 'accounts:password_change' %}">Security</a></nav>
+    <p class="eyebrow">{{ "MY MEMO"|ui_text }}</p><h1>{{ "Your details."|ui_text }}</h1>
+    <nav><a href="{% url 'accounts:dashboard' %}">{{ "Orders"|ui_text }}</a><a href="{% url 'wishlist:detail' %}">{{ "Saved items"|ui_text }}</a><a class="active" href="{% url 'accounts:profile' %}">{{ "Profile and addresses"|ui_text }}</a><a href="{% url 'accounts:password_change' %}">{{ "Security"|ui_text }}</a></nav>
   </aside>
   <div class="account-content">
-    <div class="account-section-head" id="profile"><div><p class="eyebrow">PROFILE</p><h2>Profile</h2></div></div>
-    <form class="profile-edit-form" method="post" novalidate>{% csrf_token %}<div class="form-grid">{% for field in profile_form %}{% include 'components/form-field.html' with field=field %}{% endfor %}</div><button class="btn btn--dark" type="submit" name="save_profile">Save details</button></form>
-    <div class="account-section-head account-section-head--addresses" id="addresses"><div><p class="eyebrow">DELIVERY</p><h2>Delivery addresses</h2></div>{% if editing_address %}<a href="{% url 'accounts:profile' %}">Cancel editing</a>{% endif %}</div>
+    <div class="account-section-head" id="profile"><div><p class="eyebrow">{{ "PROFILE"|ui_text }}</p><h2>{{ "Profile"|ui_text }}</h2></div></div>
+    <form class="profile-edit-form" method="post" novalidate>{% csrf_token %}<div class="form-grid">{% for field in profile_form %}{% include 'components/form-field.html' with field=field %}{% endfor %}</div><button class="btn btn--dark" type="submit" name="save_profile">{{ "Save details"|ui_text }}</button></form>
+    <div class="account-section-head account-section-head--addresses" id="addresses"><div><p class="eyebrow">{{ "DELIVERY"|ui_text }}</p><h2>{{ "Delivery addresses"|ui_text }}</h2></div>{% if editing_address %}<a href="{% url 'accounts:profile' %}">{{ "Cancel editing"|ui_text }}</a>{% endif %}</div>
     <div class="address-grid">
       {% for address in addresses %}
       <article class="address-card{% if address.is_default %} address-card--default{% endif %}">
-        <header><strong>{{ address.name }}</strong>{% if address.is_default %}<span>Default</span>{% endif %}</header>
-        <p>{{ address.phone }}</p><p>{{ address.governorate_en }}, {{ address.area }}<br>{{ address.address_line }}{% if address.building %}, building {{ address.building }}{% endif %}</p>
-        <div class="address-card__actions"><a href="{% url 'accounts:profile' %}?edit={{ address.pk }}#address-form">Edit</a><form action="{% url 'accounts:address_delete' address.pk %}" method="post" onsubmit="return confirm('Delete this address?')">{% csrf_token %}<button type="submit">Delete</button></form></div>
+        <header><strong>{{ address.name }}</strong>{% if address.is_default %}<span>{{ "Default"|ui_text }}</span>{% endif %}</header>
+        <p>{{ address.phone }}</p><p>{{ address.display_governorate }}, {{ address.area }}<br>{{ address.address_line }}{% if address.building %}, building {{ address.building }}{% endif %}</p>
+        <div class="address-card__actions"><a href="{% url 'accounts:profile' %}?edit={{ address.pk }}#address-form">{{ "Edit"|ui_text }}</a><form action="{% url 'accounts:address_delete' address.pk %}" method="post" onsubmit="return confirm('Delete this address?')">{% csrf_token %}<button type="submit">{{ "Delete"|ui_text }}</button></form></div>
       </article>
-      {% empty %}<div class="empty-state compact"><h3>No saved addresses yet.</h3><p>Add an address to make your next checkout faster.</p></div>{% endfor %}
+      {% empty %}<div class="empty-state compact"><h3>{{ "No saved addresses yet."|ui_text }}</h3><p>{{ "Add an address to make your next checkout faster."|ui_text }}</p></div>{% endfor %}
     </div>
     <form id="address-form" class="address-form" method="post" novalidate>
       {% csrf_token %}
-      <div class="account-section-head"><div><p class="eyebrow">{% if editing_address %}EDIT ADDRESS{% else %}NEW ADDRESS{% endif %}</p><h2>{% if editing_address %}Edit address{% else %}Add address{% endif %}</h2></div></div>
+      <div class="account-section-head"><div><p class="eyebrow">{% if editing_address %}{{ "EDIT ADDRESS"|ui_text }}{% else %}{{ "NEW ADDRESS"|ui_text }}{% endif %}</p><h2>{% if editing_address %}{{ "Edit address"|ui_text }}{% else %}{{ "Add address"|ui_text }}{% endif %}</h2></div></div>
       {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="form-grid">{% for field in form %}{% if field.name == 'address_line' or field.name == 'notes' %}<div class="field-span-2">{% include 'components/form-field.html' with field=field %}</div>{% else %}{% include 'components/form-field.html' with field=field %}{% endif %}{% endfor %}</div>
-      <button class="btn btn--dark" type="submit" name="save_address">Save address</button>
+      <button class="btn btn--dark" type="submit" name="save_address">{{ "Save address"|ui_text }}</button>
     </form>
   </div>
 </section>

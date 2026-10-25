@@ -2,7 +2,8 @@ import re
 
 from django import forms
 
-from apps.core.choices import EGYPT_GOVERNORATES_EN
+from apps.core.choices import EGYPT_GOVERNORATES, EGYPT_GOVERNORATES_EN
+from django.utils.translation import get_language
 from apps.core.numbers import latin_digits
 
 from .models import Order
@@ -38,6 +39,8 @@ class WhatsAppOrderEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if get_language() == "ar":
+            self.fields["governorate"].choices = [("", "اختر المحافظة")] + EGYPT_GOVERNORATES
         self.fields["customer_phone"].widget.attrs.update({"inputmode": "tel", "dir": "ltr"})
         self.fields["customer_email"].widget.attrs.update({"inputmode": "email", "dir": "ltr"})
         for field in self.fields.values():

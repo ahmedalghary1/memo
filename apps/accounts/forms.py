@@ -3,7 +3,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from apps.orders.models import Address
 from apps.core.numbers import latin_digits
-from apps.core.choices import EGYPT_GOVERNORATES_EN
+from apps.core.choices import EGYPT_GOVERNORATES, EGYPT_GOVERNORATES_EN
+from django.utils.translation import get_language
 
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(label="First name")
@@ -54,6 +55,11 @@ class AddressForm(forms.ModelForm):
             "address_line": forms.TextInput(attrs={"autocomplete": "street-address"}),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if get_language() == "ar":
+            self.fields["governorate"].choices = [("", "اختر المحافظة")] + EGYPT_GOVERNORATES
 
     def clean_phone(self):
         phone = "".join(character for character in latin_digits(self.cleaned_data["phone"]) if character.isdigit() or character == "+")

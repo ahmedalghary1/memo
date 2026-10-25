@@ -1,4 +1,4 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load ui_tags %}
 {% block title %}{% if request.LANGUAGE_CODE == 'ar' %}تتبع طلبك{% else %}Track your order{% endif %} — MEMO{% endblock %}
 {% block content %}
 <section class="tracking-page shell">
@@ -7,10 +7,10 @@
   {% if not_found %}<div class="tracking-alert" role="alert"><strong>{% if request.LANGUAGE_CODE == 'ar' %}لم نتمكن من العثور على الطلب.{% else %}We could not find that order.{% endif %}</strong><p>{% if request.LANGUAGE_CODE == 'ar' %}تحقق من رقم الطلب والهاتف ثم حاول مرة أخرى.{% else %}Check the order number and phone number, then try again.{% endif %}</p></div>{% endif %}
   {% if order %}
   <article class="tracking-result">
-    <div class="tracking-result__head"><div><span>Order number</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.status_en }}</span></div>
-    <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>Received</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Confirmed</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Shipped</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>Delivered</span></div></div>
-    <dl class="tracking-meta"><div><dt>Order date</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>Delivering to</dt><dd>{{ order.governorate_en }}, {{ order.area }}</dd></div><div><dt>Total</dt><dd>{{ order.grand_total|floatformat:0 }} EGP</dd></div></dl>
-    <div class="tracking-events"><h2>Latest updates</h2>{% for event in order.timeline.all %}<div><i></i><span><strong>{{ event.status_label_en }}</strong><small>{{ event.created_at|date:'d.m.Y — H:i' }}</small></span></div>{% empty %}<p>We have received your order. The first update will appear after review.</p>{% endfor %}</div><a class="tracking-support" href="{% url 'core:info' 'contact' %}">Need help with this order?</a>
+    <div class="tracking-result__head"><div><span>{{ "Order number"|ui_text }}</span><strong>{{ order.order_number }}</strong></div><span class="status status--{{ order.status }}">{{ order.display_status }}</span></div>
+    <div class="tracking-progress"><div class="{% if order.status != 'cancelled' and order.status != 'returned' %}is-done{% endif %}"><i></i><span>{{ "Received"|ui_text }}</span></div><div class="{% if order.status == 'confirmed' or order.status == 'preparing' or order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>{{ "Confirmed"|ui_text }}</span></div><div class="{% if order.status == 'shipped' or order.status == 'delivered' %}is-done{% endif %}"><i></i><span>{{ "Shipped"|ui_text }}</span></div><div class="{% if order.status == 'delivered' %}is-done{% endif %}"><i></i><span>{{ "Delivered"|ui_text }}</span></div></div>
+    <dl class="tracking-meta"><div><dt>{{ "Order date"|ui_text }}</dt><dd>{{ order.created_at|date:'d F Y' }}</dd></div><div><dt>{{ "Delivering to"|ui_text }}</dt><dd>{{ order.display_governorate }}, {{ order.area }}</dd></div><div><dt>{{ "Total"|ui_text }}</dt><dd>{{ order.grand_total|floatformat:0 }} {{ "EGP"|ui_text }}</dd></div></dl>
+    <div class="tracking-events"><h2>{{ "Latest updates"|ui_text }}</h2>{% for event in order.timeline.all %}<div><i></i><span><strong>{{ event.display_status_label }}</strong><small>{{ event.created_at|date:'d.m.Y — H:i' }}</small></span></div>{% empty %}<p>{{ "We have received your order. The first update will appear after review."|ui_text }}</p>{% endfor %}</div><a class="tracking-support" href="{% url 'core:info' 'contact' %}">{{ "Need help with this order?"|ui_text }}</a>
   </article>
   {% endif %}
 </section>

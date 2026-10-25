@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.translation import get_language
 from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import ContactMessageForm
 from .models import InfoPageContent
@@ -56,7 +57,7 @@ def search_suggestions(request):
     return JsonResponse({"results": [
         {
             "name": product.display_name,
-            "category": product.category.name,
+            "category": product.category.localized_name,
             "price": f"{product.price:.0f}",
             "url": product.get_absolute_url(),
             "image": product.primary_image.optimized_url if product.primary_image else "",
@@ -86,18 +87,32 @@ def info_page(request, page):
         "sizes": ("Size guide", "Choose your usual size for MEMO's relaxed fit. We review measurements for every piece before launch, and you can contact us before ordering."),
         "contact": ("Contact us", "Send your question or order details directly to our customer support team."),
     }
-    title, content = pages.get(page, pages["about"])
+    pages_ar = {
+        "about": ("عن ميمو", "ميمو علامة أزياء معاصرة من القاهرة. نصمم قطعًا يومية بهوية واضحة وخامات مختارة وقصّات تمنحك حرية الحركة."),
+        "shipping": ("الشحن", "نجهز الطلبات خلال يومي عمل. يستغرق التوصيل العادي داخل مصر عادةً من يومين إلى خمسة أيام عمل."),
+        "returns": ("الاستبدال والاسترجاع", "يمكنك طلب استرجاع المنتج خلال 14 يومًا من الاستلام إذا كان غير مستخدم وبحالته الأصلية."),
+        "privacy": ("الخصوصية", "نستخدم بياناتك لتنفيذ طلبك وتقديم الدعم فقط. لا نبيع بيانات العملاء ولا نشاركها للإعلانات الخارجية."),
+        "terms": ("الشروط والأحكام", "تخضع الطلبات لتأكيد المخزون والتوصيل. الأسعار بالجنيه المصري وتشمل الضرائب المطبقة."),
+        "sizes": ("دليل المقاسات", "اختر مقاسك المعتاد لقصّات ميمو المريحة. نراجع قياسات كل قطعة قبل إطلاقها، ويمكنك التواصل معنا قبل الطلب."),
+        "contact": ("تواصل معنا", "أرسل سؤالك أو تفاصيل طلبك مباشرة إلى فريق خدمة العملاء."),
+    }
+    defaults = pages_ar if get_language() == "ar" else pages
+    title, content = defaults.get(page, defaults["about"])
     edited_page = InfoPageContent.objects.filter(page=page).first()
     if edited_page:
-        title, content = edited_page.title, edited_page.intro
+        if get_language() == "ar":
+            title, content = edited_page.title_ar or title, edited_page.intro_ar or content
+        else:
+            title, content = edited_page.title, edited_page.intro
     contact_form = None
     if page == "contact":
         contact_form = ContactMessageForm(request.POST or None)
         if request.method == "POST" and contact_form.is_valid():
             contact_form.save()
-            messages.success(request, "Your message has reached the MEMO team. We will get back to you soon.")
+            messages.success(request, "وصلت رسالتك إلى فريق ميمو. سنتواصل معك قريبًا." if get_language() == "ar" else "Your message has reached the MEMO team. We will get back to you soon.")
             return redirect("core:info", page="contact")
-    return render(request, "store/info-page.html", {"title": title, "page_content": content, "custom_body": edited_page.body if edited_page else "", "page": page, "contact_form": contact_form})
+    custom_body = (edited_page.body_ar if get_language() == "ar" else edited_page.body) if edited_page else ""
+    return render(request, "store/info-page.html", {"title": title, "page_content": content, "custom_body": custom_body, "page": page, "contact_form": contact_form})
 
 def error_403(request, exception=None): return render(request, "errors/403.html", status=403)
 def error_404(request, exception=None): return render(request, "errors/404.html", status=404)

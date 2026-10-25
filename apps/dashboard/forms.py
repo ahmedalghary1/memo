@@ -51,6 +51,11 @@ class DashboardModelForm(forms.ModelForm):
 
 
 class ProductForm(DashboardModelForm):
+    TRANSLATED_FIELDS = (
+        "name", "short_description", "description", "material", "care_instructions",
+        "fit_notes", "model_info", "measurement_notes", "meta_title", "meta_description",
+    )
+
     class Meta:
         model = Product
         fields = (
@@ -86,15 +91,29 @@ class ProductForm(DashboardModelForm):
         for name, label in english_labels.items():
             self.fields[name].label = label
 
+    def clean(self):
+        cleaned = super().clean()
+        for field in self.TRANSLATED_FIELDS:
+            english = cleaned.get(field)
+            arabic = cleaned.get(f"{field}_ar")
+            if self.instance.pk and english == getattr(self.instance, field) and arabic == getattr(self.instance, f"{field}_ar"):
+                continue
+            if bool(english) != bool(arabic):
+                missing = f"{field}_ar" if english else field
+                self.add_error(missing, "أدخل النص بالعربية والإنجليزية معًا.")
+        return cleaned
+
 
 class CategoryForm(DashboardModelForm):
     class Meta:
         model = Category
-        fields = ("name", "slug", "parent", "image", "description", "visual_theme", "is_active", "sort_order", "seo_title", "seo_description")
+        fields = ("name", "name_ar", "slug", "parent", "image", "description", "description_ar", "visual_theme", "is_active", "sort_order", "seo_title", "seo_title_ar", "seo_description", "seo_description_ar")
         widgets = {"description": forms.Textarea(attrs={"rows": 4}), "seo_description": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in ("name", "description", "seo_title", "seo_description"):
+            self.fields[field].label = f"{self.fields[field].label} بالإنجليزية"
         self.fields["visual_theme"].label = "الهوية البصرية"
 
 
@@ -112,7 +131,7 @@ class CollectionForm(DashboardModelForm):
 
     class Meta:
         model = Collection
-        fields = ("name", "slug", "description", "categories", "products", "cover_image", "hero_image", "starts_at", "ends_at", "is_active", "sort_order", "seo_title", "seo_description")
+        fields = ("name", "name_ar", "slug", "description", "description_ar", "categories", "products", "cover_image", "hero_image", "starts_at", "ends_at", "is_active", "sort_order", "seo_title", "seo_title_ar", "seo_description", "seo_description_ar")
         widgets = {
             "categories": forms.CheckboxSelectMultiple,
             "description": forms.Textarea(attrs={"rows": 4}),
@@ -123,6 +142,8 @@ class CollectionForm(DashboardModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in ("name", "description", "seo_title", "seo_description"):
+            self.fields[field].label = f"{self.fields[field].label} بالإنجليزية"
         self.fields["categories"].queryset = Category.objects.filter(is_active=True).select_related("parent", "parent__parent")
         self.fields["categories"].help_text = "تُضاف منتجات الفئة المحددة وكل فئاتها الفرعية تلقائيًا."
         if self.instance.pk:
@@ -138,14 +159,22 @@ class CollectionForm(DashboardModelForm):
 class ColorForm(DashboardModelForm):
     class Meta:
         model = Color
-        fields = ("name", "slug", "hex_code", "swatch_image", "sort_order")
+        fields = ("name", "name_ar", "slug", "hex_code", "swatch_image", "sort_order")
         widgets = {"hex_code": forms.TextInput(attrs={"type": "color"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["name"].label = "اسم اللون بالإنجليزية"
 
 
 class SizeForm(DashboardModelForm):
     class Meta:
         model = Size
-        fields = ("name", "slug", "sort_order")
+        fields = ("name", "name_ar", "slug", "sort_order")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["name"].label = "اسم المقاس بالإنجليزية"
 
 
 class CouponForm(DashboardModelForm):
@@ -175,10 +204,11 @@ class ProductVariantForm(DashboardModelForm):
 class ProductImageForm(DashboardModelForm):
     class Meta:
         model = ProductImage
-        fields = ("product", "color", "image", "alt_text", "sort_order", "is_primary")
+        fields = ("product", "color", "image", "alt_text", "alt_text_ar", "sort_order", "is_primary")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["alt_text"].label = "وصف الصورة بالإنجليزية"
         self.fields["color"].required = False
         self.fields["color"].empty_label = "صورة عامة لكل الألوان"
         self.fields["color"].help_text = "اختر اللون لتظهر هذه الصورة عند اختياره في المتجر."
@@ -280,15 +310,22 @@ class StoreSettingsForm(DashboardModelForm):
             "announcement_text": forms.TextInput(attrs={"placeholder": "اتركه فارغًا لإخفاء شريط الإعلان"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in ("brand_tagline", "hero_kicker", "hero_title", "hero_description", "announcement_text", "business_hours"):
+            self.fields[field].label = f"{self.fields[field].label} بالإنجليزية"
+
 
 class InfoPageContentForm(DashboardModelForm):
     class Meta:
         model = InfoPageContent
-        fields = ("page", "title", "intro", "body")
+        fields = ("page", "title", "title_ar", "intro", "intro_ar", "body", "body_ar")
         widgets = {"intro": forms.Textarea(attrs={"rows": 3}), "body": forms.Textarea(attrs={"rows": 10})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in ("title", "intro", "body"):
+            self.fields[field].label = f"{self.fields[field].label} بالإنجليزية"
         if self.instance.pk:
             self.fields["page"].disabled = True
 

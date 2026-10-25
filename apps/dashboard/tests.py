@@ -143,14 +143,28 @@ class DashboardPermissionTests(TestCase):
 
         response = self.client.post(reverse("dashboard:product_create"), {
             "name": "Arabic Tee", "name_ar": "تيشيرت عربي", "slug": "تيشيرت-عربي", "base_sku": "AR-TEE",
-            "category": category.pk, "short_description": "", "description": "", "material": "",
-            "care_instructions": "", "fit_notes": "", "model_info": "", "measurement_notes": "",
+            "category": category.pk, "short_description": "Cotton tee", "short_description_ar": "تيشيرت قطني",
+            "description": "Soft cotton for every day.", "description_ar": "قطن ناعم لكل يوم.",
+            "material": "Cotton", "material_ar": "قطن",
+            "care_instructions": "Wash cold", "care_instructions_ar": "يغسل بماء بارد",
+            "fit_notes": "Relaxed", "fit_notes_ar": "قَصّة مريحة",
+            "model_info": "Model wears M", "model_info_ar": "الموديل يرتدي مقاس متوسط",
+            "measurement_notes": "Length 70 cm", "measurement_notes_ar": "الطول 70 سم",
             "price": "500", "compare_at_price": "", "cost_price": "", "status": "active",
-            "meta_title": "", "meta_description": "",
+            "meta_title": "Arabic Tee", "meta_title_ar": "تيشيرت عربي",
+            "meta_description": "A cotton tee", "meta_description_ar": "تيشيرت قطني",
         })
         product = Product.objects.get(slug="تيشيرت-عربي")
         self.assertEqual(product.name_ar, "تيشيرت عربي")
+        self.assertEqual(product.description_ar, "قطن ناعم لكل يوم.")
+        self.assertEqual(product.care_instructions_ar, "يغسل بماء بارد")
+        self.assertEqual(product.meta_description_ar, "تيشيرت قطني")
         self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+
+        self.client.cookies["django_language"] = "ar"
+        self.assertContains(self.client.get(product.get_absolute_url()), "تيشيرت عربي")
+        self.client.cookies["django_language"] = "en"
+        self.assertContains(self.client.get(product.get_absolute_url()), "Arabic Tee")
 
     def test_collection_can_mix_full_category_tree_and_specific_products(self):
         self.login_authorized()
@@ -233,6 +247,7 @@ class DashboardPermissionTests(TestCase):
         )
         payload = {
             "name": product.name, "slug": product.slug, "base_sku": product.base_sku,
+            "name_ar": "تيشيرت",
             "category": category.pk, "short_description": "", "description": "", "material": "",
             "care_instructions": "", "fit_notes": "", "model_info": "", "measurement_notes": "",
             "price": "500", "compare_at_price": "", "cost_price": "", "status": "active",
@@ -241,15 +256,17 @@ class DashboardPermissionTests(TestCase):
             "variants-0-color": str(color.pk), "variants-0-size": str(size.pk), "variants-0-stock_quantity": "7",
             "variants-0-price_override": "", "variants-0-is_active": "on", "variants-0-low_stock_threshold": "2",
             "images-TOTAL_FORMS": "1", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
-            "images-0-color": str(color.pk), "images-0-image": image, "images-0-alt_text": "Black tee",
+            "images-0-color": str(color.pk), "images-0-image": image, "images-0-alt_text": "Black tee", "images-0-alt_text_ar": "تيشيرت أسود",
             "images-0-sort_order": "0", "images-0-is_primary": "on",
         }
 
         response = self.client.post(reverse("dashboard:product_edit", args=[product.pk]), payload)
 
         self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+        product.refresh_from_db()
+        self.assertEqual(product.name_ar, "تيشيرت")
         self.assertTrue(ProductVariant.objects.filter(product=product, color=color, size=size, stock_quantity=7).exists())
-        self.assertTrue(ProductImage.objects.filter(product=product, color=color, alt_text="Black tee").exists())
+        self.assertTrue(ProductImage.objects.filter(product=product, color=color, alt_text="Black tee", alt_text_ar="تيشيرت أسود").exists())
 
     def test_staff_can_edit_order_customer_details(self):
         self.login_authorized()

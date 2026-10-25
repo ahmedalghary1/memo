@@ -14,6 +14,11 @@ def optimized_image_url(image_field):
     optimized_name = str(Path(image_field.name).with_suffix(".webp")).replace("\\", "/")
     return image_field.storage.url(optimized_name) if image_field.storage.exists(optimized_name) else image_field.url
 
+
+def localized_value(instance, field):
+    value = getattr(instance, f"{field}_ar", "") if get_language() == "ar" else ""
+    return value or getattr(instance, field)
+
 class TimeStamped(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -27,17 +32,29 @@ class Category(TimeStamped):
         ("kids", "MEMO Kids"),
     ]
     name = models.CharField(max_length=120)
+    name_ar = models.CharField(max_length=120, blank=True, verbose_name="الاسم بالعربية")
     slug = models.SlugField(unique=True, allow_unicode=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
     image = models.ImageField(upload_to="categories/", blank=True)
     description = models.TextField(blank=True)
+    description_ar = models.TextField(blank=True, verbose_name="الوصف بالعربية")
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     seo_title = models.CharField(max_length=160, blank=True)
+    seo_title_ar = models.CharField(max_length=160, blank=True, verbose_name="عنوان الصفحة بالعربية")
     seo_description = models.CharField(max_length=300, blank=True)
+    seo_description_ar = models.CharField(max_length=300, blank=True, verbose_name="وصف الصفحة بالعربية")
     visual_theme = models.CharField(max_length=24, choices=VISUAL_THEMES, default="inherit")
     class Meta: ordering = ["sort_order", "name"]; verbose_name_plural = "Categories"
-    def __str__(self): return f"{'— ' * self.depth}{self.name}"
+    def __str__(self): return f"{'— ' * self.depth}{self.localized_name}"
+    @property
+    def localized_name(self): return localized_value(self, "name")
+    @property
+    def localized_description(self): return localized_value(self, "description")
+    @property
+    def localized_seo_title(self): return localized_value(self, "seo_title")
+    @property
+    def localized_seo_description(self): return localized_value(self, "seo_description")
     def get_absolute_url(self): return reverse("catalog:category", args=[self.slug])
     @property
     def optimized_image_url(self): return optimized_image_url(self.image)
@@ -50,7 +67,7 @@ class Category(TimeStamped):
             ancestor = ancestor.parent
         return depth
     @property
-    def display_name(self): return f"{'↳ ' * self.depth}{self.name}"
+    def display_name(self): return f"{'↳ ' * self.depth}{self.localized_name}"
     @property
     def ancestors(self):
         items, ancestor, seen = [], self.parent, set()
@@ -82,8 +99,10 @@ class Category(TimeStamped):
 
 class Collection(TimeStamped):
     name = models.CharField(max_length=120)
+    name_ar = models.CharField(max_length=120, blank=True, verbose_name="الاسم بالعربية")
     slug = models.SlugField(unique=True, allow_unicode=True)
     description = models.TextField(blank=True)
+    description_ar = models.TextField(blank=True, verbose_name="الوصف بالعربية")
     categories = models.ManyToManyField(Category, blank=True, related_name="collections")
     cover_image = models.ImageField(upload_to="collections/", blank=True)
     hero_image = models.ImageField(upload_to="collections/", blank=True)
@@ -92,9 +111,19 @@ class Collection(TimeStamped):
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     seo_title = models.CharField(max_length=160, blank=True)
+    seo_title_ar = models.CharField(max_length=160, blank=True, verbose_name="عنوان الصفحة بالعربية")
     seo_description = models.CharField(max_length=300, blank=True)
+    seo_description_ar = models.CharField(max_length=300, blank=True, verbose_name="وصف الصفحة بالعربية")
     class Meta: ordering = ["sort_order", "-created_at"]
-    def __str__(self): return self.name
+    def __str__(self): return self.localized_name
+    @property
+    def localized_name(self): return localized_value(self, "name")
+    @property
+    def localized_description(self): return localized_value(self, "description")
+    @property
+    def localized_seo_title(self): return localized_value(self, "seo_title")
+    @property
+    def localized_seo_description(self): return localized_value(self, "seo_description")
     def get_absolute_url(self): return reverse("catalog:collection", args=[self.slug])
     def product_queryset(self):
         selected = self.categories.filter(is_active=True)
@@ -150,8 +179,7 @@ class Product(TimeStamped):
     def __str__(self): return self.name
     def get_absolute_url(self): return reverse("catalog:product", args=[self.slug])
     def localized(self, field):
-        value = getattr(self, f"{field}_ar", "") if get_language() == "ar" else ""
-        return value or getattr(self, field)
+        return localized_value(self, field)
     @property
     def display_name(self): return self.localized("name")
     @property
@@ -228,27 +256,36 @@ class ProductImage(models.Model):
     color = models.ForeignKey("Color", null=True, blank=True, on_delete=models.SET_NULL, related_name="product_images")
     image = models.ImageField(upload_to="products/", validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])])
     alt_text = models.CharField(max_length=220)
+    alt_text_ar = models.CharField(max_length=220, blank=True, verbose_name="وصف الصورة بالعربية")
     sort_order = models.PositiveIntegerField(default=0)
     is_primary = models.BooleanField(default=False)
     class Meta: ordering = ["sort_order", "id"]
     @property
     def optimized_url(self): return optimized_image_url(self.image)
+    @property
+    def localized_alt_text(self): return localized_value(self, "alt_text")
 
 class Color(models.Model):
     name = models.CharField(max_length=80)
+    name_ar = models.CharField(max_length=80, blank=True, verbose_name="اسم اللون بالعربية")
     slug = models.SlugField(unique=True, allow_unicode=True)
     hex_code = models.CharField(max_length=7)
     swatch_image = models.ImageField(upload_to="swatches/", blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     class Meta: ordering = ["sort_order"]
-    def __str__(self): return self.name
+    def __str__(self): return self.localized_name
+    @property
+    def localized_name(self): return localized_value(self, "name")
 
 class Size(models.Model):
     name = models.CharField(max_length=30)
+    name_ar = models.CharField(max_length=30, blank=True, verbose_name="اسم المقاس بالعربية")
     slug = models.SlugField(unique=True, allow_unicode=True)
     sort_order = models.PositiveIntegerField(default=0)
     class Meta: ordering = ["sort_order"]
-    def __str__(self): return self.name
+    def __str__(self): return self.localized_name
+    @property
+    def localized_name(self): return localized_value(self, "name")
 
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
@@ -263,7 +300,7 @@ class ProductVariant(models.Model):
     def __str__(self): return f"{self.product} / {self.option_label}"
     @property
     def option_label(self):
-        return " / ".join(str(option) for option in (self.color, self.size) if option) or ("بدون خيارات" if get_language() == "ar" else "No options")
+        return " / ".join(option.localized_name for option in (self.color, self.size) if option) or ("بدون خيارات" if get_language() == "ar" else "No options")
     def generate_sku(self):
         parts = [self.product.base_sku]
         if self.color_id: parts.append(self.color.slug)

@@ -1,11 +1,11 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %}{% load ui_tags %}
 {% block title %}Order received — MEMO{% endblock %}
 {% block content %}
 <section class="success-page shell">
   <div class="success-mark">✓</div><p class="eyebrow">{% if request.LANGUAGE_CODE == "ar" %}تم استلام طلبك{% else %}ORDER RECEIVED{% endif %}</p><h1>{% if request.LANGUAGE_CODE == "ar" %}وصلنا طلبك.{% else %}We have your order.{% endif %}</h1>
   <p>Thank you, {{ order.customer_name }}. We will review the details and contact you to confirm shipping.</p>
-  <div class="order-ticket"><span>{% if request.LANGUAGE_CODE == "ar" %}رقم الطلب{% else %}Order number{% endif %}</span><strong>{{ order.order_number }}</strong><span>{% if request.LANGUAGE_CODE == "ar" %}الإجمالي{% else %}Total{% endif %}</span><strong>{{ order.grand_total|floatformat:0 }} EGP</strong></div>
-  <p class="success-note">Keep your order number and phone number to track your order anytime.</p>
-  <div class="success-actions"><a class="btn btn--dark" href="{% url 'orders:track' %}">تتبّع الطلب</a><a class="btn" href="{% url 'catalog:list' %}">Back to shop</a></div>
+  <div class="order-ticket"><span>{% if request.LANGUAGE_CODE == "ar" %}رقم الطلب{% else %}{{ "Order number"|ui_text }}{% endif %}</span><strong>{{ order.order_number }}</strong><span>{% if request.LANGUAGE_CODE == "ar" %}الإجمالي{% else %}{{ "Total"|ui_text }}{% endif %}</span><strong>{{ order.grand_total|floatformat:0 }} {{ "EGP"|ui_text }}</strong></div>
+  <p class="success-note">{{ "Keep your order number and phone number to track your order anytime."|ui_text }}</p>
+  <div class="success-actions"><a class="btn btn--dark" href="{% url 'orders:track' %}">تتبّع الطلب</a><a class="btn" href="{% url 'catalog:list' %}">{{ "Back to shop"|ui_text }}</a></div>
 </section>
 {% endblock %}

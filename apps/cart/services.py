@@ -66,13 +66,13 @@ class Cart:
     def validate_coupon(self, coupon):
         now = timezone.now()
         if not coupon or not coupon.is_active or coupon.starts_at > now or coupon.ends_at < now:
-            raise ValueError("This discount code is invalid or has expired.")
-        if coupon.usage_limit and coupon.uses >= coupon.usage_limit: raise ValueError("This discount code has reached its usage limit.")
-        if self.subtotal < coupon.min_order: raise ValueError(f"The minimum order for this code is {coupon.min_order:.0f} EGP.")
-        if self.request.user.is_authenticated and self.request.user.orders.filter(coupon=coupon).exclude(status__in=["cancelled", "returned"]).count() >= coupon.per_user_limit: raise ValueError("You have already used this discount code.")
+            raise ValueError("رمز الخصم غير صالح أو منتهي الصلاحية." if get_language() == "ar" else "This discount code is invalid or has expired.")
+        if coupon.usage_limit and coupon.uses >= coupon.usage_limit: raise ValueError("وصل رمز الخصم إلى الحد الأقصى للاستخدام." if get_language() == "ar" else "This discount code has reached its usage limit.")
+        if self.subtotal < coupon.min_order: raise ValueError(f"الحد الأدنى للطلب لهذا الرمز {coupon.min_order:.0f} ج.م." if get_language() == "ar" else f"The minimum order for this code is {coupon.min_order:.0f} EGP.")
+        if self.request.user.is_authenticated and self.request.user.orders.filter(coupon=coupon).exclude(status__in=["cancelled", "returned"]).count() >= coupon.per_user_limit: raise ValueError("لقد استخدمت رمز الخصم هذا بالفعل." if get_language() == "ar" else "You have already used this discount code.")
         restricted_products = set(coupon.products.values_list("id", flat=True))
         restricted_categories = set(coupon.categories.values_list("id", flat=True))
-        if (restricted_products or restricted_categories) and not any(i["product"].id in restricted_products or i["product"].category_id in restricted_categories for i in self): raise ValueError("This discount code does not apply to the items in your bag.")
+        if (restricted_products or restricted_categories) and not any(i["product"].id in restricted_products or i["product"].category_id in restricted_categories for i in self): raise ValueError("رمز الخصم لا ينطبق على المنتجات الموجودة في سلتك." if get_language() == "ar" else "This discount code does not apply to the items in your bag.")
         return coupon
     @property
     def coupon(self):

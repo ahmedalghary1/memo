@@ -1,19 +1,19 @@
-{% extends 'base/base.html' %}
-{% block title %}{{ collection.seo_title|default:collection.name }} — MEMO{% endblock %}
-{% block description %}{{ collection.seo_description|default:collection.description|default:collection.name }}{% endblock %}
+{% extends 'base/base.html' %}{% load ui_tags %}
+{% block title %}{{ collection.localized_seo_title|default:collection.localized_name }} — MEMO{% endblock %}
+{% block description %}{{ collection.localized_seo_description|default:collection.localized_description|default:collection.localized_name }}{% endblock %}
 {% block content %}
 <header class="collection-page-hero">
   {% if collection.hero_image or collection.cover_image %}<img src="{% if collection.hero_image %}{{ collection.optimized_hero_url }}{% else %}{{ collection.optimized_cover_url }}{% endif %}" alt="" width="1600" height="900">{% endif %}
   <div class="collection-page-hero__content shell">
-    <p class="eyebrow">MEMO / COLLECTION</p>
-    <h1>{{ collection.name }}</h1>
-    {% if collection.description %}<p>{{ collection.description }}</p>{% endif %}
+    <p class="eyebrow">{{ "MEMO / COLLECTION"|ui_text }}</p>
+    <h1>{{ collection.localized_name }}</h1>
+    {% if collection.localized_description %}<p>{{ collection.localized_description }}</p>{% endif %}
   </div>
 </header>
 <section class="collection-page-content shell">
-  {% if collection_categories %}<nav class="collection-page-categories" aria-label="Collection categories">{% for category in collection_categories %}<a href="{{ category.get_absolute_url }}">{{ category.name }} →</a>{% endfor %}</nav>{% endif %}
-  <div class="collection-page-toolbar"><span>{{ page_obj.paginator.count }} items</span><form class="sort-form" method="get"><label for="collection-sort">Sort by</label><select id="collection-sort" name="sort"><option value="new" {% if request.GET.sort == 'new' %}selected{% endif %}>Newest</option><option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Price: low to high</option><option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price: high to low</option></select></form></div>
+  {% if collection_categories %}<nav class="collection-page-categories" aria-label="{{ "Collection categories"|ui_text }}">{% for category in collection_categories %}<a href="{{ category.get_absolute_url }}">{{ category.localized_name }} →</a>{% endfor %}</nav>{% endif %}
+  <div class="collection-page-toolbar"><span>{{ page_obj.paginator.count }} {{ "items"|ui_text }}</span><form class="sort-form" method="get"><label for="collection-sort">{{ "Sort by"|ui_text }}</label><select id="collection-sort" name="sort"><option value="new" {% if request.GET.sort == 'new' %}selected{% endif %}>{{ "Newest"|ui_text }}</option><option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>{{ "Price: low to high"|ui_text }}</option><option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>{{ "Price: high to low"|ui_text }}</option></select></form></div>
   {% include 'components/product-grid.html' with products=page_obj %}
-  {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="Pages">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" aria-label="Previous page">‹</a>{% endif %}<span>{{ page_obj.number }}</span><small>of {{ page_obj.paginator.num_pages }}</small>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" aria-label="Next page">›</a>{% endif %}</nav>{% endif %}
+  {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="{{ "Pages"|ui_text }}">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" aria-label="{{ "Previous page"|ui_text }}">‹</a>{% endif %}<span>{{ page_obj.number }}</span><small>of {{ page_obj.paginator.num_pages }}</small>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" aria-label="{{ "Next page"|ui_text }}">›</a>{% endif %}</nav>{% endif %}
 </section>
 {% endblock %}
