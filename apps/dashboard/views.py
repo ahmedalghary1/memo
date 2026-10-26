@@ -172,20 +172,25 @@ def product_form(request, pk=None):
                     uploaded = color_images.cleaned_data.get("images") or []
                     upload_color = color_images.cleaned_data.get("color")
                     primary_index = color_images.cleaned_data.get("primary_index")
-                    if uploaded and upload_color:
+                    if uploaded:
                         if primary_index is None:
                             primary_index = 0
-                        ProductImage.objects.filter(product=product, color=upload_color, is_primary=True).update(is_primary=False)
+                        if upload_color:
+                            ProductImage.objects.filter(product=product, color=upload_color, is_primary=True).update(is_primary=False)
                         start_order = product.images.order_by("-sort_order").values_list("sort_order", flat=True).first() or 0
-                        ProductImage.objects.bulk_create([
-                            ProductImage(
-                                product=product, color=upload_color, image=image,
-                                alt_text=f"{product.name} - {upload_color.name} - {index + 1}",
-                                alt_text_ar=f"{product.name_ar or product.name} - {upload_color.name_ar or upload_color.name} - {index + 1}",
-                                sort_order=start_order + index + 1, is_primary=index == primary_index,
+                        for index, img_file in enumerate(uploaded):
+                            color_suffix = f" - {upload_color.name}" if upload_color else ""
+                            color_suffix_ar = f" - {upload_color.name_ar or upload_color.name}" if upload_color else ""
+                            pi = ProductImage(
+                                product=product,
+                                color=upload_color,
+                                alt_text=f"{product.name}{color_suffix} - {index + 1}".strip(),
+                                alt_text_ar=f"{product.name_ar or product.name}{color_suffix_ar} - {index + 1}".strip(),
+                                sort_order=start_order + index + 1,
+                                is_primary=(index == primary_index),
                             )
-                            for index, image in enumerate(uploaded)
-                        ])
+                            pi.image.save(img_file.name, img_file, save=False)
+                            pi.save()
             messages.success(request, "تم حفظ المنتج وألوانه ومقاساته وصوره بنجاح.")
             return redirect("dashboard:product_edit", pk=product.pk)
     return render(request, "dashboard/product-form.html", {

@@ -268,6 +268,36 @@ class DashboardPermissionTests(TestCase):
         self.assertTrue(ProductVariant.objects.filter(product=product, color=color, size=size, stock_quantity=7).exists())
         self.assertTrue(ProductImage.objects.filter(product=product, color=color, alt_text="Black tee", alt_text_ar="تيشيرت أسود").exists())
 
+    def test_product_editor_saves_batch_images_properly(self):
+        import base64
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.login_authorized()
+        category = Category.objects.create(name="Tops", slug="batch-tops")
+        product = Product.objects.create(name="Batch Tee", slug="batch-tee", base_sku="BATCH-TEE", price=500, category=category, status="active")
+        color = Color.objects.create(name="Navy", slug="batch-navy", hex_code="#000080")
+        image = SimpleUploadedFile(
+            "navy.png",
+            base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="),
+            content_type="image/png",
+        )
+        payload = {
+            "name": product.name, "slug": product.slug, "base_sku": product.base_sku,
+            "name_ar": "تيشيرت كحلي",
+            "category": category.pk, "price": "500", "status": "active",
+            "variants-TOTAL_FORMS": "0", "variants-INITIAL_FORMS": "0", "variants-MIN_NUM_FORMS": "0", "variants-MAX_NUM_FORMS": "1000",
+            "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+            "batch-color": str(color.pk),
+            "batch-images": [image],
+            "batch-primary_index": "0",
+        }
+        response = self.client.post(reverse("dashboard:product_edit", args=[product.pk]), payload)
+        self.assertRedirects(response, reverse("dashboard:product_edit", args=[product.pk]))
+        self.assertTrue(ProductImage.objects.filter(product=product, color=color, is_primary=True).exists())
+        saved_img = ProductImage.objects.filter(product=product, color=color).first()
+        self.assertTrue(saved_img.image)
+        self.assertTrue(saved_img.image.storage.exists(saved_img.image.name))
+
     def test_staff_can_edit_order_customer_details(self):
         self.login_authorized()
         order = Order.objects.create(

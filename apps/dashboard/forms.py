@@ -209,9 +209,19 @@ class ProductImageForm(DashboardModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["alt_text"].label = "وصف الصورة بالإنجليزية"
+        self.fields["alt_text"].required = False
         self.fields["color"].required = False
         self.fields["color"].empty_label = "صورة عامة لكل الألوان"
         self.fields["color"].help_text = "اختر اللون لتظهر هذه الصورة عند اختياره في المتجر."
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("alt_text"):
+            product = cleaned.get("product") or (self.instance.product if self.instance.pk else None)
+            color = cleaned.get("color") or (self.instance.color if self.instance.pk else None)
+            prod_name = product.name if product else "Product"
+            cleaned["alt_text"] = f"{prod_name} {color.name if color else ''}".strip()
+        return cleaned
 
 
 class MultipleImageInput(forms.ClearableFileInput):
@@ -219,25 +229,24 @@ class MultipleImageInput(forms.ClearableFileInput):
 
 
 class MultipleImageField(forms.ImageField):
-    widget = MultipleImageInput(attrs={"accept": "image/jpeg,image/png,image/webp,image/avif", "multiple": True})
+    widget = MultipleImageInput(attrs={"accept": "image/jpeg,image/png,image/webp", "multiple": True})
 
     def clean(self, data, initial=None):
         clean_one = super().clean
         if not data:
             return []
-        return [clean_one(item, initial) for item in (data if isinstance(data, (list, tuple)) else [data])]
+        items = data if isinstance(data, (list, tuple)) else [data]
+        return [clean_one(item, initial) for item in items if item]
 
 
 class ProductColorImagesUploadForm(forms.Form):
-    color = forms.ModelChoiceField(label="لون الصور", queryset=Color.objects.all(), required=False, empty_label="اختر اللون")
+    color = forms.ModelChoiceField(label="لون الصور", queryset=Color.objects.all(), required=False, empty_label="عام / كل الألوان")
     images = MultipleImageField(label="صور اللون", required=False)
     primary_index = forms.IntegerField(required=False, min_value=0, widget=forms.HiddenInput)
 
     def clean(self):
         cleaned = super().clean()
         images = cleaned.get("images") or []
-        if images and not cleaned.get("color"):
-            self.add_error("color", "اختر اللون الذي تنتمي إليه الصور.")
         primary_index = cleaned.get("primary_index")
         if images and primary_index is not None and primary_index >= len(images):
             self.add_error("primary_index", "اختيار الصورة الرئيسية غير صالح.")

@@ -9,10 +9,15 @@ from django.utils.translation import get_language
 
 
 def optimized_image_url(image_field):
-    if not image_field:
+    if not image_field or not getattr(image_field, "name", None):
         return ""
-    optimized_name = str(Path(image_field.name).with_suffix(".webp")).replace("\\", "/")
-    return image_field.storage.url(optimized_name) if image_field.storage.exists(optimized_name) else image_field.url
+    try:
+        optimized_name = str(Path(image_field.name).with_suffix(".webp")).replace("\\", "/")
+        if image_field.storage.exists(optimized_name):
+            return image_field.storage.url(optimized_name)
+        return image_field.url
+    except Exception:
+        return ""
 
 
 def localized_value(instance, field):
@@ -255,7 +260,7 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     color = models.ForeignKey("Color", null=True, blank=True, on_delete=models.SET_NULL, related_name="product_images")
     image = models.ImageField(upload_to="products/", validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])])
-    alt_text = models.CharField(max_length=220)
+    alt_text = models.CharField(max_length=220, blank=True)
     alt_text_ar = models.CharField(max_length=220, blank=True, verbose_name="وصف الصورة بالعربية")
     sort_order = models.PositiveIntegerField(default=0)
     is_primary = models.BooleanField(default=False)
@@ -264,6 +269,16 @@ class ProductImage(models.Model):
     def optimized_url(self): return optimized_image_url(self.image)
     @property
     def localized_alt_text(self): return localized_value(self, "alt_text")
+    def save(self, *args, **kwargs):
+        if not self.alt_text:
+            prod_name = self.product.name if self.product_id else "Product"
+            color_name = f" - {self.color.name}" if self.color_id else ""
+            self.alt_text = f"{prod_name}{color_name}".strip()
+        if not self.alt_text_ar:
+            prod_name_ar = (self.product.name_ar or self.product.name) if self.product_id else "منتج"
+            color_name_ar = f" - {self.color.name_ar or self.color.name}" if self.color_id else ""
+            self.alt_text_ar = f"{prod_name_ar}{color_name_ar}".strip()
+        super().save(*args, **kwargs)
 
 class Color(models.Model):
     name = models.CharField(max_length=80)
