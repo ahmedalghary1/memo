@@ -74,7 +74,7 @@ LOGIN_URL = "accounts:login"
 LOGOUT_REDIRECT_URL = "core:home"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {"BACKEND": "apps.core.storage.WebPImageStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 WHITENOISE_MANIFEST_STRICT = False
